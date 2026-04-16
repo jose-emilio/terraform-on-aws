@@ -1,0 +1,7 @@
+# Backend config para la capa de computo en AWS real.
+# Usa el bucket creado en el Lab02 (terraform-state-labs-<ACCOUNT_ID>).
+# Úsalo así:
+#   terraform init -backend-config=aws.s3.tfbackend -backend-config="bucket=terraform-state-labs-<ACCOUNT_ID>"
+key     = "lab10/compute/terraform.tfstate"
+region  = "us-east-1"
+encrypt = true

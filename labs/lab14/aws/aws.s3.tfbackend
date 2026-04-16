@@ -1,0 +1,18 @@
+# Backend config para Lab14 en AWS real.
+# Usa el bucket creado en el Lab02 (terraform-state-labs-<ACCOUNT_ID>).
+#
+# HARDENING KMS: Para habilitar el cifrado obligatorio con CMK en el .tfstate,
+# añade kms_key_id con el ARN de la clave KMS ANTES de `terraform init`.
+# Flujo recomendado:
+#   1. Comenta kms_key_id en el primer init (la clave aún no existe).
+#   2. Ejecuta `terraform apply` para crear la KMS key.
+#   3. Copia el output `kms_key_arn` y pégalo como valor de kms_key_id aquí.
+#   4. Ejecuta `terraform init -reconfigure ...` para migrar el estado al CMK.
+#
+# Úsalo así:
+#   terraform init -backend-config=aws.s3.tfbackend -backend-config="bucket=terraform-state-labs-<ACCOUNT_ID>"
+key          = "lab14/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true
+# kms_key_id = "<ARN_DE_LA_KMS_KEY>"  # Descomenta tras crear la KMS key (paso 3 del flujo)

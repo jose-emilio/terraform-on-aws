@@ -1,0 +1,68 @@
+version: 0.2
+
+# ── Apply ──────────────────────────────────────────────────────────────────────
+#
+# Aplica el plan aprobado usando exclusivamente el artefacto inmutable tfplan.bin.
+#
+# CRITICO: Este buildspec NO llama a terraform plan bajo NINGUN concepto.
+# El contrato inmutable del pipeline garantiza que lo que el aprobador
+# autorizo es exactamente lo que se aplica.
+#
+# Artefactos de entrada (configurados en CodePipeline):
+#   source_output  → codigo Terraform (PrimarySource: extraido en el raiz)
+#   plan_output    → contiene tfplan.bin, tfplan.json, tfplan.txt
+#
+# PrimarySource = source_output:
+#   Los ficheros de source_output se extraen en el directorio de trabajo (raiz).
+#   plan_output se extrae en una ruta absoluta que CodeBuild expone mediante
+#   la variable CODEBUILD_SRC_DIR_plan_output. El buildspec la usa para
+#   referenciar tfplan.bin sin depender de rutas relativas fragiles.
+#
+# Nota sobre directorios: cada fase de CodeBuild arranca en el directorio raiz
+# del workspace. El bloque | de cada fase comienza con "cd "${CODEBUILD_SRC_DIR}/target"" para que
+# todos los comandos de esa fase ejecuten dentro del modulo Terraform.
+
+phases:
+  install:
+    commands:
+      - |
+        curl -fsSL \
+          "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+          -o /tmp/terraform.zip
+        unzip -q /tmp/terraform.zip -d /usr/local/bin/
+        terraform version
+
+  pre_build:
+    commands:
+      - |
+        cd "${CODEBUILD_SRC_DIR}/target"
+        terraform init \
+          -backend-config="bucket=${TF_STATE_BUCKET}" \
+          -backend-config="key=${TF_STATE_KEY}" \
+          -backend-config="region=${AWS_DEFAULT_REGION}"
+
+        # Verificar que el plan inmutable existe antes de intentar aplicarlo.
+        # CODEBUILD_SRC_DIR_plan_output es la variable que CodeBuild inyecta
+        # con la ruta absoluta donde se extrae el artefacto secundario plan_output.
+        PLAN_PATH="${CODEBUILD_SRC_DIR_plan_output}/target/tfplan.bin"
+        if [ ! -f "$PLAN_PATH" ]; then
+          echo "ERROR: tfplan.bin no encontrado en $PLAN_PATH"
+          ls -la "${CODEBUILD_SRC_DIR_plan_output}/" 2>/dev/null || echo "(directorio plan_output no existe)"
+          exit 1
+        fi
+        echo "Plan encontrado: $PLAN_PATH"
+
+  build:
+    commands:
+      - |
+        set -e
+        cd "${CODEBUILD_SRC_DIR}/target"
+        echo "=== terraform apply (plan inmutable) ==="
+        terraform apply -auto-approve "${CODEBUILD_SRC_DIR_plan_output}/target/tfplan.bin"
+
+        echo "=== terraform output ==="
+        terraform output
+
+  post_build:
+    commands:
+      - echo "Apply completado. Los recursos han sido desplegados segun el plan aprobado."

@@ -1,0 +1,90 @@
+version: 0.2
+
+# ── Plan ───────────────────────────────────────────────────────────────────────
+#
+# Genera el plan de Terraform en tres formatos y los empaqueta como artefacto
+# inmutable de salida (plan_output):
+#
+#   tfplan.bin    Plan binario → usado por terraform apply en la etapa Deploy
+#   tfplan.json   Plan en JSON → procesado por la Lambda inspectora
+#   tfplan.txt    Plan en texto plano → revision humana en la notificacion de
+#                 aprobacion (el aprobador descarga este fichero del bucket S3)
+#
+# -detailed-exitcode:
+#   exit 0 → sin cambios (terraform plan no falla, pero el buildspec tambien
+#             debe tratar esto como exito para que el pipeline continue)
+#   exit 2 → hay cambios que aplicar (el caso normal y esperado)
+#   exit 1 → error en el plan (fallo real)
+#
+# Nota sobre directorios: cada fase de CodeBuild arranca en el directorio raiz
+# del workspace. El bloque | de cada fase comienza con "cd "${CODEBUILD_SRC_DIR}/target"" para que
+# todos los comandos de esa fase ejecuten dentro del modulo Terraform.
+
+phases:
+  install:
+    commands:
+      - |
+        curl -fsSL \
+          "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+          -o /tmp/terraform.zip
+        unzip -q /tmp/terraform.zip -d /usr/local/bin/
+        terraform version
+
+  pre_build:
+    commands:
+      - |
+        cd "${CODEBUILD_SRC_DIR}/target"
+        terraform init \
+          -backend-config="bucket=${TF_STATE_BUCKET}" \
+          -backend-config="key=${TF_STATE_KEY}" \
+          -backend-config="region=${AWS_DEFAULT_REGION}"
+
+  build:
+    commands:
+      - |
+        cd "${CODEBUILD_SRC_DIR}/target"
+
+        echo "=== terraform plan ==="
+        terraform plan \
+          -detailed-exitcode \
+          -out=tfplan.bin \
+          -var="project=${TF_STATE_BUCKET%%-pipeline-*}" \
+          -var="region=${AWS_DEFAULT_REGION}" || PLAN_EXIT=$?
+
+        # exit 2 = hay cambios (exito esperado)
+        # exit 0 = sin cambios (tambien exito)
+        # exit 1 = error real
+        if [ "${PLAN_EXIT:-0}" -eq 1 ]; then
+          echo "ERROR: terraform plan fallo."
+          exit 1
+        fi
+        echo "Plan generado. Exit code: ${PLAN_EXIT:-0}"
+
+        echo "=== terraform show -json ==="
+        terraform show -json tfplan.bin > tfplan.json
+
+        echo "=== terraform show (texto) ==="
+        terraform show tfplan.bin > tfplan.txt
+
+        echo "=== Resumen del plan ==="
+        cat tfplan.txt
+
+        # Publica tfplan.txt en una ruta predecible para que el aprobador
+        # pueda descargarlo desde el enlace de la notificacion de aprobacion.
+        # Se ejecuta en el mismo bloque para garantizar que el fichero existe.
+        echo "=== Publicando tfplan.txt para revision ==="
+        aws s3 cp tfplan.txt \
+          "s3://${TF_STATE_BUCKET}/plans/latest/tfplan.txt"
+        echo "Plan disponible en s3://${TF_STATE_BUCKET}/plans/latest/tfplan.txt"
+
+  post_build:
+    commands:
+      - echo "Artefactos del plan generados => tfplan.bin, tfplan.json, tfplan.txt"
+
+artifacts:
+  files:
+    - target/tfplan.bin
+    - target/tfplan.json
+    - target/tfplan.txt
+  name: plan_output
+  discard-paths: no

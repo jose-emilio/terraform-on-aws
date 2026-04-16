@@ -1,0 +1,15 @@
+# Backend config para LocalStack. Todos los valores están predefinidos.
+# terraform init -backend-config=localstack.s3.tfbackend
+bucket                      = "terraform-state-labs"
+key                         = "lab7-workload/terraform.tfstate"
+region                      = "us-east-1"
+encrypt                     = true
+use_lockfile                = true
+access_key                  = "test"
+secret_key                  = "test"
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_requesting_account_id  = true
+endpoints = {
+  s3 = "http://localhost.localstack.cloud:4566"
+}

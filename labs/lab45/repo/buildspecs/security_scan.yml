@@ -1,0 +1,58 @@
+version: 0.2
+
+# ── SecurityScan ───────────────────────────────────────────────────────────────
+#
+# Analiza el codigo Terraform con Checkov en busca de configuraciones inseguras.
+#
+# Patron Collect-and-Fail con dos pasadas:
+#   Pasada 1 (--soft-fail): genera siempre el informe JUnit en disco,
+#     independientemente del resultado. Garantiza que CodeBuild pueda
+#     subirlo a Reports aunque la segunda pasada falle el build.
+#   Pasada 2 (sin --soft-fail): evalua los hallazgos con el exit code real.
+#     Falla el build si Checkov encuentra checks bloqueantes.
+#
+# Nota: --output-file-path provoca que Checkov salga con codigo 0 en
+# algunas versiones, por eso se separan la escritura del fichero y la
+# evaluacion del resultado en dos invocaciones distintas.
+#
+# Tipos de hallazgos que Checkov detecta en Terraform:
+#   - Buckets S3 publicos o sin cifrado
+#   - Grupos de seguridad con ingress 0.0.0.0/0 en puertos criticos
+#   - Recursos IAM con permisos excesivos (*)
+#   - Cifrado en reposo desactivado (RDS, EBS, etc.)
+#   - Logging desactivado (CloudTrail, ALB, S3)
+
+phases:
+  install:
+    commands:
+      - pip install --upgrade pip packaging --root-user-action=ignore --quiet
+      - pip install "checkov==${CHECKOV_VERSION}" --quiet
+
+  build:
+    commands:
+      # Pasada 1: genera el informe JUnit en disco (--soft-fail garantiza
+      # que el fichero siempre se escribe, independientemente del resultado)
+      - echo "=== Checkov ==> generando informe JUnit ==="
+      - |
+        checkov \
+          --directory target \
+          --output junitxml \
+          --output-file-path . \
+          --framework terraform \
+          --soft-fail
+
+      # Pasada 2: evalua los hallazgos y falla el build si los hay.
+      # Checkov devuelve exit code != 0 cuando encuentra checks bloqueantes.
+      # Esta segunda ejecucion no escribe a fichero, solo a stdout.
+      - echo "=== Checkov ==> evaluando hallazgos ==="
+      - |
+        checkov \
+          --directory target \
+          --output cli \
+          --framework terraform
+
+reports:
+  checkov_results:
+    files:
+      - results_junitxml.xml
+    file-format: JUNITXML

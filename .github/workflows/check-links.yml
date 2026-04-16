@@ -1,0 +1,46 @@
+name: Check Links
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "**/*.md"
+  pull_request:
+    paths:
+      - "**/*.md"
+  schedule:
+    # Todos los lunes a las 08:00 UTC — detecta enlaces externos que se rompen con el tiempo
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  linkcheck:
+    name: Verificar enlaces
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Comprobar enlaces
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >
+            --verbose
+            --no-progress
+            --accept 200,429,403
+            --exclude "^https://grafana.internal"
+            --exclude "^mailto:"
+            --exclude "^https://console.aws.amazon.com"
+            --exclude "^https://app.terraform.io"
+            --exclude "\.(tf|hcl|rego|py|sh|json|yaml|yml)$"
+            --timeout 30
+            --retry-wait-time 5
+            --max-retries 3
+            '**/*.md'
+          fail: true
+          jobSummary: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

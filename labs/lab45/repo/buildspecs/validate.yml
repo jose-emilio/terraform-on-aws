@@ -1,0 +1,65 @@
+version: 0.2
+
+# ── ValidateAndLint ────────────────────────────────────────────────────────────
+#
+# Ejecuta tres comprobaciones estaticas sobre el codigo Terraform:
+#
+#   1. terraform fmt -check   → el codigo esta correctamente formateado
+#   2. terraform validate     → la sintaxis y la logica interna son validas
+#   3. tflint                 → buenas practicas especificas del proveedor AWS
+#
+# El buildspec falla si cualquiera de las tres comprobaciones falla.
+# No genera artefactos de salida.
+#
+# Nota sobre directorios: cada fase de CodeBuild arranca en el directorio raiz
+# del workspace. El bloque | de cada fase comienza con "cd "${CODEBUILD_SRC_DIR}/target"" para que
+# todos los comandos de esa fase ejecuten dentro del modulo Terraform.
+
+phases:
+  install:
+    commands:
+      # ── Terraform ──────────────────────────────────────────────────────────
+      - |
+        curl -fsSL \
+          "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+          -o /tmp/terraform.zip
+        unzip -q /tmp/terraform.zip -d /usr/local/bin/
+        terraform version
+
+      # ── TFLint ─────────────────────────────────────────────────────────────
+      - |
+        curl -fsSL \
+          "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
+          -o /tmp/tflint.zip
+        unzip -q /tmp/tflint.zip -d /usr/local/bin/
+        tflint --version
+
+  pre_build:
+    commands:
+      - |
+        cd "${CODEBUILD_SRC_DIR}/target"
+        terraform init -backend=false
+
+  build:
+    commands:
+      # Comprobacion de formato: falla si hay ficheros sin formatear
+      - |
+        echo "=== terraform fmt -check ==="
+        cd "${CODEBUILD_SRC_DIR}/target"
+        terraform fmt -check -recursive ..
+
+      # Validacion de sintaxis
+      - |
+        echo "=== terraform validate ==="
+        cd "${CODEBUILD_SRC_DIR}/target"
+        terraform validate
+
+      # Linting con TFLint (plugin AWS instalado via .tflint.hcl)
+      - |
+        echo "=== tflint ==="
+        tflint --init
+        tflint --recursive
+
+  post_build:
+    commands:
+      - echo "Validacion y linting completados correctamente."

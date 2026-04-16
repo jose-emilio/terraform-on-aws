@@ -1,0 +1,115 @@
+version: 0.2
+
+# ── SmokeTest ──────────────────────────────────────────────────────────────────
+#
+# Verifica que los recursos desplegados por terraform apply tienen el estado
+# correcto mediante llamadas directas a la API de AWS.
+#
+# Los outputs de Terraform se leen del estado remoto con "terraform output -json"
+# para obtener los nombres/ARNs de los recursos sin hard-codearlos.
+#
+# Pruebas ejecutadas:
+#   1. Bucket S3
+#      a. El bucket existe (aws s3api head-bucket)
+#      b. El versionado esta habilitado (get-bucket-versioning)
+#      c. El cifrado SSE-KMS esta habilitado (get-bucket-encryption)
+#      d. El acceso publico esta bloqueado (get-public-access-block)
+#
+#   2. Parametro SSM
+#      a. El parametro existe y es descifrable (get-parameter --with-decryption)
+#
+#   3. CloudWatch Log Group
+#      a. El grupo existe (describe-log-groups)
+#      b. El periodo de retencion coincide con el configurado en Terraform
+#
+# Nota sobre directorios: cada fase de CodeBuild arranca en el directorio raiz
+# del workspace. El bloque | de cada fase comienza con "cd "${CODEBUILD_SRC_DIR}/target"" para que
+# todos los comandos de esa fase ejecuten dentro del modulo Terraform.
+# Las variables de entorno definidas en pre_build no persisten en build;
+# por eso se consolida toda la logica en un unico bloque | por fase.
+
+phases:
+  install:
+    commands:
+      - |
+        curl -fsSL \
+          "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+          -o /tmp/terraform.zip
+        unzip -q /tmp/terraform.zip -d /usr/local/bin/
+        terraform version
+
+  build:
+    commands:
+      - |
+        cd "${CODEBUILD_SRC_DIR}/target"
+
+        terraform init \
+          -backend-config="bucket=${TF_STATE_BUCKET}" \
+          -backend-config="key=${TF_STATE_KEY}" \
+          -backend-config="region=${AWS_DEFAULT_REGION}"
+
+        # Leer outputs del estado remoto
+        OUTPUTS=$(terraform output -json)
+        BUCKET_NAME=$(echo "$OUTPUTS"   | python3 -c "import sys,json; print(json.load(sys.stdin)['bucket_name']['value'])")
+        SSM_PARAM=$(echo "$OUTPUTS"     | python3 -c "import sys,json; print(json.load(sys.stdin)['ssm_parameter_name']['value'])")
+        LOG_GROUP=$(echo "$OUTPUTS"     | python3 -c "import sys,json; print(json.load(sys.stdin)['log_group_name']['value'])")
+        LOG_RETENTION=$(echo "$OUTPUTS" | python3 -c "import sys,json; print(json.load(sys.stdin)['log_retention_days']['value'])")
+        echo "Bucket=$BUCKET_NAME  SSM=$SSM_PARAM  LogGroup=$LOG_GROUP  Retencion=${LOG_RETENTION}d"
+
+        # ── 1. S3 Bucket ───────────────────────────────────────────────────────
+        echo "=== [S3] 1a. El bucket existe ==="
+        aws s3api head-bucket --bucket "$BUCKET_NAME"
+        echo "PASS: bucket $BUCKET_NAME existe"
+
+        echo "=== [S3] 1b. Versionado habilitado ==="
+        STATUS=$(aws s3api get-bucket-versioning \
+          --bucket "$BUCKET_NAME" \
+          --query 'Status' --output text)
+        [ "$STATUS" = "Enabled" ] || { echo "FAIL: versionado=$STATUS"; exit 1; }
+        echo "PASS: versionado=$STATUS"
+
+        echo "=== [S3] 1c. Cifrado SSE-KMS habilitado ==="
+        ALGO=$(aws s3api get-bucket-encryption \
+          --bucket "$BUCKET_NAME" \
+          --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' \
+          --output text)
+        [ "$ALGO" = "aws:kms" ] || { echo "FAIL: cifrado=$ALGO (esperado aws:kms)"; exit 1; }
+        echo "PASS: cifrado=$ALGO"
+
+        echo "=== [S3] 1d. Acceso publico bloqueado ==="
+        BLOCK=$(aws s3api get-public-access-block \
+          --bucket "$BUCKET_NAME" \
+          --query 'PublicAccessBlockConfiguration.BlockPublicAcls' \
+          --output text)
+        [ "$BLOCK" = "True" ] || { echo "FAIL: BlockPublicAcls=$BLOCK"; exit 1; }
+        echo "PASS: acceso publico bloqueado"
+
+        # ── 2. SSM Parameter ───────────────────────────────────────────────────
+        echo "=== [SSM] 2a. El parametro existe y es descifrable ==="
+        PARAM_VALUE=$(aws ssm get-parameter \
+          --name "$SSM_PARAM" \
+          --with-decryption \
+          --query 'Parameter.Value' \
+          --output text)
+        echo "PASS: parametro $SSM_PARAM = $PARAM_VALUE"
+
+        # ── 3. CloudWatch Log Group ────────────────────────────────────────────
+        echo "=== [CWL] 3a. El log group existe ==="
+        GROUPS=$(aws logs describe-log-groups \
+          --log-group-name-prefix "$LOG_GROUP" \
+          --query "logGroups[?logGroupName=='${LOG_GROUP}'].logGroupName" \
+          --output text)
+        [ -n "$GROUPS" ] || { echo "FAIL: log group $LOG_GROUP no encontrado"; exit 1; }
+        echo "PASS: log group $LOG_GROUP encontrado"
+
+        echo "=== [CWL] 3b. Periodo de retencion correcto ==="
+        ACTUAL_RETENTION=$(aws logs describe-log-groups \
+          --log-group-name-prefix "$LOG_GROUP" \
+          --query "logGroups[?logGroupName=='${LOG_GROUP}'].retentionInDays" \
+          --output text)
+        [ "$ACTUAL_RETENTION" = "$LOG_RETENTION" ] || { echo "FAIL: retencion esperada=${LOG_RETENTION}d actual=${ACTUAL_RETENTION}d"; exit 1; }
+        echo "PASS: retencion=${ACTUAL_RETENTION}d"
+
+  post_build:
+    commands:
+      - echo "Todos los smoke tests pasaron correctamente."

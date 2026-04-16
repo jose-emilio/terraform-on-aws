@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab44 — v2</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #071a12 0%, #0d2818 50%, #0a1f14 100%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 3rem 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(16,185,129,0.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(52,211,153,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .accent-line {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 2px;
+      align-self: center;
+    }
+
+    .card {
+      position: relative;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 2.5rem 3rem;
+      text-align: center;
+      box-shadow:
+        0 0 0 1px rgba(16,185,129,0.15),
+        0 32px 64px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 50%;
+      transform: translateX(-50%);
+      width: 60%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(52,211,153,0.6), transparent);
+    }
+
+    .fleet-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(52,211,153,0.15));
+      border: 1px solid rgba(16,185,129,0.35);
+      color: #6ee7b7;
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .fleet-badge::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.5; transform:scale(0.8); }
+    }
+
+    .version-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(148,163,184,0.7);
+      margin-bottom: 0.4rem;
+    }
+
+    h1 {
+      font-size: 5rem;
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, #e2e8f0 0%, #fff 40%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+    }
+
+    .divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      margin-bottom: 1.25rem;
+    }
+
+    .description {
+      font-size: 0.875rem;
+      color: rgba(148,163,184,0.85);
+      line-height: 1.6;
+    }
+
+    .description strong { color: rgba(167,243,208,0.9); font-weight: 600; }
+
+    .new-chip {
+      display: inline-block;
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 100px;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+      position: relative;
+      top: -0.15rem;
+    }
+
+    .meta-panel {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .meta-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.9rem 1.4rem;
+      background: rgba(16,185,129,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .meta-panel-header .dot {
+      width: 8px; height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .meta-panel-header span {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(148,163,184,0.8);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-direction: column;
+      padding: 0.85rem 1.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .meta-row:nth-child(even) { border-right: none; }
+    .meta-row:nth-last-child(-n+2) { border-bottom: none; }
+
+    .meta-row.full-width {
+      grid-column: 1 / -1;
+      border-right: none;
+    }
+
+    .meta-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: rgba(99,130,166,0.9);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+
+    .meta-value.highlight { color: #6ee7b7; font-weight: 500; }
+
+    .logo-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .logo-wrapper img {
+      height: 36px;
+      width: auto;
+      background: rgba(255,255,255,0.92);
+      padding: 0.4rem 1.1rem;
+      border-radius: 100px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="accent-line"></div>
+
+    <div class="card">
+      <div class="logo-wrapper">
+        <img src="image.png" alt="HashiCorp Terraform">
+      </div>
+      <div class="fleet-badge">CodeDeploy · IN_PLACE</div>
+      <div class="version-label">Versión activa</div>
+      <h1>v2 <span class="new-chip">new</span></h1>
+      <div class="divider"></div>
+      <p class="description">
+        Desplegada con <strong>AWS CodeDeploy</strong> — estrategia IN_PLACE rolling<br>
+        sobre EC2 Graviton (ARM64)
+      </p>
+    </div>
+
+    <div class="meta-panel">
+      <div class="meta-panel-header">
+        <div class="dot"></div>
+        <span>Instance Metadata</span>
+      </div>
+      <div class="meta-grid">
+        <div class="meta-row">
+          <span class="meta-key">instance-id</span>
+          <span class="meta-value highlight">__INSTANCE_ID__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">instance-type</span>
+          <span class="meta-value">__INSTANCE_TYPE__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">architecture</span>
+          <span class="meta-value">__ARCHITECTURE__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">availability-zone</span>
+          <span class="meta-value">__AZ__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">region</span>
+          <span class="meta-value">__REGION__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">account-id</span>
+          <span class="meta-value">__ACCOUNT_ID__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">private-ipv4</span>
+          <span class="meta-value">__PRIVATE_IP__</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">vpc-id</span>
+          <span class="meta-value">__VPC_ID__</span>
+        </div>
+        <div class="meta-row full-width">
+          <span class="meta-key">subnet-id</span>
+          <span class="meta-value">__SUBNET_ID__</span>
+        </div>
+        <div class="meta-row full-width">
+          <span class="meta-key">ami-id</span>
+          <span class="meta-value">__AMI_ID__</span>
+        </div>
+        <div class="meta-row full-width">
+          <span class="meta-key">private-hostname</span>
+          <span class="meta-value">__PRIVATE_HOSTNAME__</span>
+        </div>
+        <div class="meta-row full-width">
+          <span class="meta-key">security-groups</span>
+          <span class="meta-value">__SG_IDS__</span>
+        </div>
+        <div class="meta-row full-width">
+          <span class="meta-key">deploy-timestamp</span>
+          <span class="meta-value">__DEPLOY_TIME__</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="accent-line"></div>
+  </div>
+</body>
+</html>

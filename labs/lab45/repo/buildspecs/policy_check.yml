@@ -1,0 +1,72 @@
+version: 0.2
+
+# ── PolicyCheck ────────────────────────────────────────────────────────────────
+#
+# Evalua el plan de Terraform contra las politicas OPA definidas en policies/.
+# Se ejecuta tras InspectPlan (runOrder=3) una vez que el plan ya ha sido
+# inspeccionado y aprobado automaticamente por la Lambda.
+#
+# Patron de dos pasadas sobre OPA:
+#   Pasada 1 (--format pretty): imprime en los logs el detalle de cada
+#     violacion encontrada para facilitar la depuracion.
+#   Pasada 2 (--format raw + count): cuenta las violaciones y falla el build
+#     si hay al menos una, garantizando que el pipeline no avanza.
+#
+# Variables de entorno requeridas:
+#   OPA_VERSION              Version de OPA a descargar (ej. "0.68.0")
+#   CODEBUILD_SRC_DIR_plan_output  Ruta absoluta al artefacto plan_output
+#                            (inyectada automaticamente por CodeBuild cuando
+#                             el proyecto tiene un secundario llamado plan_output)
+#
+# Politicas activas (en policies/):
+#   kms.rego   Todos los aws_kms_key deben tener rotacion de clave habilitada.
+#   ssm.rego   Todos los aws_ssm_parameter deben ser de tipo SecureString.
+
+phases:
+  install:
+    commands:
+      - |
+        curl -fsSLo /usr/local/bin/opa \
+          "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static"
+        chmod +x /usr/local/bin/opa
+        opa version
+
+  build:
+    commands:
+      - echo "=== OPA policy evaluation ==="
+      - |
+        set -e
+        # Con PrimarySource=source_output, CodeBuild extrae source_output en la raiz
+        # del workspace (policies/ accesible con ruta relativa) y plan_output en la
+        # ruta absoluta expuesta en CODEBUILD_SRC_DIR_plan_output.
+        TFPLAN_JSON="${CODEBUILD_SRC_DIR_plan_output}/target/tfplan.json"
+
+        if [ ! -f "$TFPLAN_JSON" ]; then
+          echo "ERROR: tfplan.json no encontrado en $TFPLAN_JSON"
+          exit 1
+        fi
+
+        # Primera pasada: muestra el detalle de todas las violaciones en los logs
+        opa eval \
+          --data policies/ \
+          --input "${TFPLAN_JSON}" \
+          --format pretty \
+          'data.terraform.deny'
+
+        # Segunda pasada: cuenta violaciones para decidir si fallar el build
+        VIOLATIONS=$(opa eval \
+          --data policies/ \
+          --input "${TFPLAN_JSON}" \
+          --format raw \
+          'count(data.terraform.deny)')
+
+        echo "Violaciones encontradas: $VIOLATIONS"
+
+        if [ "$VIOLATIONS" -gt 0 ]; then
+          echo "ERROR: el plan viola $VIOLATIONS politica(s) organizativa(s)."
+          exit 1
+        fi
+
+  post_build:
+    commands:
+      - echo "Todas las politicas OPA pasaron correctamente."

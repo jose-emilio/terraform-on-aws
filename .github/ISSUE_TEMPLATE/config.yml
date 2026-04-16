@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Pregunta técnica o duda del curso
+    url: https://github.com/jose-emilio/terraform-on-aws/discussions
+    about: Para preguntas generales sobre Terraform o AWS que no son errores ni mejoras concretas, usa Discussions.

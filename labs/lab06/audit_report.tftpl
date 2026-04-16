@@ -1,0 +1,39 @@
+================================================================================
+  REPORTE DE AUDITORÍA DE INFRAESTRUCTURA
+  Generado por Terraform
+================================================================================
+
+IDENTIDAD
+  Account ID : ${account_id}
+  User ID    : ${caller_user_id}
+
+REGIÓN
+  Nombre     : ${region_name}
+  Descripción: ${region_desc}
+
+RED DE PRODUCCIÓN
+  VPC ID     : ${vpc_id}
+  CIDR       : ${vpc_cidr}
+
+  Subredes (${length(subnet_ids)}):
+%{ for id in subnet_ids ~}
+    - ${id}
+%{ endfor ~}
+
+INSTANCIAS EN EJECUCIÓN (${length(instance_ips)}):
+%{ if length(instance_ips) == 0 ~}
+    (ninguna instancia en ejecución)
+%{ else ~}
+%{ for id, ip in instance_ips ~}
+    - ${id}  →  ${ip}
+%{ endfor ~}
+%{ endif ~}
+
+ZONAS DE DISPONIBILIDAD
+  Todas disponibles (${length(az_names)}): ${join(", ", az_names)}
+  Principales      (${length(primary_az_names)}): ${join(", ", primary_az_names)}
+
+POLÍTICAS IAM DE REFERENCIA
+  ReadOnlyAccess : ${policy_arn}
+
+================================================================================

@@ -1,0 +1,4 @@
+region       = "us-east-1"
+key          = "lab42/terraform.tfstate"
+encrypt      = true
+use_lockfile = true

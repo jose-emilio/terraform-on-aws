@@ -1,0 +1,6 @@
+# Backend config para AWS real. El nombre del bucket se pasa en el comando init:
+# terraform init -backend-config=aws.s3.tfbackend -backend-config="bucket=<nombre>"
+key            = "lab7-workload/terraform.tfstate"
+region         = "us-east-1"
+encrypt        = true
+use_lockfile   = true

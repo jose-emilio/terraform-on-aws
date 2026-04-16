@@ -1,0 +1,57 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.0",
+  "resource_changes": [
+    {
+      "address": "aws_lb.main",
+      "mode": "managed",
+      "type": "aws_lb",
+      "name": "main",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "name": "mi-alb-inseguro",
+          "internal": false,
+          "load_balancer_type": "application",
+          "enable_deletion_protection": false
+        },
+        "after_unknown": {
+          "arn": true,
+          "dns_name": true,
+          "id": true,
+          "zone_id": true
+        }
+      }
+    },
+    {
+      "address": "aws_lb_listener.http_insecure",
+      "mode": "managed",
+      "type": "aws_lb_listener",
+      "name": "http_insecure",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "port": 80,
+          "protocol": "HTTP",
+          "load_balancer_arn": "(known after apply)",
+          "default_action": [
+            {
+              "type": "forward",
+              "target_group_arn": "(known after apply)"
+            }
+          ]
+        },
+        "after_unknown": {
+          "arn": true,
+          "id": true,
+          "load_balancer_arn": true
+        }
+      }
+    }
+  ],
+  "output_changes": {}
+}

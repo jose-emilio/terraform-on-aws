@@ -1,0 +1,127 @@
+name: "Error en laboratorio"
+description: "Reporta un paso que no funciona, un comando incorrecto o un comportamiento inesperado en un laboratorio."
+title: "[Lab XX] — Descripción breve del error"
+labels: ["bug", "laboratorio"]
+assignees: ["jose-emilio"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar el error. Completa todos los campos para que podamos reproducirlo y corregirlo rápidamente.
+
+  - type: dropdown
+    id: lab
+    attributes:
+      label: "Laboratorio"
+      description: "¿En qué laboratorio ocurre el error?"
+      options:
+        - "Lab00 — Entorno de Desarrollo Remoto con VSCode en EC2"
+        - "Lab01 — Primeros Pasos: Terraform, AWS CLI y LocalStack"
+        - "Lab02 — Primer despliegue en AWS: bucket S3"
+        - "Lab03 — Variables complejas, cidrsubnet() y bloques dynamic"
+        - "Lab04 — for_each, data sources y lifecycle"
+        - "Lab05 — templatefile(), file() y generación de configuraciones"
+        - "Lab06 — Auditoría con data sources y reportes exportables"
+        - "Lab07 — Backend remoto con S3, DynamoDB y state locking"
+        - "Lab07b — HCP Terraform como Backend Remoto"
+        - "Lab08 — Refactorización declarativa: import, moved y removed"
+        - "Lab09 — Gestión de entornos con workspaces"
+        - "Lab10 — State splitting: capas de infraestructura independientes"
+        - "Lab11 — Gestión de Drift y Disaster Recovery"
+        - "Lab12 — Gestión de Identidades y Acceso Seguro para EC2"
+        - "Lab13 — Cifrado Transversal con KMS y Jerarquía de Llaves"
+        - "Lab14 — Automatización de Secretos Zero-Touch"
+        - "Lab15 — Blindaje del Pipeline DevSecOps"
+        - "Lab16 — Construcción de una Red Multi-AZ Robusta y Dinámica"
+        - "Lab17 — Optimización de Salida a Internet y NAT Tax"
+        - "Lab18 — Seguridad y Control de Tráfico en VPC"
+        - "Lab19 — Conectividad Punto a Punto con VPC Peering"
+        - "Lab20 — Hub-and-Spoke con Transit Gateway y RAM"
+        - "Lab21 — Zonas Hospedadas Privadas y Resolución DNS"
+        - "Lab22 — Módulos reutilizables: S3 con estándares corporativos"
+        - "Lab23 — Módulos con validación, precondiciones y postcondiciones"
+        - "Lab24 — Composición de Módulos Públicos con Estándares Corporativos"
+        - "Lab25 — Testing de infraestructura con terraform test"
+        - "Lab26 — Gobernanza, Documentación y Publicación Lean"
+        - "Lab27 — Cimientos de EC2: Despliegue Dinámico y Seguro"
+        - "Lab28 — Escalabilidad y Alta Disponibilidad con Zero Downtime"
+        - "Lab29 — Microservicios con ECS Fargate y Malla de Servicios"
+        - "Lab30 — Procesamiento Asíncrono y Resiliencia de Eventos"
+        - "Lab31 — API Serverless: Lambda, API Gateway v2 y Layers"
+        - "Lab32 — FinOps y Rendimiento: Optimización de Cómputo"
+        - "Lab33 — El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida"
+        - "Lab34 — Almacenamiento Híbrido: EBS y EFS Compartido"
+        - "Lab35 — Base de Datos Relacional Crítica: RDS Multi-AZ"
+        - "Lab36 — Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos"
+        - "Lab37 — Orquestación Imperativa con terraform_data"
+        - "Lab38 — Ingeniería de Datos y Resiliencia con Lifecycle"
+        - "Lab39 — Despliegue Global y Adopción de Infraestructura Existente"
+        - "Lab40 — Refactorización y Optimización de Performance"
+        - "Lab41 — Gobernanza y Control de Versiones en CodeCommit"
+        - "Lab42 — Repositorio Privado de Módulos Terraform con CodeArtifact"
+        - "Lab43 — Canalización CI de IaC con CodeBuild y ECR"
+        - "Lab44 — Entrega Continua con CodeDeploy"
+        - "Lab45 — Pipeline GitOps de Terraform con CodePipeline"
+        - "Lab46 — Observabilidad Proactiva y Dashboards as Code"
+        - "Lab47 — Centralización de Telemetría y Pipeline de Auditoría"
+        - "Lab48 — Fundamentos FinOps: Tags, Budgets y Spot Instances"
+        - "Lab49 — Compliance as Code y Remediación Automática"
+    validations:
+      required: true
+
+  - type: input
+    id: paso
+    attributes:
+      label: "Paso o sección donde falla"
+      description: "Indica el nombre del paso o número de sección del README del lab."
+      placeholder: "Ej: Paso 3 — Configurar el backend, o sección 'Crear la tabla DynamoDB'"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: entorno
+    attributes:
+      label: "Entorno"
+      options:
+        - "AWS real"
+        - "LocalStack"
+        - "Ambos"
+    validations:
+      required: true
+
+  - type: input
+    id: terraform_version
+    attributes:
+      label: "Versión de Terraform"
+      description: "Ejecuta `terraform version` y pega la primera línea."
+      placeholder: "Ej: Terraform v1.7.5"
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: "Mensaje de error completo"
+      description: "Pega la salida de `terraform plan` o `terraform apply` que incluye el error."
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos_reproducir
+    attributes:
+      label: "Pasos para reproducir"
+      description: "Describe exactamente qué hiciste antes de que apareciera el error."
+      placeholder: |
+        1. Ejecuté `terraform init`
+        2. Ejecuté `terraform plan`
+        3. El error apareció en...
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: "Contexto adicional (opcional)"
+      description: "Región AWS, cambios que hayas hecho en el código, versión del provider, etc."

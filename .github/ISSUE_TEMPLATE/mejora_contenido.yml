@@ -1,0 +1,74 @@
+name: "Mejora de contenido"
+description: "Sugiere una mejora en el contenido teórico, ejemplos de código, estructura de un laboratorio o actualización de versiones."
+title: "[Mejora] — Descripción breve"
+labels: ["mejora", "contenido"]
+assignees: ["jose-emilio"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por contribuir a mejorar el curso. Cuanta más información aportes, más fácil es evaluar e implementar la mejora.
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: "Tipo de mejora"
+      options:
+        - "Corrección técnica (concepto erróneo o desactualizado)"
+        - "Actualización de versión (Terraform, provider, servicio AWS)"
+        - "Mejora de ejemplo de código"
+        - "Corrección de errata (ortografía, formato)"
+        - "Nuevo ejemplo o caso de uso"
+        - "Mejora de claridad o redacción"
+        - "Enlace roto o referencia incorrecta"
+        - "Otro"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ubicacion_tipo
+    attributes:
+      label: "¿Dónde está el contenido a mejorar?"
+      options:
+        - "Módulo teórico"
+        - "Laboratorio"
+        - "README raíz"
+        - "Documentación general"
+    validations:
+      required: true
+
+  - type: input
+    id: ubicacion_detalle
+    attributes:
+      label: "Ubicación exacta"
+      description: "Módulo/lab y sección o archivo específico."
+      placeholder: "Ej: modulos/modulo-03/02_backend_s3.md, sección 2.4 — o labs/Lab07/README.md, Paso 2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: "Descripción de la mejora"
+      description: "¿Qué está mal o qué podría estar mejor? Sé específico."
+    validations:
+      required: true
+
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: "Propuesta concreta (opcional)"
+      description: "Si tienes una solución o redacción alternativa, inclúyela aquí."
+      placeholder: |
+        Texto actual:
+        > ...
+
+        Texto propuesto:
+        > ...
+
+  - type: textarea
+    id: referencias
+    attributes:
+      label: "Referencias (opcional)"
+      description: "Documentación oficial, changelog de Terraform/AWS, o cualquier fuente que respalde la mejora."

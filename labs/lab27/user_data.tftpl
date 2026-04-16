@@ -1,0 +1,38 @@
+#!/bin/bash
+# Generado por Terraform — entorno: ${env}
+set -euo pipefail
+
+# Configuración del entorno
+echo "ENV=${env}" >> /etc/environment
+echo "APP_NAME=${app_name}" >> /etc/environment
+echo "DB_ENDPOINT=${db_endpoint}" >> /etc/environment
+
+# Actualización del sistema
+dnf update -y
+
+# Instalación de servidor web
+dnf install -y httpd
+
+# Página de verificación con datos inyectados desde Terraform
+cat <<'INNEREOF' > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head><title>${app_name}</title></head>
+<body>
+  <h1>${app_name} — ${env}</h1>
+  <p>Instancia aprovisionada con Terraform</p>
+  <p>Backend DB: ${db_endpoint}</p>
+</body>
+</html>
+INNEREOF
+
+# Arranque del servidor web
+systemctl enable --now httpd
+
+%{ if env == "prod" ~}
+# Hardening adicional solo en producción
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+systemctl restart sshd
+%{ endif ~}
+
+echo "Bootstrap completado para ${app_name} en ${env}"

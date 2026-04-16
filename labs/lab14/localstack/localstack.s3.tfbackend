@@ -1,0 +1,18 @@
+# Backend config completo para Lab14 en LocalStack.
+# El bucket terraform-state-labs es creado por Lab07/localstack/ al desplegar en LocalStack.
+# Úsalo así:
+#   terraform init -backend-config=localstack.s3.tfbackend
+bucket                      = "terraform-state-labs"
+key                         = "lab14/terraform.tfstate"
+region                      = "us-east-1"
+encrypt                     = true
+use_lockfile                = true
+access_key                  = "test"
+secret_key                  = "test"
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_requesting_account_id  = true
+use_path_style              = true
+endpoints = {
+  s3 = "http://localhost.localstack.cloud:4566"
+}

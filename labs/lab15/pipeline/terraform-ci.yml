@@ -1,0 +1,164 @@
+name: Terraform CI — Lab15 DevSecOps Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "labs/Lab15/aws/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "labs/Lab15/aws/**"
+
+permissions:
+  id-token: write   # Requerido para solicitar el token OIDC
+  contents: read    # Requerido para actions/checkout
+
+env:
+  AWS_REGION: us-east-1
+  TF_DIR: labs/Lab15/aws
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 1: Escaneo de seguridad estático (sin credenciales AWS)
+  # ─────────────────────────────────────────────────────────────────────────
+  security-scan:
+    name: Escaneo de seguridad IaC
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── Checkov: análisis de compliance ──────────────────────────────────
+      - name: Checkov — escaneo de configuraciones Terraform
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ env.TF_DIR }}
+          framework: terraform
+          output_format: cli
+          # Fallos que se aceptan en este laboratorio (recursos de práctica):
+          soft_fail_on: CKV_AWS_117,CKV_AWS_116  # Lambda dentro de VPC (no aplica)
+          download_external_modules: false
+
+      # ── tfsec: análisis de seguridad específico de Terraform ─────────────
+      - name: tfsec — análisis de seguridad Terraform
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: ${{ env.TF_DIR }}
+          format: lovely
+          additional_args: --minimum-severity MEDIUM
+
+      # ── OPA/Conftest: políticas personalizadas ────────────────────────────
+      - name: Conftest — validación de políticas OPA/Rego
+        run: |
+          # Instalar conftest
+          CONFTEST_VERSION="0.51.0"
+          curl -sL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            | tar xz conftest
+          sudo mv conftest /usr/local/bin/
+
+          # Instalar terraform para generar el plan en JSON
+          # (en un pipeline real, reutiliza el plan de terraform-plan)
+          # Aquí se valida el directorio de terraform directamente
+          # conftest no descubre .tf automáticamente: se pasan con glob explícito
+          conftest test ${{ env.TF_DIR }}/*.tf \
+            --policy labs/Lab15/policies/ \
+            --parser hcl2 \
+            --all-namespaces \
+            --no-color
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 2: Terraform plan (sólo en PR) — requiere OIDC
+  # ─────────────────────────────────────────────────────────────────────────
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: github.event_name == 'pull_request'
+    environment: aws-readonly   # Entorno de GitHub con aprobación opcional
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── Autenticación OIDC: sin AWS_ACCESS_KEY_ID ni AWS_SECRET_ACCESS_KEY ─
+      - name: Configurar credenciales AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}  # ARN del output github_actions_role_arn
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Lab15-Plan
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.5"
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform init \
+            -backend-config=aws.s3.tfbackend \
+            -backend-config="bucket=terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform plan \
+            -var="github_org=${{ github.repository_owner }}" \
+            -var="github_repo=${{ github.event.repository.name }}" \
+            -var="allowed_ref=ref:refs/heads/main" \
+            -out=tfplan
+
+      - name: Guardar plan como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_DIR }}/tfplan
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 3: Terraform apply (sólo en push a main, tras aprobación manual)
+  # ─────────────────────────────────────────────────────────────────────────
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: [security-scan, terraform-plan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: aws-production   # Requiere aprobación manual en GitHub
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Lab15-Apply
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.5"
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform init \
+            -backend-config=aws.s3.tfbackend \
+            -backend-config="bucket=terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform apply -auto-approve \
+            -var="github_org=${{ github.repository_owner }}" \
+            -var="github_repo=${{ github.event.repository.name }}" \
+            -var="allowed_ref=ref:refs/heads/main"
