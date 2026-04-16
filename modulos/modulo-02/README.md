@@ -34,10 +34,10 @@ Este módulo profundiza en el lenguaje HCL (HashiCorp Configuration Language): s
 
 | Lab | Título |
 |-----|--------|
-| [Lab 3](../../labs/lab03/README.md) | Infraestructura Parametrizada y Dinámica |
-| [Lab 4](../../labs/lab04/README.md) | Orquestación de Identidades y Gestión de Ciclo de Vida |
-| [Lab 5](../../labs/lab05/README.md) | Configuración Dinámica y Plantillas de Sistema |
-| [Lab 6](../../labs/lab06/README.md) | Auditoría Dinámica y Conectividad Externa |
+| [Lab 3](../../labs/lab-03/README.md) | Infraestructura Parametrizada y Dinámica |
+| [Lab 4](../../labs/lab-04/README.md) | Orquestación de Identidades y Gestión de Ciclo de Vida |
+| [Lab 5](../../labs/lab-05/README.md) | Configuración Dinámica y Plantillas de Sistema |
+| [Lab 6](../../labs/lab-06/README.md) | Auditoría Dinámica y Conectividad Externa |
 
 ---
 

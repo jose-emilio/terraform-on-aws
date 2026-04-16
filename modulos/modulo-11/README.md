@@ -33,10 +33,10 @@ El módulo final del curso cubre la observabilidad de la infraestructura con Clo
 
 | Lab | Título |
 |-----|--------|
-| [Lab 46](../../labs/lab46/README.md) | Observabilidad Proactiva y Dashboards as Code |
-| [Lab 47](../../labs/lab47/README.md) | Centralización de Telemetría y Pipeline de Auditoría |
-| [Lab 48](../../labs/lab48/README.md) | Fundamentos FinOps: Tags, Budgets y Spot Instances |
-| [Lab 49](../../labs/lab49/README.md) | Compliance as Code y Remediación Automática |
+| [Lab 46](../../labs/lab-46/README.md) | Observabilidad Proactiva y Dashboards as Code |
+| [Lab 47](../../labs/lab-47/README.md) | Centralización de Telemetría y Pipeline de Auditoría |
+| [Lab 48](../../labs/lab-48/README.md) | Fundamentos FinOps: Tags, Budgets y Spot Instances |
+| [Lab 49](../../labs/lab-49/README.md) | Compliance as Code y Remediación Automática |
 
 ---
 

@@ -35,12 +35,12 @@ La red es el cimiento de toda arquitectura cloud. Este módulo cubre la creació
 
 | Lab | Título |
 |-----|--------|
-| [Lab 16](../../labs/lab16/README.md) | Construcción de una Red Multi-AZ Robusta y Dinámica |
-| [Lab 17](../../labs/lab17/README.md) | Optimización de Salida a Internet y «NAT Tax» |
-| [Lab 18](../../labs/lab18/README.md) | Seguridad y Control de Tráfico en VPC |
-| [Lab 19](../../labs/lab19/README.md) | Conectividad Punto a Punto con VPC Peering |
-| [Lab 20](../../labs/lab20/README.md) | Hub-and-Spoke con Transit Gateway y RAM |
-| [Lab 21](../../labs/lab21/README.md) | Zonas Hospedadas Privadas y Resolución DNS |
+| [Lab 16](../../labs/lab-16/README.md) | Construcción de una Red Multi-AZ Robusta y Dinámica |
+| [Lab 17](../../labs/lab-17/README.md) | Optimización de Salida a Internet y «NAT Tax» |
+| [Lab 18](../../labs/lab-18/README.md) | Seguridad y Control de Tráfico en VPC |
+| [Lab 19](../../labs/lab-19/README.md) | Conectividad Punto a Punto con VPC Peering |
+| [Lab 20](../../labs/lab-20/README.md) | Hub-and-Spoke con Transit Gateway y RAM |
+| [Lab 21](../../labs/lab-21/README.md) | Zonas Hospedadas Privadas y Resolución DNS |
 
 ---
 

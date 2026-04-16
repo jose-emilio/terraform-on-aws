@@ -32,12 +32,12 @@ Este módulo cubre todos los servicios de cómputo de AWS gestionados con Terraf
 
 | Lab | Título |
 |-----|--------|
-| [Lab 27](../../labs/lab27/README.md) | Cimientos de EC2: Despliegue Dinámico y Seguro |
-| [Lab 28](../../labs/lab28/README.md) | Escalabilidad y Alta Disponibilidad con Zero Downtime |
-| [Lab 29](../../labs/lab29/README.md) | Microservicios con ECS Fargate y Malla de Servicios |
-| [Lab 30](../../labs/lab30/README.md) | Procesamiento Asíncrono y Resiliencia de Eventos |
-| [Lab 31](../../labs/lab31/README.md) | API Serverless: Lambda, API Gateway v2 y Layers |
-| [Lab 32](../../labs/lab32/README.md) | FinOps y Rendimiento: Optimización de Cómputo |
+| [Lab 27](../../labs/lab-27/README.md) | Cimientos de EC2: Despliegue Dinámico y Seguro |
+| [Lab 28](../../labs/lab-28/README.md) | Escalabilidad y Alta Disponibilidad con Zero Downtime |
+| [Lab 29](../../labs/lab-29/README.md) | Microservicios con ECS Fargate y Malla de Servicios |
+| [Lab 30](../../labs/lab-30/README.md) | Procesamiento Asíncrono y Resiliencia de Eventos |
+| [Lab 31](../../labs/lab-31/README.md) | API Serverless: Lambda, API Gateway v2 y Layers |
+| [Lab 32](../../labs/lab-32/README.md) | FinOps y Rendimiento: Optimización de Cómputo |
 
 ---
 

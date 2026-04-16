@@ -35,9 +35,9 @@ Este módulo sienta las bases conceptuales y prácticas necesarias para trabajar
 
 | Lab | Título | Sección relacionada |
 |-----|--------|---------------------|
-| [Lab 0](../../labs/lab00/README.md) | Entorno de desarrollo remoto con VSCode en EC2 | Sección 3 |
-| [Lab 1](../../labs/lab01/README.md) | Primeros pasos: Terraform, AWS CLI y LocalStack | Secciones 3 y 6 |
-| [Lab 2](../../labs/lab02/README.md) | Primer despliegue en AWS: bucket S3 con versionado y cifrado | Sección 5 |
+| [Lab 0](../../labs/lab-00/README.md) | Entorno de desarrollo remoto con VSCode en EC2 | Sección 3 |
+| [Lab 1](../../labs/lab-01/README.md) | Primeros pasos: Terraform, AWS CLI y LocalStack | Secciones 3 y 6 |
+| [Lab 2](../../labs/lab-02/README.md) | Primer despliegue en AWS: bucket S3 con versionado y cifrado | Sección 5 |
 
 ---
 

@@ -35,12 +35,12 @@ El State es el activo más crítico de cualquier proyecto Terraform. Este módul
 
 | Lab | Título |
 |-----|--------|
-| [Lab 7](../../labs/lab07/README.md) | Configurar backend S3 con DynamoDB Locking |
-| [Lab 7b](../../labs/lab07b/README.md) | HCP Terraform como Backend Remoto *(variante del Lab 7: backend cloud en lugar de S3)* |
-| [Lab 8](../../labs/lab08/README.md) | Refactorización Declarativa y Adopción de Infraestructura |
-| [Lab 9](../../labs/lab09/README.md) | Gestión de Entornos con Workspaces |
-| [Lab 10](../../labs/lab10/README.md) | Arquitectura de State Splitting (Capas de Infraestructura) |
-| [Lab 11](../../labs/lab11/README.md) | Gestión de Drift y Disaster Recovery (3-2-1) |
+| [Lab 7](../../labs/lab-07/README.md) | Configurar backend S3 con DynamoDB Locking |
+| [Lab 7b](../../labs/lab-07b/README.md) | HCP Terraform como Backend Remoto *(variante del Lab 7: backend cloud en lugar de S3)* |
+| [Lab 8](../../labs/lab-08/README.md) | Refactorización Declarativa y Adopción de Infraestructura |
+| [Lab 9](../../labs/lab-09/README.md) | Gestión de Entornos con Workspaces |
+| [Lab 10](../../labs/lab-10/README.md) | Arquitectura de State Splitting (Capas de Infraestructura) |
+| [Lab 11](../../labs/lab-11/README.md) | Gestión de Drift y Disaster Recovery (3-2-1) |
 
 ---
 

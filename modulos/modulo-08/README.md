@@ -33,10 +33,10 @@ Este módulo abarca todos los servicios de almacenamiento y persistencia de dato
 
 | Lab | Título |
 |-----|--------|
-| [Lab 33](../../labs/lab33/README.md) | El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida |
-| [Lab 34](../../labs/lab34/README.md) | Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido |
-| [Lab 35](../../labs/lab35/README.md) | Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación |
-| [Lab 36](../../labs/lab36/README.md) | Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos |
+| [Lab 33](../../labs/lab-33/README.md) | El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida |
+| [Lab 34](../../labs/lab-34/README.md) | Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido |
+| [Lab 35](../../labs/lab-35/README.md) | Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación |
+| [Lab 36](../../labs/lab-36/README.md) | Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos |
 
 ---
 

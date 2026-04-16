@@ -33,11 +33,11 @@ Este módulo cubre la integración de Terraform en pipelines de CI/CD modernos u
 
 | Lab | Título |
 |-----|--------|
-| [Lab 41](../../labs/lab41/README.md) | Gobernanza y Control de Versiones en CodeCommit |
-| [Lab 42](../../labs/lab42/README.md) | Repositorio Privado de Módulos Terraform con CodeArtifact |
-| [Lab 43](../../labs/lab43/README.md) | Canalización CI de IaC con CodeBuild y ECR |
-| [Lab 44](../../labs/lab44/README.md) | Entrega Continua con CodeDeploy |
-| [Lab 45](../../labs/lab45/README.md) | Pipeline GitOps de Terraform con CodePipeline |
+| [Lab 41](../../labs/lab-41/README.md) | Gobernanza y Control de Versiones en CodeCommit |
+| [Lab 42](../../labs/lab-42/README.md) | Repositorio Privado de Módulos Terraform con CodeArtifact |
+| [Lab 43](../../labs/lab-43/README.md) | Canalización CI de IaC con CodeBuild y ECR |
+| [Lab 44](../../labs/lab-44/README.md) | Entrega Continua con CodeDeploy |
+| [Lab 45](../../labs/lab-45/README.md) | Pipeline GitOps de Terraform con CodePipeline |
 
 ---
 

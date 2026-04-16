@@ -34,10 +34,10 @@ Este módulo profundiza en las capacidades avanzadas de Terraform: provisioners,
 
 | Lab | Título |
 |-----|--------|
-| [Lab 37](../../labs/lab37/README.md) | Orquestación Imperativa con terraform_data |
-| [Lab 38](../../labs/lab38/README.md) | Ingeniería de Datos y Resiliencia con Lifecycle |
-| [Lab 39](../../labs/lab39/README.md) | Despliegue Global y Adopción de Infraestructura Existente |
-| [Lab 40](../../labs/lab40/README.md) | Refactorización y Optimización del Rendimiento |
+| [Lab 37](../../labs/lab-37/README.md) | Orquestación Imperativa con terraform_data |
+| [Lab 38](../../labs/lab-38/README.md) | Ingeniería de Datos y Resiliencia con Lifecycle |
+| [Lab 39](../../labs/lab-39/README.md) | Despliegue Global y Adopción de Infraestructura Existente |
+| [Lab 40](../../labs/lab-40/README.md) | Refactorización y Optimización del Rendimiento |
 
 ---
 

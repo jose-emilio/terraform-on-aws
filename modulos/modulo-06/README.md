@@ -34,11 +34,11 @@ Los módulos son el mecanismo de reutilización de Terraform. Este módulo ense�
 
 | Lab | Título |
 |-----|--------|
-| [Lab 22](../../labs/lab22/README.md) | Refactorización Avanzada de S3 (De Monolítico a Modular) |
-| [Lab 23](../../labs/lab23/README.md) | Diseño de Interfaz Robusta y «Fail-Safe» |
-| [Lab 24](../../labs/lab24/README.md) | Composición de Módulos Públicos con Estándares Corporativos |
-| [Lab 25](../../labs/lab25/README.md) | Framework de Pruebas: Plan, Apply e Idempotencia |
-| [Lab 26](../../labs/lab26/README.md) | Gobernanza, Documentación y Publicación «Lean» |
+| [Lab 22](../../labs/lab-22/README.md) | Refactorización Avanzada de S3 (De Monolítico a Modular) |
+| [Lab 23](../../labs/lab-23/README.md) | Diseño de Interfaz Robusta y «Fail-Safe» |
+| [Lab 24](../../labs/lab-24/README.md) | Composición de Módulos Públicos con Estándares Corporativos |
+| [Lab 25](../../labs/lab-25/README.md) | Framework de Pruebas: Plan, Apply e Idempotencia |
+| [Lab 26](../../labs/lab-26/README.md) | Gobernanza, Documentación y Publicación «Lean» |
 
 ---
 

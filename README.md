@@ -54,7 +54,7 @@ Cada laboratorio incluye configuración para **AWS real** (`aws/`) y, cuando los
 - **Visual Studio Code** con la extensión HashiCorp Terraform
 - Cuenta de AWS con permisos de administrador
 
-> Consulta [lab01](labs/lab01/README.md) para la guía completa de instalación y configuración del entorno.
+> Consulta [lab-01](labs/lab-01/README.md) para la guía completa de instalación y configuración del entorno.
 
 ---
 
@@ -76,7 +76,7 @@ terraform-on-aws/
 │   ├── modulo-10/      # CI/CD y automatización
 │   └── modulo-11/      # Observabilidad, tagging y FinOps
 └── labs/               # 51 laboratorios prácticos
-    ├── lab00/ … lab49/
+    ├── lab-00/ … lab-49/
     └── README.md       # Índice completo de laboratorios
 ```
 
@@ -89,17 +89,17 @@ Cada módulo contiene ficheros de contenido teórico (`01_tema.md`, `02_tema.md`
 | # | Módulo | Temas principales | Labs |
 |---|--------|-------------------|------|
 | 0 | [Introducción al curso](modulos/modulo-00/README.md) | Objetivos, agenda, requisitos y metodología | — |
-| 1 | [Fundamentos de IaC y Terraform](modulos/modulo-01/README.md) | IaC, ecosistema HashiCorp, instalación, arquitectura interna, LocalStack | lab00–02 |
-| 2 | [Lenguaje HCL y configuración avanzada](modulos/modulo-02/README.md) | Sintaxis HCL, variables, outputs, data sources, expresiones, funciones, meta-argumentos | lab03–06 |
-| 3 | [Gestión del estado](modulos/modulo-03/README.md) | State local y remoto, S3 + DynamoDB, workspaces, terraform_remote_state, recuperación | lab07–11 |
-| 4 | [Seguridad e IAM con Terraform](modulos/modulo-04/README.md) | IAM users/roles/policies, KMS, Secrets Manager, OIDC Federation, Checkov, tfsec | lab12–15 |
-| 5 | [Networking en AWS con Terraform](modulos/modulo-05/README.md) | VPC, subredes, IGW, NAT, endpoints, Security Groups, NACLs, Peering, Transit Gateway, Route 53 | lab16–21 |
-| 6 | [Módulos de Terraform](modulos/modulo-06/README.md) | Diseño, versionado SemVer, Registry público, terraform test, terraform-docs | lab22–26 |
-| 7 | [Cómputo en AWS con Terraform](modulos/modulo-07/README.md) | EC2, Launch Templates, ASG, ALB, ECS Fargate, Lambda, API Gateway | lab27–32 |
-| 8 | [Almacenamiento y bases de datos](modulos/modulo-08/README.md) | S3, EBS, EFS, RDS, Aurora, DynamoDB, ElastiCache | lab33–36 |
-| 9 | [Terraform avanzado](modulos/modulo-09/README.md) | Provisioners, multi-región, drift, import declarativo, refactoring con `moved` | lab37–40 |
-| 10 | [CI/CD y automatización](modulos/modulo-10/README.md) | CodeCommit, CodeArtifact, CodeBuild, CodeDeploy, CodePipeline, GitOps | lab41–45 |
-| 11 | [Observabilidad, tagging y FinOps](modulos/modulo-11/README.md) | CloudWatch, alarmas, dashboards, tagging corporativo, Budgets, Compliance as Code | lab46–49 |
+| 1 | [Fundamentos de IaC y Terraform](modulos/modulo-01/README.md) | IaC, ecosistema HashiCorp, instalación, arquitectura interna, LocalStack | lab-00–02 |
+| 2 | [Lenguaje HCL y configuración avanzada](modulos/modulo-02/README.md) | Sintaxis HCL, variables, outputs, data sources, expresiones, funciones, meta-argumentos | lab-03–06 |
+| 3 | [Gestión del estado](modulos/modulo-03/README.md) | State local y remoto, S3 + DynamoDB, workspaces, terraform_remote_state, recuperación | lab-07–11 |
+| 4 | [Seguridad e IAM con Terraform](modulos/modulo-04/README.md) | IAM users/roles/policies, KMS, Secrets Manager, OIDC Federation, Checkov, tfsec | lab-12–15 |
+| 5 | [Networking en AWS con Terraform](modulos/modulo-05/README.md) | VPC, subredes, IGW, NAT, endpoints, Security Groups, NACLs, Peering, Transit Gateway, Route 53 | lab-16–21 |
+| 6 | [Módulos de Terraform](modulos/modulo-06/README.md) | Diseño, versionado SemVer, Registry público, terraform test, terraform-docs | lab-22–26 |
+| 7 | [Cómputo en AWS con Terraform](modulos/modulo-07/README.md) | EC2, Launch Templates, ASG, ALB, ECS Fargate, Lambda, API Gateway | lab-27–32 |
+| 8 | [Almacenamiento y bases de datos](modulos/modulo-08/README.md) | S3, EBS, EFS, RDS, Aurora, DynamoDB, ElastiCache | lab-33–36 |
+| 9 | [Terraform avanzado](modulos/modulo-09/README.md) | Provisioners, multi-región, drift, import declarativo, refactoring con `moved` | lab-37–40 |
+| 10 | [CI/CD y automatización](modulos/modulo-10/README.md) | CodeCommit, CodeArtifact, CodeBuild, CodeDeploy, CodePipeline, GitOps | lab-41–45 |
+| 11 | [Observabilidad, tagging y FinOps](modulos/modulo-11/README.md) | CloudWatch, alarmas, dashboards, tagging corporativo, Budgets, Compliance as Code | lab-46–49 |
 
 ---
 
@@ -113,107 +113,107 @@ El índice completo con descripción de cada laboratorio y conceptos clave está
 
 | Lab | Título |
 |-----|--------|
-| [lab00](labs/lab00/README.md) | Entorno de Desarrollo Remoto con VSCode en EC2 |
-| [lab01](labs/lab01/README.md) | Primeros Pasos: Terraform, AWS CLI y LocalStack |
-| [lab02](labs/lab02/README.md) | Primer despliegue en AWS: bucket S3 con versionado y cifrado |
+| [lab-00](labs/lab-00/README.md) | Entorno de Desarrollo Remoto con VSCode en EC2 |
+| [lab-01](labs/lab-01/README.md) | Primeros Pasos: Terraform, AWS CLI y LocalStack |
+| [lab-02](labs/lab-02/README.md) | Primer despliegue en AWS: bucket S3 con versionado y cifrado |
 
 #### Módulo 2 — Lenguaje HCL
 
 | Lab | Título |
 |-----|--------|
-| [lab03](labs/lab03/README.md) | Variables complejas, `cidrsubnet()` y bloques `dynamic` |
-| [lab04](labs/lab04/README.md) | `for_each`, data sources y `lifecycle` |
-| [lab05](labs/lab05/README.md) | `templatefile()`, `file()` y generación de configuraciones |
-| [lab06](labs/lab06/README.md) | Auditoría con data sources y reportes exportables |
+| [lab-03](labs/lab-03/README.md) | Variables complejas, `cidrsubnet()` y bloques `dynamic` |
+| [lab-04](labs/lab-04/README.md) | `for_each`, data sources y `lifecycle` |
+| [lab-05](labs/lab-05/README.md) | `templatefile()`, `file()` y generación de configuraciones |
+| [lab-06](labs/lab-06/README.md) | Auditoría con data sources y reportes exportables |
 
 #### Módulo 3 — Gestión del Estado
 
 | Lab | Título |
 |-----|--------|
-| [lab07](labs/lab07/README.md) | Backend remoto con S3, DynamoDB y state locking |
-| [lab07b](labs/lab07b/README.md) | HCP Terraform como Backend Remoto |
-| [lab08](labs/lab08/README.md) | Refactorización declarativa: `import`, `moved` y `removed` |
-| [lab09](labs/lab09/README.md) | Gestión de entornos con workspaces |
-| [lab10](labs/lab10/README.md) | State splitting: capas de infraestructura independientes |
-| [lab11](labs/lab11/README.md) | Gestión de Drift y Disaster Recovery |
+| [lab-07](labs/lab-07/README.md) | Backend remoto con S3, DynamoDB y state locking |
+| [lab-07b](labs/lab-07b/README.md) | HCP Terraform como Backend Remoto |
+| [lab-08](labs/lab-08/README.md) | Refactorización declarativa: `import`, `moved` y `removed` |
+| [lab-09](labs/lab-09/README.md) | Gestión de entornos con workspaces |
+| [lab-10](labs/lab-10/README.md) | State splitting: capas de infraestructura independientes |
+| [lab-11](labs/lab-11/README.md) | Gestión de Drift y Disaster Recovery |
 
 #### Módulo 4 — Seguridad e IAM
 
 | Lab | Título |
 |-----|--------|
-| [lab12](labs/lab12/README.md) | Gestión de Identidades y Acceso Seguro para EC2 |
-| [lab13](labs/lab13/README.md) | Cifrado Transversal con KMS y Jerarquía de Llaves |
-| [lab14](labs/lab14/README.md) | Automatización de Secretos "Zero-Touch" |
-| [lab15](labs/lab15/README.md) | Blindaje del Pipeline DevSecOps |
+| [lab-12](labs/lab-12/README.md) | Gestión de Identidades y Acceso Seguro para EC2 |
+| [lab-13](labs/lab-13/README.md) | Cifrado Transversal con KMS y Jerarquía de Llaves |
+| [lab-14](labs/lab-14/README.md) | Automatización de Secretos "Zero-Touch" |
+| [lab-15](labs/lab-15/README.md) | Blindaje del Pipeline DevSecOps |
 
 #### Módulo 5 — Networking
 
 | Lab | Título |
 |-----|--------|
-| [lab16](labs/lab16/README.md) | Construcción de una Red Multi-AZ Robusta y Dinámica |
-| [lab17](labs/lab17/README.md) | Optimización de Salida a Internet y "NAT Tax" |
-| [lab18](labs/lab18/README.md) | Seguridad y Control de Tráfico en VPC |
-| [lab19](labs/lab19/README.md) | Conectividad Punto a Punto con VPC Peering |
-| [lab20](labs/lab20/README.md) | Hub-and-Spoke con Transit Gateway y RAM |
-| [lab21](labs/lab21/README.md) | Zonas Hospedadas Privadas y Resolución DNS |
+| [lab-16](labs/lab-16/README.md) | Construcción de una Red Multi-AZ Robusta y Dinámica |
+| [lab-17](labs/lab-17/README.md) | Optimización de Salida a Internet y "NAT Tax" |
+| [lab-18](labs/lab-18/README.md) | Seguridad y Control de Tráfico en VPC |
+| [lab-19](labs/lab-19/README.md) | Conectividad Punto a Punto con VPC Peering |
+| [lab-20](labs/lab-20/README.md) | Hub-and-Spoke con Transit Gateway y RAM |
+| [lab-21](labs/lab-21/README.md) | Zonas Hospedadas Privadas y Resolución DNS |
 
 #### Módulo 6 — Módulos
 
 | Lab | Título |
 |-----|--------|
-| [lab22](labs/lab22/README.md) | Módulos reutilizables: S3 con estándares corporativos |
-| [lab23](labs/lab23/README.md) | Módulos con validación, precondiciones y postcondiciones |
-| [lab24](labs/lab24/README.md) | Composición de Módulos Públicos con Estándares Corporativos |
-| [lab25](labs/lab25/README.md) | Testing de infraestructura con `terraform test` |
-| [lab26](labs/lab26/README.md) | Gobernanza, Documentación y Publicación "Lean" |
+| [lab-22](labs/lab-22/README.md) | Módulos reutilizables: S3 con estándares corporativos |
+| [lab-23](labs/lab-23/README.md) | Módulos con validación, precondiciones y postcondiciones |
+| [lab-24](labs/lab-24/README.md) | Composición de Módulos Públicos con Estándares Corporativos |
+| [lab-25](labs/lab-25/README.md) | Testing de infraestructura con `terraform test` |
+| [lab-26](labs/lab-26/README.md) | Gobernanza, Documentación y Publicación "Lean" |
 
 #### Módulo 7 — Cómputo
 
 | Lab | Título |
 |-----|--------|
-| [lab27](labs/lab27/README.md) | Cimientos de EC2: Despliegue Dinámico y Seguro |
-| [lab28](labs/lab28/README.md) | Escalabilidad y Alta Disponibilidad con Zero Downtime |
-| [lab29](labs/lab29/README.md) | Microservicios con ECS Fargate y Malla de Servicios |
-| [lab30](labs/lab30/README.md) | Procesamiento Asíncrono y Resiliencia de Eventos |
-| [lab31](labs/lab31/README.md) | API Serverless: Lambda, API Gateway v2 y Layers |
-| [lab32](labs/lab32/README.md) | FinOps y Rendimiento: Optimización de Cómputo |
+| [lab-27](labs/lab-27/README.md) | Cimientos de EC2: Despliegue Dinámico y Seguro |
+| [lab-28](labs/lab-28/README.md) | Escalabilidad y Alta Disponibilidad con Zero Downtime |
+| [lab-29](labs/lab-29/README.md) | Microservicios con ECS Fargate y Malla de Servicios |
+| [lab-30](labs/lab-30/README.md) | Procesamiento Asíncrono y Resiliencia de Eventos |
+| [lab-31](labs/lab-31/README.md) | API Serverless: Lambda, API Gateway v2 y Layers |
+| [lab-32](labs/lab-32/README.md) | FinOps y Rendimiento: Optimización de Cómputo |
 
 #### Módulo 8 — Almacenamiento y Bases de Datos
 
 | Lab | Título |
 |-----|--------|
-| [lab33](labs/lab33/README.md) | El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida |
-| [lab34](labs/lab34/README.md) | Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido |
-| [lab35](labs/lab35/README.md) | Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación |
-| [lab36](labs/lab36/README.md) | Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos |
+| [lab-33](labs/lab-33/README.md) | El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida |
+| [lab-34](labs/lab-34/README.md) | Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido |
+| [lab-35](labs/lab-35/README.md) | Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación |
+| [lab-36](labs/lab-36/README.md) | Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos |
 
 #### Módulo 9 — Terraform Avanzado
 
 | Lab | Título |
 |-----|--------|
-| [lab37](labs/lab37/README.md) | Orquestación Imperativa con `terraform_data` |
-| [lab38](labs/lab38/README.md) | Ingeniería de Datos y Resiliencia con Lifecycle |
-| [lab39](labs/lab39/README.md) | Despliegue Global y Adopción de Infraestructura Existente |
-| [lab40](labs/lab40/README.md) | Refactorización y Optimización de Performance |
+| [lab-37](labs/lab-37/README.md) | Orquestación Imperativa con `terraform_data` |
+| [lab-38](labs/lab-38/README.md) | Ingeniería de Datos y Resiliencia con Lifecycle |
+| [lab-39](labs/lab-39/README.md) | Despliegue Global y Adopción de Infraestructura Existente |
+| [lab-40](labs/lab-40/README.md) | Refactorización y Optimización de Performance |
 
 #### Módulo 10 — CI/CD y Automatización
 
 | Lab | Título |
 |-----|--------|
-| [lab41](labs/lab41/README.md) | Gobernanza y Control de Versiones en CodeCommit |
-| [lab42](labs/lab42/README.md) | Repositorio Privado de Módulos Terraform con CodeArtifact |
-| [lab43](labs/lab43/README.md) | Canalización CI de IaC con CodeBuild y ECR |
-| [lab44](labs/lab44/README.md) | Entrega Continua con CodeDeploy |
-| [lab45](labs/lab45/README.md) | Pipeline GitOps de Terraform con CodePipeline |
+| [lab-41](labs/lab-41/README.md) | Gobernanza y Control de Versiones en CodeCommit |
+| [lab-42](labs/lab-42/README.md) | Repositorio Privado de Módulos Terraform con CodeArtifact |
+| [lab-43](labs/lab-43/README.md) | Canalización CI de IaC con CodeBuild y ECR |
+| [lab-44](labs/lab-44/README.md) | Entrega Continua con CodeDeploy |
+| [lab-45](labs/lab-45/README.md) | Pipeline GitOps de Terraform con CodePipeline |
 
 #### Módulo 11 — Observabilidad, Tagging y FinOps
 
 | Lab | Título |
 |-----|--------|
-| [lab46](labs/lab46/README.md) | Observabilidad Proactiva y Dashboards as Code |
-| [lab47](labs/lab47/README.md) | Centralización de Telemetría y Pipeline de Auditoría |
-| [lab48](labs/lab48/README.md) | Fundamentos FinOps: Tags, Budgets y Spot Instances |
-| [lab49](labs/lab49/README.md) | Compliance as Code y Remediación Automática |
+| [lab-46](labs/lab-46/README.md) | Observabilidad Proactiva y Dashboards as Code |
+| [lab-47](labs/lab-47/README.md) | Centralización de Telemetría y Pipeline de Auditoría |
+| [lab-48](labs/lab-48/README.md) | Fundamentos FinOps: Tags, Budgets y Spot Instances |
+| [lab-49](labs/lab-49/README.md) | Compliance as Code y Remediación Automática |
 
 ---
 

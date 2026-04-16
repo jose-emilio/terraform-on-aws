@@ -34,10 +34,10 @@ Gestionar IAM como código es uno de los pilares de la seguridad en AWS. Este m�
 
 | Lab | Título |
 |-----|--------|
-| [Lab 12](../../labs/lab12/README.md) | Gestión de Identidades y Acceso Seguro para EC2 |
-| [Lab 13](../../labs/lab13/README.md) | Cifrado Transversal con KMS y Jerarquía de Llaves |
-| [Lab 14](../../labs/lab14/README.md) | Automatización de Secretos «Zero-Touch» |
-| [Lab 15](../../labs/lab15/README.md) | Blindaje del Pipeline DevSecOps |
+| [Lab 12](../../labs/lab-12/README.md) | Gestión de Identidades y Acceso Seguro para EC2 |
+| [Lab 13](../../labs/lab-13/README.md) | Cifrado Transversal con KMS y Jerarquía de Llaves |
+| [Lab 14](../../labs/lab-14/README.md) | Automatización de Secretos «Zero-Touch» |
+| [Lab 15](../../labs/lab-15/README.md) | Blindaje del Pipeline DevSecOps |
 
 ---
 
