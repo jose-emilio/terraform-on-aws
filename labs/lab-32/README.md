@@ -1,5 +1,8 @@
 # Laboratorio 32: FinOps y Rendimiento: Optimización de Cómputo
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

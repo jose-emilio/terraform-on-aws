@@ -1,5 +1,8 @@
 # Laboratorio 30: Procesamiento Asíncrono y Resiliencia de Eventos
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

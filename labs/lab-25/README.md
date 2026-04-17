@@ -1,5 +1,8 @@
 # Laboratorio 25 — Framework de Pruebas: Plan, Apply e Idempotencia
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 6 — Módulos de Terraform](../../modulos/modulo-06/README.md)
 
 

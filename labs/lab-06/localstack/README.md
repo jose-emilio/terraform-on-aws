@@ -1,5 +1,8 @@
 # Laboratorio 6 — LocalStack: Auditoría Dinámica y Conectividad Externa
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab06 para ejecutarse íntegramente en LocalStack. En LocalStack no existe infraestructura previa, por lo que `localstack/main.tf` crea los recursos necesarios para que cada data source tenga algo que consultar.
 
 ## Prerrequisitos

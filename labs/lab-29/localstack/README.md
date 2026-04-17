@@ -1,5 +1,8 @@
 # Laboratorio 25 — LocalStack: Microservicios con ECS Fargate y Malla de Servicios
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este documento describe cómo ejecutar el laboratorio 25 contra LocalStack. El código Terraform es el mismo que en `aws/`; solo cambia la configuración del provider.
 
 ## Requisitos Previos

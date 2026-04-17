@@ -1,5 +1,8 @@
 # secure-bucket
 
+![Terraform on AWS](../../../../../images/lab-banner.svg)
+
+
 Modulo Terraform que crea un bucket S3 con buenas practicas de seguridad:
 bloqueo de acceso publico, versionado, cifrado y logging opcionales.
 

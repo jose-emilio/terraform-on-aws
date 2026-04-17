@@ -1,5 +1,8 @@
 # Laboratorio 2 — Primer despliegue en AWS: bucket S3 con versionado y cifrado
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 1 — Fundamentos de Infraestructura como Código y Terraform](../../modulos/modulo-01/README.md)
 
 

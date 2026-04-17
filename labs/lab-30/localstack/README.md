@@ -1,5 +1,8 @@
 # Laboratorio 26 — LocalStack: Procesamiento Asíncrono y Resiliencia de Eventos
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este documento describe cómo ejecutar el laboratorio 26 contra LocalStack. El código Terraform de `localstack/` es equivalente al de `aws/` con las adaptaciones necesarias para los servicios disponibles en LocalStack Community.
 
 ## Requisitos Previos

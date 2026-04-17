@@ -1,5 +1,8 @@
 # Laboratorio 26 — Gobernanza, Documentación y Publicación "Lean"
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 6 — Módulos de Terraform](../../modulos/modulo-06/README.md)
 
 

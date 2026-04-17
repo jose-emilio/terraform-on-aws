@@ -1,5 +1,8 @@
 # Laboratorio 24 — LocalStack: Escalabilidad y Alta Disponibilidad con Zero Downtime
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este documento describe cómo ejecutar el laboratorio 24 contra LocalStack. El código Terraform es el mismo que en `aws/`; solo cambia la configuración del provider.
 
 ## Requisitos Previos

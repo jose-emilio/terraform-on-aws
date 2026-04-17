@@ -1,5 +1,8 @@
 # Laboratorio 17 — Optimización de Salida a Internet y "NAT Tax"
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

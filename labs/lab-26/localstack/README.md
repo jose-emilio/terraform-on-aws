@@ -1,5 +1,8 @@
 # Laboratorio 26 — LocalStack: Gobernanza, Documentación y Publicación
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 ## Qué funciona sin AWS
 
 La mayor parte de este laboratorio **no requiere AWS**:

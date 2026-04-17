@@ -1,5 +1,8 @@
 # Laboratorio 31: API Serverless: Lambda, API Gateway v2 y Layers
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

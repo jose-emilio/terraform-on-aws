@@ -1,5 +1,8 @@
 # Laboratorio 15 — Blindaje del Pipeline DevSecOps
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 4 — Seguridad e IAM con Terraform](../../modulos/modulo-04/README.md)
 
 

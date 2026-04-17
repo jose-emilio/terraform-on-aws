@@ -1,5 +1,8 @@
 # Laboratorio 40 — Refactorización y Optimización del Rendimiento
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 9 — Terraform Avanzado](../../modulos/modulo-09/README.md)
 
 

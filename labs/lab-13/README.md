@@ -1,5 +1,8 @@
 # Laboratorio 13 — Cifrado Transversal con KMS y Jerarquía de Llaves
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 4 — Seguridad e IAM con Terraform](../../modulos/modulo-04/README.md)
 
 

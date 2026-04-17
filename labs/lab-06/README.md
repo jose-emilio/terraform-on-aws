@@ -1,5 +1,8 @@
 # Laboratorio 6: Auditoría Dinámica y Conectividad Externa
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 2 — Lenguaje HCL y Configuración Avanzada](../../modulos/modulo-02/README.md)
 
 

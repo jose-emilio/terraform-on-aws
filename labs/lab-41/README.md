@@ -1,5 +1,8 @@
 # Laboratorio 41 — Gobernanza y Control de Versiones en CodeCommit
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 10 — CI/CD y Automatización con Terraform](../../modulos/modulo-10/README.md)
 
 

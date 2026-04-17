@@ -1,5 +1,8 @@
 # Laboratorio 13 — LocalStack: Cifrado Transversal con KMS y Jerarquía de Llaves
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Entorno local con LocalStack para practicar los recursos KMS y S3 del laboratorio
 sin necesidad de una cuenta de AWS.
 

@@ -1,5 +1,8 @@
 # Laboratorio 23 — LocalStack: Cimientos de EC2: Despliegue Dinamico y Seguro
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guia adapta el lab27 para ejecutarse integramente en LocalStack. La configuracion es identica a la de AWS real: data source `aws_ami`, IAM Instance Profile, Security Group e instancia EC2 con IMDSv2. Solo cambia el `providers.tf`.
 
 ## Prerrequisitos

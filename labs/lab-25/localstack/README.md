@@ -1,5 +1,8 @@
 # Laboratorio 25 — LocalStack: Framework de Pruebas
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 ## Tests unitarios (sin AWS ni LocalStack)
 
 Los tests unitarios con `mock_provider` **no necesitan ningún proveedor real**. Funcionan en cualquier máquina con Terraform >= 1.7:

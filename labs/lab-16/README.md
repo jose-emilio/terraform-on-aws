@@ -1,5 +1,8 @@
 # Laboratorio 16 — Construcción de una Red Multi-AZ Robusta y Dinámica
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

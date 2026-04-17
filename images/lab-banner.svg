@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0521"/>
+      <stop offset="100%" stop-color="#1A0A3A"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5C4EE5"/>
+      <stop offset="100%" stop-color="#FF9900"/>
+    </linearGradient>
+    <linearGradient id="liquid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5C4EE5" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#1A0A3A"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#8080D0" stop-opacity="0.15"/>
+      <stop offset="28%"  stop-color="#FFFFFF"  stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#4040A0"  stop-opacity="0.2"/>
+    </linearGradient>
+
+    <!-- Silueta del matraz para recortar el líquido -->
+    <clipPath id="flaskClip">
+      <path d="M 62,15 L 92,15 L 92,75
+               C 115,85 137,120 137,160
+               Q 137,190 77,192
+               Q 18,190 18,160
+               C 18,120 40,85 62,75 Z"/>
+    </clipPath>
+
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="800" height="200" fill="url(#bg)"/>
+
+  <!-- Banda superior -->
+  <rect width="800" height="5" fill="url(#bar)"/>
+
+  <!-- ── MATRAZ ── -->
+
+  <!-- Líquido (recortado a la silueta del matraz) -->
+  <rect x="0" y="92" width="160" height="105" fill="url(#liquid)" clip-path="url(#flaskClip)"/>
+
+  <!-- Superficie del líquido con onda -->
+  <path d="M 26,92 Q 52,83 77,92 Q 103,101 128,92"
+    stroke="#9B92FF" stroke-width="2" fill="none" opacity="0.9" clip-path="url(#flaskClip)"/>
+
+  <!-- Logo Terraform en miniatura dentro del líquido -->
+  <g transform="translate(38,112) scale(0.82)" opacity="0.8">
+    <path fill="#B0A8FF" d="M0 .15v18.94l16.4 9.47V9.62L0 .15z"/>
+    <path fill="#B0A8FF" d="M18.2 10.72l16.4 9.48v18.93l-16.4-9.47V10.72z"/>
+    <path fill="#8880D0" d="M36.4 20.2v18.93l16.4-9.46V10.72L36.4 20.2z"/>
+    <path fill="#B0A8FF" d="M18.2 50.53l16.4 9.47V41.21l-16.4-9.47v18.94z"/>
+  </g>
+
+  <!-- Burbujas naranja (AWS) -->
+  <circle cx="53"  cy="142" r="5.5" fill="#FF9900" opacity="0.75" filter="url(#glow)"/>
+  <circle cx="101" cy="158" r="4"   fill="#FF9900" opacity="0.65"/>
+  <circle cx="76"  cy="174" r="3"   fill="#FFBB44" opacity="0.60"/>
+  <circle cx="120" cy="147" r="3.5" fill="#FF9900" opacity="0.60" filter="url(#glow)"/>
+  <circle cx="34"  cy="163" r="4"   fill="#FF9900" opacity="0.55"/>
+
+  <!-- Vidrio del matraz (contorno) -->
+  <path d="M 62,15 L 92,15 L 92,75
+           C 115,85 137,120 137,160
+           Q 137,190 77,192
+           Q 18,190 18,160
+           C 18,120 40,85 62,75 Z"
+    fill="url(#glass)" stroke="#9090D0" stroke-width="2.5" stroke-opacity="0.7"/>
+
+  <!-- Boca del matraz -->
+  <rect x="57" y="10" width="40" height="9" rx="3"
+    fill="#2A2060" stroke="#9090D0" stroke-width="1.5" opacity="0.85"/>
+
+  <!-- Reflejo izquierdo del cuello -->
+  <path d="M 67,18 L 67,73 C 65,80 58,90 52,106"
+    stroke="white" stroke-width="2" fill="none" stroke-opacity="0.22" stroke-linecap="round"/>
+
+  <!-- Reflejo izquierdo del cuerpo -->
+  <path d="M 29,112 Q 23,142 21,167"
+    stroke="white" stroke-width="2" fill="none" stroke-opacity="0.12" stroke-linecap="round"/>
+
+  <!-- ── SEPARADOR ── -->
+  <line x1="158" y1="14" x2="158" y2="186" stroke="#2A2A55" stroke-width="1.5"/>
+
+  <!-- ── TEXTO ── -->
+
+  <!-- Badge LAB -->
+  <rect x="175" y="18" width="54" height="22" rx="4" fill="#FF9900" opacity="0.92"/>
+  <text x="202" y="34"
+    font-family="Arial, sans-serif" font-size="13" font-weight="700"
+    fill="#0D0521" text-anchor="middle" letter-spacing="2">LAB</text>
+
+  <!-- "Terraform" -->
+  <text x="175" y="100"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#7B6AFF" letter-spacing="-1">Terraform</text>
+
+  <!-- "on" -->
+  <text x="179" y="155"
+    font-family="Arial, sans-serif"
+    font-size="36" font-weight="300"
+    fill="#CCCCCC">on</text>
+
+  <!-- "AWS" -->
+  <text x="237" y="155"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#FF9900" letter-spacing="-1">AWS</text>
+
+  <!-- Arco AWS -->
+  <path d="M 239,167 Q 315,194 391,167"
+    stroke="#FF9900" stroke-width="5"
+    fill="none" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Banda inferior -->
+  <rect y="195" width="800" height="5" fill="url(#bar)"/>
+</svg>

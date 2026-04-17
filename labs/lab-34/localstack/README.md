@@ -1,5 +1,8 @@
 # Laboratorio 30 — LocalStack: Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este documento describe cómo ejecutar el laboratorio 30 contra LocalStack. Los recursos EFS (file system, mount targets, access points) y EC2/EBS funcionan en Community con las limitaciones indicadas. DLM no está disponible en Community.
 
 ## Requisitos Previos

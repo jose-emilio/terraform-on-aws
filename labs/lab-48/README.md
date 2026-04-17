@@ -1,5 +1,8 @@
 # Laboratorio 48 — Fundamentos FinOps: Tags, Budgets y Spot Instances
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 11 — Observabilidad, Tagging y FinOps](../../modulos/modulo-11/README.md)
 
 

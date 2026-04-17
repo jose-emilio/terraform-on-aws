@@ -1,5 +1,8 @@
 # Laboratorio 14 — LocalStack: Automatización de Secretos "Zero-Touch"
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Entorno local con LocalStack para practicar los recursos KMS, Secrets Manager y
 `random_password` del laboratorio sin necesidad de una cuenta de AWS.
 

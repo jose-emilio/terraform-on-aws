@@ -1,5 +1,8 @@
 # Laboratorio 23 — Diseño de Interfaz Robusta y "Fail-Safe"
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 6 — Módulos de Terraform](../../modulos/modulo-06/README.md)
 
 

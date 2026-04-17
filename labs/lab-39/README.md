@@ -1,5 +1,8 @@
 # Laboratorio 39 — Despliegue Global y Adopción de Infraestructura Existente
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 9 — Terraform Avanzado](../../modulos/modulo-09/README.md)
 
 

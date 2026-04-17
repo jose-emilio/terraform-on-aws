@@ -1,5 +1,8 @@
 # Terraform on AWS
 
+![Terraform on AWS](../images/lab-banner.svg)
+
+
 Material práctico del curso **Terraform on AWS**. Cada laboratorio introduce conceptos progresivos de Infraestructura como Código (IaC) con Terraform, con soporte para despliegue en AWS real y en LocalStack como entorno local de pruebas.
 
 ## Requisitos Previos

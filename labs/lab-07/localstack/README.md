@@ -1,5 +1,8 @@
 # Laboratorio 7: LocalStack: Backend Remoto Profesional
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 En este laboratorio configurarás un backend remoto de Terraform usando S3 y DynamoDB, el estándar de la industria para equipos que colaboran en infraestructura. Crearás la infraestructura de soporte (bucket y tabla), configurarás el bloque `backend "s3"` con cifrado y bloqueo de estado, y migrarás un estado local existente al nuevo backend remoto.
 
 ## Objetivos de Aprendizaje

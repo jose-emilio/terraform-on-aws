@@ -1,5 +1,8 @@
 # Laboratorio 9: Gestión de Entornos con Workspaces
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 3 — Gestión del Estado (State)](../../modulos/modulo-03/README.md)
 
 

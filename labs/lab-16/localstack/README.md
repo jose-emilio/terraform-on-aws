@@ -1,5 +1,8 @@
 # Laboratorio 16 — LocalStack: Red Multi-AZ Robusta y Dinámica
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab16 para ejecutarse íntegramente en LocalStack. Los conceptos son idénticos a la versión AWS; la diferencia reside en la configuración del provider y el backend.
 
 ## Prerrequisitos

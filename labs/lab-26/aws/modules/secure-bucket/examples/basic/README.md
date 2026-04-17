@@ -1,5 +1,8 @@
 # Ejemplo basico
 
+![Terraform on AWS](../../../../../../../images/lab-banner.svg)
+
+
 Crea un bucket S3 con la minima configuracion: solo el nombre y el entorno.
 El modulo aplica automaticamente versionado, cifrado y bloqueo de acceso publico.
 

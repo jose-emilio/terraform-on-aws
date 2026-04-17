@@ -1,5 +1,8 @@
 # Laboratorio 4: Orquestación de Identidades y Gestión de Ciclo de Vida
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 2 — Lenguaje HCL y Configuración Avanzada](../../modulos/modulo-02/README.md)
 
 

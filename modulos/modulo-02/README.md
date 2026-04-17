@@ -1,5 +1,8 @@
 # Módulo 2 — Lenguaje HCL y Configuración Avanzada
 
+![Terraform on AWS](../../images/modulo-banner.svg)
+
+
 > **Curso:** Terraform on AWS  
 > **Instructor:** José Emilio Vera — Champion AWS Authorized Instructor
 

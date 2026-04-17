@@ -1,5 +1,8 @@
 # Laboratorio 34: Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 8 — Almacenamiento y Bases de Datos con Terraform](../../modulos/modulo-08/README.md)
 
 

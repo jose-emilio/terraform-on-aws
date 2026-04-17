@@ -1,5 +1,8 @@
 # Laboratorio 11 — LocalStack: Gestión de Drift y Disaster Recovery
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab11 para ejecutarse íntegramente en LocalStack. Los conceptos son idénticos a la versión AWS; la diferencia reside en cómo se simula el drift y cómo se accede al bucket S3 de estado.
 
 ## Prerrequisitos

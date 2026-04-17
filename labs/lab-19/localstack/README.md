@@ -1,5 +1,8 @@
 # Laboratorio 19 — LocalStack: Conectividad Punto a Punto con VPC Peering
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guia adapta el lab19 para ejecutarse integramente en LocalStack. LocalStack emula VPC Peering a nivel de API pero **no ejecuta trafico real**. El objetivo es validar la estructura de Terraform: VPCs, peerings, rutas bidireccionales y Security Groups.
 
 ## Prerrequisitos

@@ -1,5 +1,8 @@
 # Laboratorio 8: LocalStack: Refactorización Declarativa y Adopción de Infraestructura
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 En este laboratorio aprenderás a gestionar el ciclo de vida completo de un recurso usando las primitivas declarativas de Terraform 1.5+/1.7+: adoptarás un recurso existente con `import {}` y `-generate-config-out`, lo renombrarás en el estado sin recrearlo con `moved {}`, y finalmente dejarás de gestionarlo sin eliminarlo con `removed {}`.
 
 ## Objetivos de Aprendizaje

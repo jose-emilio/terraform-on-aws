@@ -1,5 +1,8 @@
 # Laboratorio 37 — Orquestación Imperativa con terraform_data
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 9 — Terraform Avanzado](../../modulos/modulo-09/README.md)
 
 

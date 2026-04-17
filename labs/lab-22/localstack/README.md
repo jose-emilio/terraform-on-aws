@@ -1,5 +1,8 @@
 # Laboratorio 18 — LocalStack: Refactorizacion Avanzada de S3
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guia adapta el lab22 para ejecutarse integramente en LocalStack. S3 esta completamente soportado en LocalStack Community, por lo que la funcionalidad es practicamente identica. Las diferencias principales son: sin `prevent_destroy` (para facilitar limpieza) y sin bloqueo de acceso publico (emulacion parcial).
 
 ## Prerrequisitos

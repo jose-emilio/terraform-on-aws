@@ -1,5 +1,8 @@
 # Laboratorio 49 — Compliance as Code y Remediación Automática
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 11 — Observabilidad, Tagging y FinOps](../../modulos/modulo-11/README.md)
 
 

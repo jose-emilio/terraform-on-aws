@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0521"/>
+      <stop offset="100%" stop-color="#1A0A3A"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5C4EE5"/>
+      <stop offset="100%" stop-color="#FF9900"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="200" fill="url(#bgGrad)" rx="10"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="800" height="5" fill="url(#barGrad)" rx="3"/>
+
+  <!-- Terraform logo oficial (paths extraídos de Wikimedia Commons, MPL-2.0) -->
+  <!-- Escala 2×, centrado verticalmente: translate(30, 40) scale(2) -->
+  <g transform="translate(30, 40) scale(2)">
+    <!-- Far-left slab (light) -->
+    <path fill="#5C4EE5" d="M0 .15v18.94l16.4 9.47V9.62L0 .15z"/>
+    <!-- Center-left slab (light) -->
+    <path fill="#5C4EE5" d="M18.2 10.72l16.4 9.48v18.93l-16.4-9.47V10.72z"/>
+    <!-- Right slab (dark) -->
+    <path fill="#4040B2" d="M36.4 20.2v18.93l16.4-9.46V10.72L36.4 20.2z"/>
+    <!-- Bottom slab (light) -->
+    <path fill="#5C4EE5" d="M18.2 50.53l16.4 9.47V41.21l-16.4-9.47v18.94z"/>
+  </g>
+
+  <!-- "Terraform" -->
+  <text x="158" y="86"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#5C4EE5" letter-spacing="-1">Terraform</text>
+
+  <!-- "on" -->
+  <text x="162" y="140"
+    font-family="Arial, sans-serif"
+    font-size="36" font-weight="300"
+    fill="#CCCCCC">on</text>
+
+  <!-- "AWS" -->
+  <text x="220" y="140"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#FF9900" letter-spacing="-1">AWS</text>
+
+  <!-- AWS smile arc -->
+  <path d="M 222,152 Q 298,182 374,152"
+    stroke="#FF9900" stroke-width="5"
+    fill="none" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Bottom accent bar -->
+  <rect x="0" y="195" width="800" height="5" fill="url(#barGrad)" rx="3"/>
+</svg>

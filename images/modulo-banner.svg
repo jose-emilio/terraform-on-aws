@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0521"/>
+      <stop offset="100%" stop-color="#1A0A3A"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5C4EE5"/>
+      <stop offset="100%" stop-color="#FF9900"/>
+    </linearGradient>
+    <linearGradient id="leftPage" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#B0B3E0"/>
+      <stop offset="100%" stop-color="#D0D3F5"/>
+    </linearGradient>
+    <linearGradient id="rightPage" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#D0D3F5"/>
+      <stop offset="100%" stop-color="#B8BAE0"/>
+    </linearGradient>
+    <linearGradient id="spine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#7B6AFF"/>
+      <stop offset="100%" stop-color="#3030A0"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2" dy="3" stdDeviation="4" flood-color="#000020" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="800" height="200" fill="url(#bg)"/>
+
+  <!-- Banda superior -->
+  <rect width="800" height="5" fill="url(#bar)"/>
+
+  <!-- ── LIBRO ABIERTO ── -->
+  <g filter="url(#shadow)">
+
+    <!-- Página izquierda -->
+    <path d="M 76,27 Q 42,21 11,29 L 9,177 Q 43,169 76,174 Z"
+      fill="url(#leftPage)"/>
+
+    <!-- Página derecha -->
+    <path d="M 76,27 Q 110,21 139,29 L 141,177 Q 107,169 76,174 Z"
+      fill="url(#rightPage)"/>
+
+    <!-- Lomo -->
+    <path d="M 73,27 C 74,100 74,100 73,174 L 79,174 C 78,100 78,100 79,27 Z"
+      fill="url(#spine)"/>
+
+  </g>
+
+  <!-- Marcapáginas naranja (cuelga desde arriba en la página derecha) -->
+  <polygon points="126,20 137,20 131,44" fill="#FF9900" opacity="0.92"/>
+
+  <!-- Logo Terraform en miniatura (página izquierda, zona superior) -->
+  <g transform="translate(17, 33) scale(0.53)" opacity="0.65">
+    <path fill="#5C4EE5" d="M0 .15v18.94l16.4 9.47V9.62L0 .15z"/>
+    <path fill="#5C4EE5" d="M18.2 10.72l16.4 9.48v18.93l-16.4-9.47V10.72z"/>
+    <path fill="#4040B2" d="M36.4 20.2v18.93l16.4-9.46V10.72L36.4 20.2z"/>
+    <path fill="#5C4EE5" d="M18.2 50.53l16.4 9.47V41.21l-16.4-9.47v18.94z"/>
+  </g>
+
+  <!-- Líneas de texto — página izquierda -->
+  <line x1="14" y1="75"  x2="68" y2="74"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="88"  x2="62" y2="87"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="101" x2="66" y2="100" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="114" x2="58" y2="113" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="127" x2="65" y2="126" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="140" x2="60" y2="139" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="153" x2="64" y2="152" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="14" y1="166" x2="56" y2="165" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+
+  <!-- Líneas de texto — página derecha (algunas resaltadas en naranja) -->
+  <line x1="82" y1="36"  x2="134" y2="35"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="49"  x2="128" y2="48"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="62"  x2="132" y2="61"  stroke="#FF9900" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+  <line x1="82" y1="75"  x2="126" y2="74"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="88"  x2="130" y2="87"  stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="101" x2="124" y2="100" stroke="#FF9900" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+  <line x1="82" y1="114" x2="128" y2="113" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="127" x2="122" y2="126" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="140" x2="126" y2="139" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+  <line x1="82" y1="153" x2="120" y2="152" stroke="#FF9900" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+  <line x1="82" y1="166" x2="124" y2="165" stroke="#8888B8" stroke-width="2"   stroke-linecap="round"/>
+
+  <!-- Contorno de las páginas -->
+  <path d="M 76,27 Q 42,21 11,29 L 9,177 Q 43,169 76,174"
+    fill="none" stroke="#6868A0" stroke-width="1.5" opacity="0.7"/>
+  <path d="M 76,27 Q 110,21 139,29 L 141,177 Q 107,169 76,174"
+    fill="none" stroke="#6868A0" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- ── SEPARADOR ── -->
+  <line x1="158" y1="14" x2="158" y2="186" stroke="#2A2A55" stroke-width="1.5"/>
+
+  <!-- ── TEXTO ── -->
+
+  <!-- Badge MÓDULO (azul-violeta, distinto del LAB naranja) -->
+  <rect x="175" y="18" width="82" height="22" rx="4" fill="#5C4EE5" opacity="0.92"/>
+  <text x="216" y="34"
+    font-family="Arial, sans-serif" font-size="12" font-weight="700"
+    fill="white" text-anchor="middle" letter-spacing="1.5">MÓDULO</text>
+
+  <!-- "Terraform" -->
+  <text x="175" y="100"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#7B6AFF" letter-spacing="-1">Terraform</text>
+
+  <!-- "on" -->
+  <text x="179" y="155"
+    font-family="Arial, sans-serif"
+    font-size="36" font-weight="300"
+    fill="#CCCCCC">on</text>
+
+  <!-- "AWS" -->
+  <text x="237" y="155"
+    font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+    font-size="60" font-weight="900"
+    fill="#FF9900" letter-spacing="-1">AWS</text>
+
+  <!-- Arco AWS -->
+  <path d="M 239,167 Q 315,194 391,167"
+    stroke="#FF9900" stroke-width="5"
+    fill="none" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Banda inferior -->
+  <rect y="195" width="800" height="5" fill="url(#bar)"/>
+</svg>

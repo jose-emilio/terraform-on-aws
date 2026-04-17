@@ -1,5 +1,8 @@
 # Laboratorio 17 — LocalStack: Zonas Hospedadas Privadas y Resolucion DNS
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guia adapta el lab21 para ejecutarse integramente en LocalStack. LocalStack emula Route 53 a nivel de API pero **no ejecuta resolucion DNS real**. El ALB no esta disponible en Community, por lo que se usa un registro A con IP fija en lugar de Alias. El objetivo es validar la estructura de Terraform.
 
 ## Prerrequisitos

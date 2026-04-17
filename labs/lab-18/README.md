@@ -1,5 +1,8 @@
 # Laboratorio 18 — Seguridad y Control de Tráfico en VPC
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

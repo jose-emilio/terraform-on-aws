@@ -1,5 +1,8 @@
 # Laboratorio 12 — LocalStack: Gestión de Identidades y Acceso Seguro para EC2
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Entorno local con LocalStack para practicar los recursos IAM del laboratorio
 sin necesidad de una cuenta de AWS.
 

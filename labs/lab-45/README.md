@@ -1,5 +1,8 @@
 # Laboratorio 45 — Pipeline GitOps de Terraform con CodePipeline
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 10 — CI/CD y Automatización con Terraform](../../modulos/modulo-10/README.md)
 
 

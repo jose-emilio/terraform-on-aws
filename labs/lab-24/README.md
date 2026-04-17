@@ -1,5 +1,8 @@
 # Laboratorio 24 — Composición de Módulos Públicos con Estándares Corporativos
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 6 — Módulos de Terraform](../../modulos/modulo-06/README.md)
 
 

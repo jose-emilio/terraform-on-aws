@@ -1,5 +1,8 @@
 # Laboratorio 12 — Gestión de Identidades y Acceso Seguro para EC2
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 4 — Seguridad e IAM con Terraform](../../modulos/modulo-04/README.md)
 
 

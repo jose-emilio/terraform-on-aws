@@ -1,5 +1,8 @@
 # Laboratorio 1 — Primeros Pasos: Terraform, AWS CLI y LocalStack
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 1 — Fundamentos de Infraestructura como Código y Terraform](../../modulos/modulo-01/README.md)
 
 

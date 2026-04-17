@@ -1,5 +1,8 @@
 # Laboratorio 19 — LocalStack: Diseño de Interfaz Robusta y "Fail-Safe"
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab23 para ejecutarse íntegramente en LocalStack. Los tres módulos (`safe-network`, `validated-bucket`, `db-config`) funcionan igual que en AWS real. Las validaciones, precondiciones y postcondiciones son evaluadas por el motor de Terraform, no por el proveedor, por lo que funcionan idénticamente. La diferencia principal es que `db-config` usa SSM SecureString en lugar de Secrets Manager.
 
 ## Prerrequisitos

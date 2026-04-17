@@ -1,5 +1,8 @@
 # Laboratorio 29 — LocalStack: El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este documento describe cómo ejecutar el laboratorio 29 contra LocalStack. Los recursos S3 (bucket, public access block, versionado, lifecycle configuration) funcionan plenamente en Community. KMS y la condición de VPC endpoint tienen soporte parcial.
 
 ## Requisitos Previos

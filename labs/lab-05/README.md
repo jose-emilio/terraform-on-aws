@@ -1,5 +1,8 @@
 # Laboratorio 5: Configuración Dinámica y Plantillas de Sistema
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 2 — Lenguaje HCL y Configuración Avanzada](../../modulos/modulo-02/README.md)
 
 

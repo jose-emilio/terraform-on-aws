@@ -1,5 +1,8 @@
 # Laboratorio 21 — Zonas Hospedadas Privadas y Resolución DNS
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

@@ -1,5 +1,8 @@
 # Laboratorio 33: El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 8 — Almacenamiento y Bases de Datos con Terraform](../../modulos/modulo-08/README.md)
 
 

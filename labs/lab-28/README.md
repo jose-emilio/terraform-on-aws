@@ -1,5 +1,8 @@
 # Laboratorio 28: Escalabilidad y Alta Disponibilidad con Zero Downtime
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

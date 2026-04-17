@@ -1,5 +1,8 @@
 # Laboratorio 22 — Refactorización Avanzada de S3 (De Monolítico a Modular)
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 6 — Módulos de Terraform](../../modulos/modulo-06/README.md)
 
 

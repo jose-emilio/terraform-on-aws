@@ -1,5 +1,8 @@
 # Módulo 5 — Networking en AWS con Terraform
 
+![Terraform on AWS](../../images/modulo-banner.svg)
+
+
 > **Curso:** Terraform on AWS  
 > **Instructor:** José Emilio Vera — Champion AWS Authorized Instructor
 

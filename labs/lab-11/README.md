@@ -1,5 +1,8 @@
 # Laboratorio 11 — Gestión de Drift y Disaster Recovery (3-2-1)
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 3 — Gestión del Estado (State)](../../modulos/modulo-03/README.md)
 
 

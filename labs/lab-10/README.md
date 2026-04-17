@@ -1,5 +1,8 @@
 # Laboratorio 10: Arquitectura de State Splitting (Capas de Infraestructura)
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 3 — Gestión del Estado (State)](../../modulos/modulo-03/README.md)
 
 

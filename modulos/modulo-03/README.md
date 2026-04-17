@@ -1,5 +1,8 @@
 # Módulo 3 — Gestión del Estado (State)
 
+![Terraform on AWS](../../images/modulo-banner.svg)
+
+
 > **Curso:** Terraform on AWS  
 > **Instructor:** José Emilio Vera — Champion AWS Authorized Instructor
 

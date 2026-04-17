@@ -1,5 +1,8 @@
 # Laboratorio 29: Microservicios con ECS Fargate y Malla de Servicios
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

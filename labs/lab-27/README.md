@@ -1,5 +1,8 @@
 # Laboratorio 27: Cimientos de EC2: Despliegue Dinamico y Seguro
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 7 — Cómputo en AWS con Terraform](../../modulos/modulo-07/README.md)
 
 

@@ -1,5 +1,8 @@
 # Laboratorio 3 — LocalStack: Infraestructura Parametrizada y Dinámica
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab03 para ejecutarse íntegramente en LocalStack. Los conceptos son idénticos a la versión AWS; la diferencia reside en la configuración del provider.
 
 ## Prerrequisitos

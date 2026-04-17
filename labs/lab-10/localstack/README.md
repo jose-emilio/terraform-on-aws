@@ -1,5 +1,8 @@
 # Laboratorio 10 — LocalStack: State Splitting (Capas de Infraestructura)
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Este directorio contiene la versión LocalStack del laboratorio. La diferencia principal respecto a la versión AWS real está en el backend de estado y en la configuración del provider.
 
 ## Diferencias clave respecto a AWS real

@@ -1,5 +1,8 @@
 # Laboratorio 24 — LocalStack: El "Wrapper" Corporativo: RDS + VPC
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 ## No disponible en LocalStack Community
 
 Este laboratorio **no tiene versión LocalStack** porque depende de servicios que no están disponibles en la edición Community:

@@ -1,5 +1,8 @@
 # Laboratorio 0 — Entorno de Desarrollo Remoto con VSCode en EC2
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 1 — Fundamentos de Infraestructura como Código y Terraform](../../modulos/modulo-01/README.md)
 
 

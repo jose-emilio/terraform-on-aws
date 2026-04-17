@@ -1,5 +1,8 @@
 # Laboratorio 20 — Hub-and-Spoke con Transit Gateway y RAM
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

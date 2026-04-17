@@ -1,5 +1,8 @@
 # Laboratorio 9: LocalStack: Gestión de Entornos con Workspaces
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 En este laboratorio gestionarás entornos Dev y Prod desde una sola base de código usando workspaces de Terraform. Aprenderás a derivar configuración dinámica con `terraform.workspace`, a validar inconsistencias de forma declarativa con el bloque `check {}` y a proteger el plan con `lifecycle { precondition }`.
 
 ## Objetivos de Aprendizaje

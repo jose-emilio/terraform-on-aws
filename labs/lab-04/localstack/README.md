@@ -1,5 +1,8 @@
 # Laboratorio 4 — LocalStack: Orquestación de Identidades y Gestión de Ciclo de Vida
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab04 para ejecutarse íntegramente en LocalStack. Los conceptos son idénticos a la versión AWS; las diferencias principales son el provider y la ausencia del data source `aws_ami`.
 
 ## Prerrequisitos

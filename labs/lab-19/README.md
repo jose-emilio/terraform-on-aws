@@ -1,5 +1,8 @@
 # Laboratorio 19 — Conectividad Punto a Punto con VPC Peering
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 5 — Networking en AWS con Terraform](../../modulos/modulo-05/README.md)
 
 

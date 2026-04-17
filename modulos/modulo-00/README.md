@@ -1,5 +1,8 @@
 # Módulo 0 — Introducción al Curso: Terraform on AWS
 
+![Terraform on AWS](../../images/modulo-banner.svg)
+
+
 > **Curso:** Terraform on AWS  
 > **Instructor:** José Emilio Vera — Champion AWS Authorized Instructor
 

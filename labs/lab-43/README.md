@@ -1,5 +1,8 @@
 # Laboratorio 43 — Canalización CI de IaC con CodeBuild y ECR
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 10 — CI/CD y Automatización con Terraform](../../modulos/modulo-10/README.md)
 
 

@@ -1,5 +1,8 @@
 # Laboratorio 36: Arquitectura Moderna NoSQL — DynamoDB con Caché y Eventos
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 8 — Almacenamiento y Bases de Datos con Terraform](../../modulos/modulo-08/README.md)
 
 

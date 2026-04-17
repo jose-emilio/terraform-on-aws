@@ -1,5 +1,8 @@
 # Laboratorio 17 — LocalStack: Optimización de Salida a Internet y "NAT Tax"
 
+![Terraform on AWS](../../../images/lab-banner.svg)
+
+
 Esta guía adapta el lab17 para ejecutarse íntegramente en LocalStack. Los conceptos son idénticos a la versión AWS; la diferencia principal es que **la Instancia NAT no está disponible** (requiere AMIs reales de EC2), por lo que solo se despliega la variante con NAT Gateway.
 
 ## Prerrequisitos

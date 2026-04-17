@@ -1,5 +1,8 @@
 # Laboratorio 35: Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación
 
+![Terraform on AWS](../../images/lab-banner.svg)
+
+
 [← Módulo 8 — Almacenamiento y Bases de Datos con Terraform](../../modulos/modulo-08/README.md)
 
 
