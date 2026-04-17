@@ -217,21 +217,18 @@ Los sistemas CI/CD (GitHub Actions, GitLab CI) deben usar **Roles en lugar de Ac
 **Código: Proveedor OIDC para GitHub Actions**
 
 ```hcl
-# Obtener el thumbprint actual del endpoint OIDC de GitHub dinámicamente
-# No hardcodear el thumbprint: GitHub actualiza su cadena de certificados periódicamente
-data "tls_certificate" "github_oidc" {
-  url = "https://token.actions.githubusercontent.com"
-}
-
 # Registrar GitHub como OIDC Provider en AWS
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
 
-  # Thumbprint obtenido dinámicamente — siempre actualizado
-  thumbprint_list = [data.tls_certificate.github_oidc.certificates[0].sha1_fingerprint]
+  # AWS ignora este valor para GitHub Actions; se incluye solo porque
+  # el argumento es obligatorio en el provider de AWS.
+  thumbprint_list = ["ffffffffffffffffffffffffffffffffffffffff"]
 }
 ```
+
+> **Nota:** Desde **julio de 2023**, AWS ya no requiere la verificación del thumbprint para proveedores OIDC de GitHub Actions. AWS valida los tokens directamente usando su propia biblioteca de CA raíz. El uso de `data "tls_certificate"` para obtener el thumbprint dinámicamente es innecesario y puede eliminarse de configuraciones existentes.
 
 **Código: Rol OIDC con Restricción de Repositorio**
 

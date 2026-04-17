@@ -89,8 +89,7 @@ Principio de mínimo privilegio: el rol o usuario que ejecuta Terraform necesita
 "Action": [
   "s3:GetObject",
   "s3:PutObject",
-  "s3:ListBucket",
-  "s3:DeleteObject"
+  "s3:ListBucket"
 ]
 ```
 

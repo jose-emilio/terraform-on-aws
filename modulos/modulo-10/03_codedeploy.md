@@ -8,7 +8,7 @@
 
 En el modelo de CI/CD en AWS, Terraform y CodeDeploy tienen dominios claramente separados. Terraform gestiona la infraestructura — las piezas que no cambian con cada release de la aplicación. CodeDeploy gestiona el código de la aplicación — las piezas que cambian con cada deploy.
 
-> **El profesor explica:** "Uno de los errores más comunes que veo es querer usar Terraform para desplegar código de aplicación. Terraform no sabe si tu aplicación está healthcheck. No entiende de Blue/Green ni Canary. No puede pausar el tráfico mientras instala dependencias. CodeDeploy sí. La pregunta es: ¿esto pertenece a la infraestructura o a la aplicación? Si cambia con cada release de código, es CodeDeploy. Si cambia cuando rediseñas la arquitectura, es Terraform."
+> **En la práctica:** "Uno de los errores más comunes que veo es querer usar Terraform para desplegar código de aplicación. Terraform no sabe si tu aplicación está healthcheck. No entiende de Blue/Green ni Canary. No puede pausar el tráfico mientras instala dependencias. CodeDeploy sí. La pregunta es: ¿esto pertenece a la infraestructura o a la aplicación? Si cambia con cada release de código, es CodeDeploy. Si cambia cuando rediseñas la arquitectura, es Terraform."
 
 **División de responsabilidades:**
 

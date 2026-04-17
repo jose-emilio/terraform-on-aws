@@ -8,7 +8,7 @@
 
 La observabilidad es el pilar de la estabilidad operativa. CloudWatch centraliza Logs, Metrics, Alarms y Dashboards, ofreciendo una vista unificada de la salud de la infraestructura. Es el punto de partida para gestionar operaciones desde el código con Terraform.
 
-> **El profesor explica:** "Observabilidad no es lo mismo que monitorización. Monitorizar es saber si el servicio está arriba o caído. Observabilidad es entender *por qué* se cayó, cuándo empezó a degradarse, y qué cambio lo provocó. CloudWatch te da los tres pilares para construir esa capacidad: logs para el 'qué pasó', métricas para el 'cuánto y con qué frecuencia', y alarmas para el 'avísame cuando supere el umbral'. La diferencia entre un equipo reactivo y uno proactivo es si estas tres piezas están configuradas como código antes de que ocurra el problema."
+> **En la práctica:** "Observabilidad no es lo mismo que monitorización. Monitorizar es saber si el servicio está arriba o caído. Observabilidad es entender *por qué* se cayó, cuándo empezó a degradarse, y qué cambio lo provocó. CloudWatch te da los tres pilares para construir esa capacidad: logs para el 'qué pasó', métricas para el 'cuánto y con qué frecuencia', y alarmas para el 'avísame cuando supere el umbral'. La diferencia entre un equipo reactivo y uno proactivo es si estas tres piezas están configuradas como código antes de que ocurra el problema."
 
 **Los tres pilares de CloudWatch:**
 
@@ -24,12 +24,12 @@ La observabilidad es el pilar de la estabilidad operativa. CloudWatch centraliza
 
 Un Log Group sin política de retención almacena datos indefinidamente, generando costes crecientes. Configurar `retention_in_days` y cifrado con KMS es esencial para cumplimiento y ahorro.
 
-> **El profesor explica:** "El error más caro que veo en auditorías de costes AWS es Log Groups sin política de retención. Cada gigabyte de logs cuesta $0.03 al mes en almacenamiento — para siempre. Para una aplicación que emite 10 GB de logs diarios, eso se convierte en miles de dólares anuales de deuda silenciosa. La línea `retention_in_days = 30` es la configuración con mejor ROI de todo el módulo. Cuesta cero implementarla y puede ahorrar miles."
+> **En la práctica:** "El error más caro que veo en auditorías de costes AWS es Log Groups sin política de retención. Cada gigabyte de logs cuesta $0.03 al mes en almacenamiento — para siempre. Para una aplicación que emite 10 GB de logs diarios, eso se convierte en miles de dólares anuales de deuda silenciosa. La línea `retention_in_days = 30` es la configuración con mejor ROI de todo el módulo. Cuesta cero implementarla y puede ahorrar miles."
 
 ```hcl
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "/app/${var.environment}/logs"
-  retention_in_days = var.log_retention_days   # Valores válidos: 1,3,5,7,14,30,60,90,120,150,180,365...
+  retention_in_days = var.log_retention_days   # Valores válidos: 1,3,5,7,14,30,60,90,120,150,180,365,400,545,731,1096,1827,2192,2557,2922,3288,3653
 
   kms_key_id = aws_kms_key.logs.arn   # Cifrado at-rest: SOC2 / HIPAA compliance
 
@@ -127,7 +127,7 @@ resource "aws_sns_topic_subscription" "lambda_handler" {
 
 `aws_cloudwatch_log_metric_filter` busca patrones en logs y los convierte en métricas CloudWatch. Esto crea telemetría sin modificar el código de la aplicación.
 
-> **El profesor explica:** "Este es uno de los recursos más infrautilizados de CloudWatch. La idea es simple pero poderosa: tienes logs que ya se están emitiendo, y en lugar de parsearlo manualmente, defines un patrón — por ejemplo, la cadena 'ERROR' — y CloudWatch cuenta cuántas veces aparece por unidad de tiempo. Ese contador se convierte en una métrica sobre la que puedes poner alarmas. La mejor observabilidad no requiere cambiar el código de la aplicación — solo cambiar cómo capturas su output."
+> **En la práctica:** "Este es uno de los recursos más infrautilizados de CloudWatch. La idea es simple pero poderosa: tienes logs que ya se están emitiendo, y en lugar de parsearlo manualmente, defines un patrón — por ejemplo, la cadena 'ERROR' — y CloudWatch cuenta cuántas veces aparece por unidad de tiempo. Ese contador se convierte en una métrica sobre la que puedes poner alarmas. La mejor observabilidad no requiere cambiar el código de la aplicación — solo cambiar cómo capturas su output."
 
 ```hcl
 resource "aws_cloudwatch_log_metric_filter" "error_count" {
@@ -164,7 +164,7 @@ resource "aws_cloudwatch_metric_alarm" "app_errors" {
 
 Las alarmas compuestas agrupan múltiples alarmas base con operadores AND/OR. Solo se disparan cuando la condición combinada se cumple, reduciendo falsos positivos y fatiga de alertas.
 
-> **El profesor explica:** "La fatiga de alertas es uno de los problemas más serios en equipos de operaciones. Cuando las alarmas se disparan constantemente por picos transitorios o condiciones que no son realmente críticas, los ingenieros aprenden a ignorarlas. Y el día que hay una alerta real e importante, pasa desapercibida. Las alarmas compuestas son la solución: en lugar de alertar cuando CPU > 80% — que puede ser un pico de 5 minutos — alertas cuando CPU > 80% AND error rate > 5% AND health check failing. Esa combinación confirma un problema real."
+> **En la práctica:** "La fatiga de alertas es uno de los problemas más serios en equipos de operaciones. Cuando las alarmas se disparan constantemente por picos transitorios o condiciones que no son realmente críticas, los ingenieros aprenden a ignorarlas. Y el día que hay una alerta real e importante, pasa desapercibida. Las alarmas compuestas son la solución: en lugar de alertar cuando CPU > 80% — que puede ser un pico de 5 minutos — alertas cuando CPU > 80% AND error rate > 5% AND health check failing. Esa combinación confirma un problema real."
 
 ```hcl
 resource "aws_cloudwatch_composite_alarm" "service_health" {

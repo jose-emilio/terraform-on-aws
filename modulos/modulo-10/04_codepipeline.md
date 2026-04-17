@@ -8,7 +8,7 @@
 
 CodePipeline es el orquestador de entrega continua de AWS. Conecta Source (CodeCommit), Build (CodeBuild), Approval (Manual) y Deploy (CodeBuild Apply) en un flujo repetible, auditable y completamente gestionado como código.
 
-> **El profesor explica:** "El principio más importante del pipeline de Terraform es: el `apply` ejecuta exactamente el mismo plan que fue revisado y aprobado. Nunca re-planifica. El archivo `tfplan` es el contrato. Si entre el plan y el apply alguien cambió algo en la nube manualmente, el plan aprobado es el que manda — no un plan nuevo. Esto es lo que da confianza al equipo: lo que apruebas es lo que se despliega."
+> **En la práctica:** "El principio más importante del pipeline de Terraform es: el `apply` ejecuta exactamente el mismo plan que fue revisado y aprobado. Nunca re-planifica. El archivo `tfplan` es el contrato. Si entre el plan y el apply alguien cambió algo en la nube manualmente, el plan aprobado es el que manda — no un plan nuevo. Esto es lo que da confianza al equipo: lo que apruebas es lo que se despliega."
 
 **El flujo inmutable:**
 

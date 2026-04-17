@@ -42,7 +42,6 @@ terraform {
     encrypt    = true
     kms_key_id = "arn:aws:kms:us-east-1:123456:key/abc-123"
     use_lockfile = true
-    acl        = "private"
   }
 }
 ```

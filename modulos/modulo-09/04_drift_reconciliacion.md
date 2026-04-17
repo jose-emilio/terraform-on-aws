@@ -8,7 +8,7 @@
 
 El state es un archivo JSON que mapea cada recurso en tu configuración `.tf` con su correspondiente recurso real en la nube. Sin state, Terraform no puede saber qué ya existe, qué necesita crearse y qué debe actualizarse.
 
-> **El profesor explica:** "El state es como el inventario de un almacén. Sin él, no sabes qué tienes. Si alguien va directamente al almacén y saca cajas sin anotarlo en el inventario, el sistema pierde la pista. Eso es el drift. Por eso la regla más importante es: todos los cambios de infraestructura pasan por Terraform — nunca por la consola directamente."
+> **En la práctica:** "El state es como el inventario de un almacén. Sin él, no sabes qué tienes. Si alguien va directamente al almacén y saca cajas sin anotarlo en el inventario, el sistema pierde la pista. Eso es el drift. Por eso la regla más importante es: todos los cambios de infraestructura pasan por Terraform — nunca por la consola directamente."
 
 **Contenido del state:**
 - IDs de los recursos en el provider (instance-id, ARN, etc.).
@@ -161,10 +161,10 @@ El drift ocurre cuando la infraestructura real diverge de la configuración decl
 ## 6. Detección de Drift
 
 ```bash
-# 1. Plan con refresh — detecta drift Y propone cambios
+# 1. Plan con refresh — detecta drift Y propone cambios en la infraestructura
 $ terraform plan
 
-# 2. Refresh-only — detecta drift SIN proponer cambios
+# 2. Refresh-only — detecta drift y propone actualizar el state (no la infraestructura)
 $ terraform plan -refresh-only
 
 # Output cuando hay drift:

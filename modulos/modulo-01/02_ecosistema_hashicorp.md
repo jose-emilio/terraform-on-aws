@@ -29,7 +29,7 @@ Terraform tiene tres niveles de producto con capacidades crecientes. Es importan
 
 | Característica | OSS (CLI) | HCP Terraform (SaaS) |
 |---------------|:---------:|:--------------------:|
-| **Coste** | Gratuito | Free tier (500 recursos/mes, hasta 5 usuarios) + planes de pago |
+| **Coste** | Gratuito | Free tier (hasta 500 recursos, usuarios ilimitados) + planes de pago |
 | **Colaboración** | Manual (archivos compartidos) | Nativa (workspaces compartidos) |
 | **RBAC** | No incluido | Control de acceso granular |
 | **Estado** | Local (archivo `.tfstate`) | Remoto y cifrado automático |
@@ -122,7 +122,7 @@ Entender la evolución de Terraform ayuda a comprender las decisiones de diseño
 | **1.9** | 2024 | Mejoras en rendimiento, providers más rápidos, nuevas capacidades de testeo. |
 | **1.10** | 2024 | S3 native locking sin DynamoDB (`use_lockfile = true`), ephemeral values y resources, funciones definidas por providers. |
 | **1.11** | 2025 | Argumentos `dynamodb_table` y `dynamodb_endpoint` marcados como deprecated. Mejoras en recursos efímeros. |
-| **1.12** | 2025 | Mejoras en el framework `terraform test`, stack configurations experimentales y optimizaciones de rendimiento en planes grandes. |
+| **1.12** | 2025 | Mejoras en el framework `terraform test`, soporte CLI para Terraform Stacks (feature de HCP Terraform administrable desde la CLI) y optimizaciones de rendimiento en planes grandes. |
 | **1.13** | 2025 | Mejoras en la gestión de providers y en la paralelización de operaciones. Incrementos de estabilidad y parches de seguridad. |
 | **1.14** | 2026 | Versión estable actual. Refinamientos en recursos efímeros y mejoras incrementales de rendimiento. |
 

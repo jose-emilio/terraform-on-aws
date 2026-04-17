@@ -8,7 +8,7 @@
 
 Terraform es declarativo: dices qué quieres, y él lo consigue. Los provisioners rompen esa promesa — son bloques imperativos que ejecutan comandos durante la creación o destrucción de un recurso. Son necesarios en casos que la API del provider no cubre, pero HashiCorp los considera un último recurso.
 
-> **El profesor explica:** "Los provisioners son como el duct tape de Terraform. Funcionan, resuelven el problema inmediato, pero crean deuda técnica. Si un plan falla a mitad porque un script remoto devolvió exit 1, el recurso queda marcado como 'tainted' y la siguiente ejecución lo destruye y recrea. Si no tienes idempotencia en tus scripts, esto es una bomba de tiempo."
+> **En la práctica:** "Los provisioners son como el duct tape de Terraform. Funcionan, resuelven el problema inmediato, pero crean deuda técnica. Si un plan falla a mitad porque un script remoto devolvió exit 1, el recurso queda marcado como 'tainted' y la siguiente ejecución lo destruye y recrea. Si no tienes idempotencia en tus scripts, esto es una bomba de tiempo."
 
 **Tres tipos de provisioners:**
 
@@ -281,7 +281,7 @@ resource "terraform_data" "bootstrap" {
 }
 ```
 
-**Migración `null_resource` → `terraform_data` (TF 1.9+):**
+**Migración `null_resource` → `terraform_data` (TF 1.5+):**
 
 ```hcl
 # Paso 1: Cambiar el recurso
@@ -293,7 +293,7 @@ resource "terraform_data" "deploy" {
   }
 }
 
-# Paso 2: Agregar bloque moved (Terraform >= 1.9)
+# Paso 2: Agregar bloque moved (Terraform >= 1.5)
 moved {
   from = null_resource.deploy
   to   = terraform_data.deploy

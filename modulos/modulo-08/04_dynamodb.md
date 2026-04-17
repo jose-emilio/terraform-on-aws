@@ -8,7 +8,7 @@
 
 DynamoDB resuelve el problema de escalar bases de datos relacionales más allá de lo que un solo servidor puede manejar. No es una mejora de SQL — es un modelo diferente. Tabla → Item → Atributo. Sin esquema fijo, sin joins, sin stored procedures. A cambio: latencia de milisegundos de un dígito a cualquier escala, con SLA de 99.999%.
 
-> **El profesor explica:** "La trampa más común con DynamoDB es querer usarla como si fuera MySQL. El éxito con DynamoDB empieza por el modelado: defines primero tus access patterns y luego diseñas la tabla para servirlos eficientemente. Si empiezas por el esquema y luego piensas en los queries, probablemente la estás usando mal."
+> **En la práctica:** "La trampa más común con DynamoDB es querer usarla como si fuera MySQL. El éxito con DynamoDB empieza por el modelado: defines primero tus access patterns y luego diseñas la tabla para servirlos eficientemente. Si empiezas por el esquema y luego piensas en los queries, probablemente la estás usando mal."
 
 **Cuándo usar DynamoDB vs RDS:**
 - DynamoDB: acceso por clave conocida, escala horizontal, latencia < 10ms, SLA 99.999%.
@@ -150,7 +150,7 @@ resource "aws_dynamodb_table" "orders" {
 | `INCLUDE` | Claves + listado específico | Medio | Medio |
 | `ALL` | Copia completa del item | Máximo | Máximo |
 
-> **El profesor explica:** "Un GSI es esencialmente una segunda tabla sincronizada automáticamente. Tiene su propio índice interno y sus propias WCU. Si escribes 1 item en la tabla con 2 GSI, en realidad estás haciendo 3 escrituras. Esto afecta el costo."
+> **En la práctica:** "Un GSI es esencialmente una segunda tabla sincronizada automáticamente. Tiene su propio índice interno y sus propias WCU. Si escribes 1 item en la tabla con 2 GSI, en realidad estás haciendo 3 escrituras. Esto afecta el costo."
 
 ---
 

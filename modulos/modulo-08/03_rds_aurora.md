@@ -8,7 +8,7 @@
 
 Imagina que cada vez que necesitas una base de datos, tuvieras que aprovisionar un servidor, instalar el motor, configurar backups, aplicar parches de seguridad, montar la réplica standby, y vigilarlo 24/7. RDS es el equipo que hace todo eso por ti.
 
-> **El profesor explica:** "RDS no es magia: es responsabilidad compartida. AWS gestiona el hardware, el sistema operativo, el motor y la disponibilidad. Tú gestionas los datos, el esquema y las queries. Esa línea de corte es la que libera a tu equipo para construir producto en lugar de administrar servidores."
+> **En la práctica:** "RDS no es magia: es responsabilidad compartida. AWS gestiona el hardware, el sistema operativo, el motor y la disponibilidad. Tú gestionas los datos, el esquema y las queries. Esa línea de corte es la que libera a tu equipo para construir producto en lugar de administrar servidores."
 
 Amazon RDS soporta seis motores: MySQL 5.7/8.0, PostgreSQL 13-16, MariaDB, Oracle, SQL Server e IBM DB2. Multi-AZ mantiene una réplica síncrona en otra AZ con failover automático (típicamente entre 60 y 120 segundos) usando el mismo endpoint DNS, por lo que la aplicación no necesita cambiar nada.
 
@@ -129,7 +129,7 @@ resource "aws_db_instance" "main" {
 | **io1** | Provisioned | 64,000 | 1,000 MB/s | Bases de datos OLTP intensivas |
 | **io2 Block Express** | Provisioned | 256,000 | 4,000 MB/s | SAP HANA, Oracle crítico |
 
-> **El profesor explica:** "La ventaja de gp3 sobre gp2 es que IOPS y throughput son independientes del tamaño. Con gp2 necesitabas 3.3 TB para tener 10,000 IOPS. Con gp3, pagas solo por los IOPS que necesitas, independientemente del tamaño del volumen."
+> **En la práctica:** "La ventaja de gp3 sobre gp2 es que IOPS y throughput son independientes del tamaño. Con gp2 necesitabas 3.3 TB para tener 10,000 IOPS. Con gp3, pagas solo por los IOPS que necesitas, independientemente del tamaño del volumen."
 
 ---
 
@@ -276,7 +276,7 @@ resource "aws_db_instance" "monitored" {
 }
 ```
 
-> **El profesor explica:** "Enhanced Monitoring va más allá de CloudWatch: te da métricas a nivel de proceso del sistema operativo. Performance Insights es como tener un DBA mirando qué query está bloqueando la base de datos en este momento. La retención de 731 días (2 años) permite análisis de tendencias históricas."
+> **En la práctica:** "Enhanced Monitoring va más allá de CloudWatch: te da métricas a nivel de proceso del sistema operativo. Performance Insights es como tener un DBA mirando qué query está bloqueando la base de datos en este momento. La retención de 731 días (2 años) permite análisis de tendencias históricas."
 
 ---
 

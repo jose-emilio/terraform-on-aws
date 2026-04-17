@@ -8,7 +8,7 @@
 
 Sin una estrategia de centralización, los datos de telemetría se dispersan entre decenas de cuentas y servicios. Terraform unifica el envío de logs hacia destinos especializados según el caso de uso.
 
-> **El profesor explica:** "En una organización con 20 cuentas AWS, cada una tiene sus propios CloudWatch Log Groups, sus propios VPC Flow Logs, su propio CloudTrail. Cuando hay un incidente de seguridad a las 2 de la mañana y necesitas correlacionar actividad entre la cuenta de producción y la cuenta de red, tienes que abrir 5 consolas distintas y saltar entre ellas manualmente. La centralización es el prerrequisito de la correlación, y la correlación es el prerrequisito del tiempo de resolución rápido."
+> **En la práctica:** "En una organización con 20 cuentas AWS, cada una tiene sus propios CloudWatch Log Groups, sus propios VPC Flow Logs, su propio CloudTrail. Cuando hay un incidente de seguridad a las 2 de la mañana y necesitas correlacionar actividad entre la cuenta de producción y la cuenta de red, tienes que abrir 5 consolas distintas y saltar entre ellas manualmente. La centralización es el prerrequisito de la correlación, y la correlación es el prerrequisito del tiempo de resolución rápido."
 
 **Destinos según caso de uso:**
 
@@ -65,7 +65,7 @@ resource "aws_flow_log" "vpc_s3" {
 
 CloudTrail captura cada llamada a la API de AWS, creando un registro inmutable de toda la actividad. Sin CloudTrail, no hay respuesta posible a "¿quién borró ese recurso?".
 
-> **El profesor explica:** "CloudTrail es el testigo que nunca miente. Cada `CreateInstance`, cada `DeleteBucket`, cada `AssumeRole` — todo queda registrado con la identidad del usuario, la IP de origen, la hora y los parámetros exactos. Cuando hay un incidente de seguridad, CloudTrail es el primer sitio al que voy. Si no está configurado con `is_organization_trail = true` y `enable_log_file_validation = true`, no tienes un trail de auditoría — tienes una ilusión de auditoría."
+> **En la práctica:** "CloudTrail es el testigo que nunca miente. Cada `CreateInstance`, cada `DeleteBucket`, cada `AssumeRole` — todo queda registrado con la identidad del usuario, la IP de origen, la hora y los parámetros exactos. Cuando hay un incidente de seguridad, CloudTrail es el primer sitio al que voy. Si no está configurado con `is_organization_trail = true` y `enable_log_file_validation = true`, no tienes un trail de auditoría — tienes una ilusión de auditoría."
 
 ```hcl
 # CloudTrail Multi-Cuenta y Multi-Región (nivel organización)
@@ -351,7 +351,7 @@ resource "aws_kinesis_firehose_delivery_stream" "logs" {
 
 X-Ray permite seguir una petición a través de múltiples saltos, identificando cuellos de botella y errores en cada segmento de la cadena de microservicios.
 
-> **El profesor explica:** "Imagina que tienes una petición que tarda 800ms y no sabes por qué. Con métricas puedes saber que está lenta, pero no dónde. Con X-Ray puedes ver: 50ms en API Gateway, 200ms en Lambda (de los cuales 180ms son cold start), 400ms en DynamoDB (por un query sin índice), y 150ms en el downstream HTTP. X-Ray convierte 'el servicio está lento' en 'el query sin índice de DynamoDB es el culpable'. Esa es la diferencia entre observabilidad y debugging a ciegas."
+> **En la práctica:** "Imagina que tienes una petición que tarda 800ms y no sabes por qué. Con métricas puedes saber que está lenta, pero no dónde. Con X-Ray puedes ver: 50ms en API Gateway, 200ms en Lambda (de los cuales 180ms son cold start), 400ms en DynamoDB (por un query sin índice), y 150ms en el downstream HTTP. X-Ray convierte 'el servicio está lento' en 'el query sin índice de DynamoDB es el culpable'. Esa es la diferencia entre observabilidad y debugging a ciegas."
 
 ```hcl
 # Lambda con X-Ray Tracing Activo

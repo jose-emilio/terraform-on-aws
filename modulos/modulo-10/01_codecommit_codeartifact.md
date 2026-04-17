@@ -8,7 +8,7 @@
 
 AWS CodeCommit es un servicio Git gestionado que proporciona la base del pipeline CI/CD. Alta disponibilidad con réplicas en múltiples AZs, escalabilidad automática y seguridad nativa integrada con IAM. Aquí reside el código de infraestructura que gobierna toda la nube.
 
-> **El profesor explica:** "CodeCommit no es solo un repositorio de código — es el origen de la verdad de toda la infraestructura. Cada recurso AWS que existe debería poder rastrearse hasta un commit en CodeCommit. Si alguien creó algo directamente en la consola, ese recurso no existe desde el punto de vista de la gobernanza. La pregunta que siempre hago es: '¿Puede tu equipo reconstruir toda la infraestructura desde cero solo con git clone + terraform apply?' Si la respuesta es sí, están bien. Si es no, tienen deuda técnica."
+> **En la práctica:** "CodeCommit no es solo un repositorio de código — es el origen de la verdad de toda la infraestructura. Cada recurso AWS que existe debería poder rastrearse hasta un commit en CodeCommit. Si alguien creó algo directamente en la consola, ese recurso no existe desde el punto de vista de la gobernanza. La pregunta que siempre hago es: '¿Puede tu equipo reconstruir toda la infraestructura desde cero solo con git clone + terraform apply?' Si la respuesta es sí, están bien. Si es no, tienen deuda técnica."
 
 ```hcl
 resource "aws_codecommit_repository" "iac_repo" {
@@ -273,7 +273,7 @@ resource "aws_codecommit_notification_rule" "pr_alerts" {
 
 Depender de registros públicos en producción es aceptar riesgo externo no controlado. Un módulo público puede desaparecer, ser comprometido (supply chain attack) o tener una versión removida sin aviso. CodeArtifact es el registro privado inmutable para módulos Terraform.
 
-> **El profesor explica:** "El peor momento para descubrir que un módulo público fue eliminado es a las 3 AM durante un incidente cuando el pipeline de DR falla en `terraform init`. CodeArtifact resuelve esto: los módulos son tuyos, están en tu cuenta, están versionados, son inmutables. Si publicas la versión 2.1.0, esa versión existirá para siempre hasta que tú la archives."
+> **En la práctica:** "El peor momento para descubrir que un módulo público fue eliminado es a las 3 AM durante un incidente cuando el pipeline de DR falla en `terraform init`. CodeArtifact resuelve esto: los módulos son tuyos, están en tu cuenta, están versionados, son inmutables. Si publicas la versión 2.1.0, esa versión existirá para siempre hasta que tú la archives."
 
 ---
 

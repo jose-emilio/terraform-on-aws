@@ -8,7 +8,7 @@
 
 CodeBuild ejecuta comandos en contenedores aislados que se destruyen tras cada build. No hay estado residual entre ejecuciones, no hay servidores que mantener, no hay drift de configuración. Cada `terraform plan` o `terraform apply` corre en un entorno perfectamente limpio con permisos IAM explícitos.
 
-> **El profesor explica:** "CodeBuild resuelve el problema más común del CI/CD de infraestructura: '¿En qué máquina corre Terraform?' Con un servidor de CI tradicional, el estado local del servidor puede contaminar las ejecuciones — versiones de Terraform distintas, caché de providers corrupta, credenciales de sesiones anteriores. Con CodeBuild, cada build es una pizarra en blanco. Si algo falla, el entorno desaparece. No hay 'funciona en mi máquina de CI'."
+> **En la práctica:** "CodeBuild resuelve el problema más común del CI/CD de infraestructura: '¿En qué máquina corre Terraform?' Con un servidor de CI tradicional, el estado local del servidor puede contaminar las ejecuciones — versiones de Terraform distintas, caché de providers corrupta, credenciales de sesiones anteriores. Con CodeBuild, cada build es una pizarra en blanco. Si algo falla, el entorno desaparece. No hay 'funciona en mi máquina de CI'."
 
 **Ventajas del modelo efímero:**
 - Sin estado residual entre ejecuciones.

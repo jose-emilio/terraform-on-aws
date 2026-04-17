@@ -140,7 +140,7 @@ project/
 
 ```bash
 # Comando de ejecución con el archivo correcto por workspace
-$ terraform plan -var-file="${terraform.workspace}.tfvars"
+$ terraform plan -var-file="$(terraform workspace show).tfvars"
 ```
 
 **Buenas prácticas:**
@@ -219,9 +219,9 @@ La diferencia clave con la CLI: un workspace de TF Cloud es una unidad de trabaj
 
 ---
 
-## 6.11 Terraform Stacks (v1.10+): La Evolución
+## 6.11 Terraform Stacks: La Evolución
 
-Los workspaces son silos independientes — no tienen coordinación nativa entre regiones o cuentas. **Terraform Stacks** (v1.10+) supera esta limitación: gestiona infraestructuras multi-región y multi-cuenta como una sola unidad orquestada.
+Los workspaces son silos independientes — no tienen coordinación nativa entre regiones o cuentas. **Terraform Stacks** supera esta limitación: gestiona infraestructuras multi-región y multi-cuenta como una sola unidad orquestada. Es una feature de HCP Terraform cuyo plugin para CLI está disponible desde la versión **1.13**.
 
 **Modelo tradicional (Workspaces):**
 ```

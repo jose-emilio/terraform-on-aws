@@ -51,7 +51,7 @@ aws_kms_key                          aws_kms_alias
 # Llave maestra con rotación automática anual
 resource "aws_kms_key" "app_key" {
   description             = "Llave para cifrado de aplicación"
-  enable_key_rotation     = true    # Rota automáticamente cada 365 días
+  enable_key_rotation     = true    # Rota automáticamente cada 365 días por defecto (mín. 90, máx. 2560 — configurable con rotation_period_in_days)
   deletion_window_in_days = 30      # Protección: 30 días antes de eliminar
 
   tags = {

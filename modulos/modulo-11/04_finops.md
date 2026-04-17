@@ -8,7 +8,7 @@
 
 FinOps une ingeniería, finanzas y negocio para maximizar el valor de cada euro en la nube. Terraform actúa como brazo ejecutor: convierte políticas de ahorro en código reproducible y auditable.
 
-> **El profesor explica:** "FinOps no es 'gastar menos en la nube'. Es 'obtener el máximo valor por cada euro que gastas en la nube'. La diferencia es fundamental. Un equipo que gasta 50.000€ al mes y entrega 10 millones en valor es más eficiente que uno que gasta 10.000€ y no entrega nada. Lo que FinOps le pide a los ingenieros es visibilidad y responsabilidad. Terraform se convierte en el vehículo perfecto porque cada `terraform apply` tiene un impacto económico medible — y con Infracost ese impacto es visible antes de hacer el apply."
+> **En la práctica:** "FinOps no es 'gastar menos en la nube'. Es 'obtener el máximo valor por cada euro que gastas en la nube'. La diferencia es fundamental. Un equipo que gasta 50.000€ al mes y entrega 10 millones en valor es más eficiente que uno que gasta 10.000€ y no entrega nada. Lo que FinOps le pide a los ingenieros es visibilidad y responsabilidad. Terraform se convierte en el vehículo perfecto porque cada `terraform apply` tiene un impacto económico medible — y con Infracost ese impacto es visible antes de hacer el apply."
 
 **Los tres pilares de FinOps:**
 
@@ -81,7 +81,7 @@ resource "aws_budgets_budget" "ec2_budget" {
 
 Cost Anomaly Detection usa ML para identificar picos de gasto inesperados: errores de código, ataques de cryptomining o recursos mal configurados.
 
-> **El profesor explica:** "Tuve un cliente que tenía una Lambda con un bug en producción que entraba en un bucle infinito. Llevaba 3 días corriendo sin que nadie lo notara. La factura de Lambda ese mes fue de 40.000 euros cuando lo normal era 200. Con Cost Anomaly Detection configurado, hubieran recibido una alerta en la primera hora. Sin él, lo descubrieron cuando el CFO preguntó qué había pasado con la factura de AWS. Ese día el CTO entendió el valor de FinOps."
+> **En la práctica:** "Tuve un cliente que tenía una Lambda con un bug en producción que entraba en un bucle infinito. Llevaba 3 días corriendo sin que nadie lo notara. La factura de Lambda ese mes fue de 40.000 euros cuando lo normal era 200. Con Cost Anomaly Detection configurado, hubieran recibido una alerta en la primera hora. Sin él, lo descubrieron cuando el CFO preguntó qué había pasado con la factura de AWS. Ese día el CTO entendió el valor de FinOps."
 
 ```hcl
 # Monitor de anomalías por servicio AWS
@@ -112,8 +112,15 @@ resource "aws_ce_anomaly_monitor" "by_team" {
 # Suscripción: alerta si la anomalía supera $50/día
 resource "aws_ce_anomaly_subscription" "daily_alerts" {
   name      = "${var.project}-daily-alerts"
-  threshold = 50          # USD por encima de lo esperado
   frequency = "DAILY"
+
+  threshold_expression {
+    dimension {
+      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
+      match_options = ["GREATER_THAN_OR_EQUAL"]
+      values        = ["50"]   # USD por encima de lo esperado
+    }
+  }
 
   monitor_arn_list = [
     aws_ce_anomaly_monitor.service.arn,
@@ -241,7 +248,7 @@ resource "aws_instance" "app" {
 
 Las Spot Instances aprovechan capacidad EC2 no utilizada con descuentos de hasta 90%. Son ideales para cargas tolerantes a interrupciones.
 
-> **El profesor explica:** "El mayor error con Spot es usarlo para servidores de producción sin preparación. Spot puede interrumpirse con 2 minutos de aviso. Pero para CI/CD runners, batch processing o cualquier carga stateless con ASG bien configurado, es transformador. Un runner de GitHub Actions que corre 8 horas al día en un `m5.4xlarge` on-demand cuesta ~$550/mes. El mismo runner en Spot cuesta ~$55. Para un equipo con 20 runners, eso es $9.900/mes de ahorro — un salario junior gratis."
+> **En la práctica:** "El mayor error con Spot es usarlo para servidores de producción sin preparación. Spot puede interrumpirse con 2 minutos de aviso. Pero para CI/CD runners, batch processing o cualquier carga stateless con ASG bien configurado, es transformador. Un runner de GitHub Actions que corre 8 horas al día en un `m5.4xlarge` on-demand cuesta ~$550/mes. El mismo runner en Spot cuesta ~$55. Para un equipo con 20 runners, eso es $9.900/mes de ahorro — un salario junior gratis."
 
 ```hcl
 resource "aws_autoscaling_group" "workers" {

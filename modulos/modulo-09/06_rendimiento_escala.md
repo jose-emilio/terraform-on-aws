@@ -8,7 +8,7 @@
 
 A medida que la infraestructura crece — de 50 recursos a 500, o de 500 a 5,000 — el tiempo de `plan` y `apply` se degrada. Cada recurso requiere una llamada API al provider para sincronizar el state. El grafo de dependencias crece. Los pipelines de CI/CD se vuelven lentos.
 
-> **El profesor explica:** "He visto proyectos donde `terraform plan` tardaba 25 minutos. El equipo dejaba de hacer `plan` regularmente porque era frustrante esperar. Y sin `plan`, la confianza se pierde. La optimización de Terraform no es un lujo — es una condición para que el proceso funcione. Un `plan` en 90 segundos se hace con frecuencia. Uno de 25 minutos, casi nunca."
+> **En la práctica:** "He visto proyectos donde `terraform plan` tardaba 25 minutos. El equipo dejaba de hacer `plan` regularmente porque era frustrante esperar. Y sin `plan`, la confianza se pierde. La optimización de Terraform no es un lujo — es una condición para que el proceso funcione. Un `plan` en 90 segundos se hace con frecuencia. Uno de 25 minutos, casi nunca."
 
 **Cuellos de botella principales:**
 

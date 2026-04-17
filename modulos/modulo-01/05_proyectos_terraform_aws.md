@@ -58,7 +58,7 @@ El operador `~>` (llamado "pessimistic constraint operator") es el más utilizad
 |----------|-------------|---------|
 | `= 5.0.0` | Versión exacta | Solo 5.0.0, nada más |
 | `>= 5.0` | Esta versión o superior | 5.0, 5.1, 6.0, 7.0... (peligroso) |
-| `~> 5.0` | Compatible en minor | 5.0, 5.1, 5.9... pero **NO** 6.0 |
+| `~> 5.0` | Cualquier versión 5.x (bloquea el major) | 5.0, 5.1, 5.9... pero **NO** 6.0 |
 | `~> 5.31.0` | Compatible en patch | 5.31.0, 5.31.1... pero **NO** 5.32 |
 
 > **Concepto clave:** `~> 5.0` significa *"cualquier versión 5.x"*. Permite recibir parches de seguridad automáticamente pero evita saltos de versión mayor que podrían romper el código. Es el equilibrio perfecto entre estabilidad y actualizaciones.
@@ -316,7 +316,7 @@ resource "aws_instance" "mi_servidor" {
 6. terraform destroy → limpia TODOS los recursos al terminar
 ```
 
-> ⚠️ **Las instancias EC2 tienen coste por hora** (~0,012 $/hora para t3.micro fuera del Free Tier). No dejes la instancia corriendo al terminar el laboratorio. El `destroy` final es obligatorio, no opcional.
+> ⚠️ **Las instancias EC2 tienen coste por hora** (~0,012 $/hora para t3.micro). No dejes la instancia corriendo al terminar el laboratorio. El `destroy` final es obligatorio, no opcional.
 
 ---
 

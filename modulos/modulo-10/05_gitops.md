@@ -8,7 +8,7 @@
 
 GitOps es el modelo operativo donde Git es la única fuente de verdad para el estado deseado de la infraestructura. Todo cambio pasa por un Pull Request, es revisado, aprobado, y el pipeline lo aplica automáticamente. La infraestructura nunca se toca directamente — solo a través del repositorio.
 
-> **El profesor explica:** "GitOps no es una herramienta — es una cultura y un proceso. La pregunta que define si un equipo hace GitOps real es: ¿puede alguien con acceso a AWS hacer un cambio que no está en Git? Si la respuesta es sí, no hay GitOps. El objetivo es que la respuesta sea no — y que el mecanismo técnico (RBAC + pipeline) lo enforce, no la confianza en las personas."
+> **En la práctica:** "GitOps no es una herramienta — es una cultura y un proceso. La pregunta que define si un equipo hace GitOps real es: ¿puede alguien con acceso a AWS hacer un cambio que no está en Git? Si la respuesta es sí, no hay GitOps. El objetivo es que la respuesta sea no — y que el mecanismo técnico (RBAC + pipeline) lo enforce, no la confianza en las personas."
 
 **Los cuatro principios de GitOps:**
 

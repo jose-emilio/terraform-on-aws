@@ -81,7 +81,7 @@ terraform {
     key             = "prod/networking/terraform.tfstate"
     region          = "eu-west-1"
     encrypt         = true
-    dynamodb_table  = "terraform-lock-table"   # ← Locking con DynamoDB (deprecated desde TF 1.11 — ver Sección 3.4)
+    dynamodb_table  = "terraform-lock-table"   # ← Locking con DynamoDB (deprecated desde TF 1.10 — ver Sección 3.4)
   }
 }
 
@@ -107,7 +107,7 @@ La política IAM mínima que necesita el rol de Terraform para operar con lockin
 ```json
 {
   "Effect": "Allow",
-  "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+  "Action": ["s3:GetObject", "s3:PutObject"],
   "Resource": "arn:aws:s3:::mi-bucket/*"
 },
 {
@@ -118,9 +118,10 @@ La política IAM mínima que necesita el rol de Terraform para operar con lockin
 {
   "Effect": "Allow",
   "Action": [
-    "dynamodb:GetItem",    // Leer lock actual
-    "dynamodb:PutItem",    // Adquirir lock
-    "dynamodb:DeleteItem"  // Liberar lock
+    "dynamodb:GetItem",       // Leer lock actual
+    "dynamodb:PutItem",       // Adquirir lock
+    "dynamodb:DeleteItem",    // Liberar lock
+    "dynamodb:DescribeTable"  // Describir la tabla de locking
   ],
   "Resource": "arn:aws:dynamodb:*:*:table/terraform-lock-table"
 }

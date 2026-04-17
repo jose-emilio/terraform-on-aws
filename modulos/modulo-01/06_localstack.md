@@ -84,20 +84,24 @@ curl http://localhost:4566/_localstack/health | python3 -m json.tool
 
 ---
 
-## 6.4 Community vs. Pro
+## 6.4 Planes de licencia
 
-La versión **Community** de LocalStack es completamente gratuita y de código abierto. Cubre todos los servicios que necesitarás durante este curso y en la mayoría de proyectos de CI/CD estándar.
+LocalStack ofrece cuatro planes. El plan **Hobby** es gratuito pero solo para uso no comercial. Los demás son de pago y añaden servicios y capacidades de forma progresiva.
 
-| Servicio | Community (Gratis) | Pro (Licencia) |
-|----------|--------------------|----------------|
-| S3, Lambda, SQS, SNS | ✅ | ✅ |
-| DynamoDB, IAM, CloudWatch | ✅ | ✅ |
-| API Gateway, CloudFormation | ✅ | ✅ |
-| RDS, EKS, AppSync | ❌ | ✅ |
-| Cloud Pods (guardar estados entre sesiones) | ❌ | ✅ |
-| Soporte empresarial | ❌ | ✅ |
+| Servicio / Característica | Hobby (Gratis) | Base | Ultimate | Enterprise |
+|---------------------------|:--------------:|:----:|:--------:|:----------:|
+| S3, Lambda, EC2 | ✅ | ✅ | ✅ | ✅ |
+| DynamoDB, SQS, SNS, SWF | ✅ | ✅ | ✅ | ✅ |
+| IAM, KMS, STS, ACM, Secrets Manager | ✅ | ✅ | ✅ | ✅ |
+| Step Functions, EventBridge, Kinesis, OpenSearch | ✅ | ✅ | ✅ | ✅ |
+| RDS, ElastiCache, ECR, ECS, Cognito, Amazon MQ | ❌ | ✅ | ✅ | ✅ |
+| EKS, EFS, Athena, Glue, DocumentDB, MemoryDB | ❌ | ❌ | ✅ | ✅ |
+| Persistencia de estado local | ❌ | ✅ | ✅ | ✅ |
+| Cloud Pods (guardar estados entre sesiones) | ❌ | 300 MB | 3 GB | 5 GB/usuario |
+| IAM Policy Enforcement | ❌ | ✅ | ✅ | ✅ |
+| Kubernetes Operator / SSO / SCIM | ❌ | ❌ | ❌ | ✅ |
 
-> **Para Terraform básico y CI/CD estándar, la versión Community es más que suficiente.** La cobertura de servicios evoluciona con cada release: consulta siempre la [Feature Coverage Matrix oficial](https://docs.localstack.cloud/aws/services/) para saber exactamente qué está soportado en tu versión.
+> **Para Terraform básico y CI/CD estándar, el plan Hobby es suficiente**, aunque está limitado a uso no comercial. La cobertura de servicios evoluciona con cada release: consulta siempre la [documentación oficial de licencias](https://docs.localstack.cloud/aws/licensing/) para saber exactamente qué está soportado en tu versión.
 
 ---
 
@@ -246,27 +250,34 @@ Los scripts en el directorio `./init/` se ejecutan automáticamente al arrancar 
 
 ## 6.10 Servicios disponibles y limitaciones
 
-### Servicios estables en Community
+### Servicios incluidos en el plan Hobby (gratuito)
 
-La versión gratuita cubre los servicios más utilizados en arquitecturas modernas:
+Organizados por categoría, estos son los servicios disponibles sin coste:
 
-- **S3** — almacenamiento de objetos
-- **Lambda** — funciones serverless
-- **DynamoDB** — base de datos NoSQL
-- **SQS / SNS** — mensajería y notificaciones
-- **IAM** — identidades y control de acceso
-- **API Gateway** — gestión de APIs REST y HTTP
-- **CloudFormation** — pilas de infraestructura
+| Categoría | Servicios |
+|-----------|-----------|
+| **Almacenamiento** | S3, S3 Control |
+| **Cómputo** | Lambda, EC2 |
+| **Bases de datos** | DynamoDB, DynamoDB Streams |
+| **Mensajería** | SQS, SNS, SWF, Step Functions, EventBridge, EventBridge Scheduler |
+| **Seguridad e identidad** | IAM, KMS, STS, ACM, Secrets Manager |
+| **Analytics** | Kinesis Streams, Kinesis Firehose, OpenSearch, Redshift |
+
+### Servicios que requieren plan de pago
+
+- **Base:** RDS, ElastiCache, ECR, ECS, Cognito, Amazon MQ
+- **Ultimate:** EKS, EFS, Athena, AWS Glue, DocumentDB, MemoryDB, Neptune
+- **Enterprise:** Kubernetes Operator, SSO/SCIM, Shield, WAF
 
 ### Limitaciones a tener en cuenta
 
 Al ser una emulación, hay diferencias respecto a AWS real:
 
-- Algunas **validaciones de seguridad** de IAM son parciales o simplificadas — las políticas se aceptan aunque tengan errores que AWS rechazaría
-- Ciertos servicios avanzados solo están disponibles en la versión **Pro** (RDS, EKS, AppSync)
+- Las **validaciones de IAM** no se aplican en el plan Hobby — las políticas se aceptan aunque tengan errores que AWS rechazaría
+- El plan Hobby **no tiene persistencia**: los recursos desaparecen al reiniciar el contenedor
 - No todas las APIs están implementadas al **100%** de compatibilidad con AWS real
 
-> **Recurso:** Consulta la [Feature Coverage Matrix](https://docs.localstack.cloud/aws/services/) oficial para saber exactamente qué está soportado en cada versión.
+> **Recurso:** Consulta la [documentación oficial de licencias](https://docs.localstack.cloud/aws/licensing/) para saber exactamente qué está soportado en cada plan.
 
 ---
 

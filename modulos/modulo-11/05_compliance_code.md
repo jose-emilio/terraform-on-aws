@@ -8,7 +8,7 @@
 
 Compliance as Code transforma las políticas de cumplimiento en reglas ejecutables dentro del repositorio. Se pasa de auditorías manuales anuales a validaciones automatizadas en tiempo real.
 
-> **El profesor explica:** "En el modelo tradicional de compliance, un auditor externo llega una vez al año con una lista de 200 controles, revisa manualmente que estén implementados, y si encuentra un problema te da 90 días para corregirlo. Con Compliance as Code, esa lista de 200 controles está codificada como reglas que se ejecutan continuamente. No hay 'auditoría anual' — hay un estado de compliance evaluado cada hora. Si algo cambia y rompe un control, lo sabes en minutos, no en meses. La agilidad no se sacrifica por el cumplimiento — se integran."
+> **En la práctica:** "En el modelo tradicional de compliance, un auditor externo llega una vez al año con una lista de 200 controles, revisa manualmente que estén implementados, y si encuentra un problema te da 90 días para corregirlo. Con Compliance as Code, esa lista de 200 controles está codificada como reglas que se ejecutan continuamente. No hay 'auditoría anual' — hay un estado de compliance evaluado cada hora. Si algo cambia y rompe un control, lo sabes en minutos, no en meses. La agilidad no se sacrifica por el cumplimiento — se integran."
 
 **Auditoría tradicional vs Compliance as Code:**
 
@@ -164,7 +164,7 @@ resource "aws_config_organization_conformance_pack" "pci" {
 
 SSM permite corregir automáticamente recursos que no cumplen con las reglas de Config sin intervención manual.
 
-> **El profesor explica:** "La tríada de Compliance as Code tiene tres capas: detectar (AWS Config), prevenir (OPA/Trivy) y remediar (SSM). La remediación automática cierra el ciclo. Si Config detecta un bucket S3 con acceso público habilitado, SSM ejecuta el documento `AWS-ConfigureS3BucketPublicAccessBlock` y lo corrige automáticamente en minutos. El ingeniero recibe una notificación de que se detectó Y se corrigió — no una tarea pendiente. La postura de seguridad se mantiene sin degradar la velocidad del equipo."
+> **En la práctica:** "La tríada de Compliance as Code tiene tres capas: detectar (AWS Config), prevenir (OPA/Trivy) y remediar (SSM). La remediación automática cierra el ciclo. Si Config detecta un bucket S3 con acceso público habilitado, SSM ejecuta el documento `AWS-ConfigureS3BucketPublicAccessBlock` y lo corrige automáticamente en minutos. El ingeniero recibe una notificación de que se detectó Y se corrigió — no una tarea pendiente. La postura de seguridad se mantiene sin degradar la velocidad del equipo."
 
 ```
 Flujo de auto-remediación:
@@ -308,7 +308,7 @@ main = rule {
 |---------|------------------------|---------------------|
 | Integración | Requiere configuración en CI/CD | Nativo en HCP Terraform/Enterprise |
 | Lenguaje | Rego (declarativo) | Sentinel (propio de HashiCorp) |
-| Scope | Genérico: Kubernetes, APIs, Terraform | Solo Terraform |
+| Scope | Genérico: Kubernetes, APIs, Terraform | Terraform y otros productos del ecosistema HashiCorp (Vault, Consul, Nomad) |
 | Acceso al plan | Vía `terraform show -json` | Directo al tfplan y tfstate |
 | Open Source | Sí | No (comercial) |
 | Niveles | Allow / Deny | Advisory / Soft / Hard mandatory |

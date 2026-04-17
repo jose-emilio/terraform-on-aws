@@ -8,7 +8,7 @@
 
 Cada query a tu base de datos consume CPU, I/O y tiempo de red. Si el mismo query se ejecuta 10,000 veces por segundo con la misma respuesta, estás pagando 10,000 veces por el mismo resultado. ElastiCache almacena esas respuestas en memoria — sub-milisegundo — y tu base de datos respira.
 
-> **El profesor explica:** "ElastiCache no reemplaza a tu base de datos. La complementa. La regla es simple: los datos que cambian poco y se leen mucho van al caché. Los datos que cambian con frecuencia o que necesitan consistencia fuerte se consultan directamente a la BD. El problema es cuando los equipos caché todo sin pensar en la invalidación — y entonces los usuarios ven datos obsoletos por horas."
+> **En la práctica:** "ElastiCache no reemplaza a tu base de datos. La complementa. La regla es simple: los datos que cambian poco y se leen mucho van al caché. Los datos que cambian con frecuencia o que necesitan consistencia fuerte se consultan directamente a la BD. El problema es cuando los equipos caché todo sin pensar en la invalidación — y entonces los usuarios ven datos obsoletos por horas."
 
 **Casos de uso principales:**
 - Caché de consultas DB frecuentes (resultados de queries costosos).
@@ -34,7 +34,7 @@ Cada query a tu base de datos consume CPU, I/O y tiempo de red. Si el mismo quer
 | Pub/Sub | Sí | No |
 | Recomendado para | 95% de los casos | Solo caché de objetos simples |
 
-> **El profesor explica:** "Elige Memcached únicamente si tu único caso de uso es caché de objetos simples sin necesidad de failover. En cualquier otro caso, Redis es la respuesta. Es más potente, tiene HA, backups y estructuras de datos que te permiten resolver problemas que con Memcached requerirían lógica en aplicación."
+> **En la práctica:** "Elige Memcached únicamente si tu único caso de uso es caché de objetos simples sin necesidad de failover. En cualquier otro caso, Redis es la respuesta. Es más potente, tiene HA, backups y estructuras de datos que te permiten resolver problemas que con Memcached requerirían lógica en aplicación."
 
 ---
 

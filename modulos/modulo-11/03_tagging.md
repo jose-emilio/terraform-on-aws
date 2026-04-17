@@ -8,7 +8,7 @@
 
 En AWS, los tags no son metadata opcional — son el sistema nervioso de gobernanza, costes y automatización. Sin una estrategia de etiquetado, la nube se convierte en un caos ingobernable.
 
-> **El profesor explica:** "Cuando entro a una cuenta AWS de un cliente y veo recursos sin tags o con tags inconsistentes, ya sé qué tipo de problemas voy a encontrar. Tags inconsistentes significan que el equipo no puede saber qué recursos pertenecen a qué equipo, no puede asignar costes a departamentos, no puede aplicar reglas de seguridad selectivas, y no puede automatizar operaciones de ciclo de vida. Los tags son el contrato que transforma una lista de recursos en una infraestructura gestionable. Y ese contrato debe definirse el día uno, no el día cien."
+> **En la práctica:** "Cuando entro a una cuenta AWS de un cliente y veo recursos sin tags o con tags inconsistentes, ya sé qué tipo de problemas voy a encontrar. Tags inconsistentes significan que el equipo no puede saber qué recursos pertenecen a qué equipo, no puede asignar costes a departamentos, no puede aplicar reglas de seguridad selectivas, y no puede automatizar operaciones de ciclo de vida. Los tags son el contrato que transforma una lista de recursos en una infraestructura gestionable. Y ese contrato debe definirse el día uno, no el día cien."
 
 **Los tres pilares del etiquetado:**
 
@@ -46,7 +46,7 @@ Una taxonomía bien diseñada agrupa tags en capas: identificación, propiedad, 
 
 Un nombre consistente como `{project}-{env}-{service}-{resource}` elimina ambigüedad.
 
-> **El profesor explica:** "El nombre de un recurso debe ser un contrato. Cuando veo `myapp-prd-api-alb` inmediatamente sé: proyecto myapp, entorno producción, servicio API, tipo load balancer. No necesito abrir los detalles del recurso. Esa legibilidad instantánea reduce el tiempo de debugging en incidentes y reduce los errores cuando alguien modifica o elimina recursos. La convención más inteligente es la que permite leer el recurso como una oración."
+> **En la práctica:** "El nombre de un recurso debe ser un contrato. Cuando veo `myapp-prd-api-alb` inmediatamente sé: proyecto myapp, entorno producción, servicio API, tipo load balancer. No necesito abrir los detalles del recurso. Esa legibilidad instantánea reduce el tiempo de debugging en incidentes y reduce los errores cuando alguien modifica o elimina recursos. La convención más inteligente es la que permite leer el recurso como una oración."
 
 **Formato recomendado:** `{project}-{env}-{service}-{resource-type}`
 
@@ -213,7 +213,7 @@ resource "aws_organizations_policy_attachment" "prod_ou" {
 
 ABAC (Attribute-Based Access Control) usa tags como conditions en políticas IAM. Un developer solo opera recursos con `Environment=dev` sin tocar las policies cuando escala el equipo.
 
-> **El profesor explica:** "ABAC es el salto evolutivo de RBAC (Role-Based) a ABAC (Attribute-Based). Con RBAC necesitas crear un rol por cada combinación de equipo y entorno: DeveloperDevRole, DeveloperStagingRole, OperationsDevRole... En empresas medianas esto se convierte en un centenar de roles que alguien tiene que mantener. Con ABAC, el tag del recurso y el tag del usuario hacen toda la lógica automáticamente: si `aws:ResourceTag/Environment` coincide con `aws:PrincipalTag/Environment`, el acceso está permitido. El número de policies se mantiene constante aunque escales de 10 a 200 personas."
+> **En la práctica:** "ABAC es el salto evolutivo de RBAC (Role-Based) a ABAC (Attribute-Based). Con RBAC necesitas crear un rol por cada combinación de equipo y entorno: DeveloperDevRole, DeveloperStagingRole, OperationsDevRole... En empresas medianas esto se convierte en un centenar de roles que alguien tiene que mantener. Con ABAC, el tag del recurso y el tag del usuario hacen toda la lógica automáticamente: si `aws:ResourceTag/Environment` coincide con `aws:PrincipalTag/Environment`, el acceso está permitido. El número de policies se mantiene constante aunque escales de 10 a 200 personas."
 
 ```hcl
 # Política ABAC: solo operar recursos de tu mismo entorno
@@ -337,16 +337,21 @@ resource "aws_config_config_rule" "required_tags" {
   }
 }
 
-# Auto-remediation: Lambda que aplica tags por defecto a recursos non-compliant
+# Auto-remediation: aplica tags requeridos a recursos non-compliant
 resource "aws_config_remediation_configuration" "auto_tag" {
   config_rule_name = aws_config_config_rule.required_tags.name
   target_type      = "SSM_DOCUMENT"
-  target_id        = "AWS-RunPythonScript"
+  target_id        = "AWS-SetRequiredTags"   # Documento SSM canónico de AWS para aplicar tags
   automatic        = false   # Semi-automático: notifica pero no aplica sin aprobación
 
   parameter {
-    name         = "commands"
-    static_value = "aws ec2 create-tags --resources $RESOURCE_ID --tags Key=ManagedBy,Value=terraform"
+    name         = "TagKey1"
+    static_value = "ManagedBy"
+  }
+
+  parameter {
+    name         = "TagValue1"
+    static_value = "terraform"
   }
 }
 ```

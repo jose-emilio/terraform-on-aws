@@ -8,7 +8,7 @@
 
 Refactorizar en Terraform significa reorganizar la configuración — renombrar recursos, extraer módulos, cambiar de `count` a `for_each` — **sin destruir ni recrear la infraestructura existente**. Esta es la habilidad que separa a un equipo que teme tocar el código de uno que lo mantiene con confianza.
 
-> **El profesor explica:** "El miedo más común que veo en los equipos es renombrar un recurso. El nombre en el state no coincide, Terraform quiere destruir y recrear una instancia de producción. La respuesta no es 'no lo tocamos'. La respuesta es el bloque `moved`. Con él, refactorizas el código, el state se actualiza, y el plan muestra cero cambios destructivos."
+> **En la práctica:** "El miedo más común que veo en los equipos es renombrar un recurso. El nombre en el state no coincide, Terraform quiere destruir y recrear una instancia de producción. La respuesta no es 'no lo tocamos'. La respuesta es el bloque `moved`. Con él, refactorizas el código, el state se actualiza, y el plan muestra cero cambios destructivos."
 
 **Herramientas de refactorización:**
 
@@ -37,7 +37,7 @@ moved {
   to   = module.storage.aws_s3_bucket.data
 }
 
-# Ejemplo 3: Cross-type move (TF 1.9+)
+# Ejemplo 3: Cross-type move (TF 1.5+)
 # Migrar null_resource → terraform_data sin destruir
 moved {
   from = null_resource.bootstrap

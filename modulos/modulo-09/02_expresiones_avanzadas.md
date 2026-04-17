@@ -8,7 +8,7 @@
 
 HCL no es solo configuración estática. Con expresiones `for`, `locals`, `try/can`, `optional()` y validaciones `lifecycle`, se convierte en un lenguaje capaz de generar infraestructura dinámica, genérica y reutilizable a escala empresarial.
 
-> **El profesor explica:** "La diferencia entre un archivo Terraform de 50 líneas con duplicación y uno de 80 líneas completamente genérico está en saber usar `for`, `locals` y `merge`. El objetivo es escribir código que un nuevo miembro del equipo pueda entender y modificar sin romper nada — no impresionar con ingenio, sino eliminar repetición."
+> **En la práctica:** "La diferencia entre un archivo Terraform de 50 líneas con duplicación y uno de 80 líneas completamente genérico está en saber usar `for`, `locals` y `merge`. El objetivo es escribir código que un nuevo miembro del equipo pueda entender y modificar sin romper nada — no impresionar con ingenio, sino eliminar repetición."
 
 **Herramientas del arsenal avanzado:**
 
@@ -338,7 +338,7 @@ moved {
   to   = module.storage.aws_s3_bucket.data
 }
 
-# Ejemplo 3: Cross-type (TF 1.9+)
+# Ejemplo 3: Cross-type (TF 1.5+)
 moved {
   from = null_resource.bootstrap
   to   = terraform_data.bootstrap

@@ -188,6 +188,8 @@ version = ">= 2.0, < 3.0, != 2.5.0"   # Rango + exclusión de versión problemá
 
 El archivo `.terraform.lock.hcl` registra la **versión exacta y los hashes criptográficos** de cada provider descargado. Es el equivalente de `package-lock.json` (Node.js) o `Pipfile.lock` (Python).
 
+> **Importante:** A diferencia de `package-lock.json`, el lockfile de Terraform **solo cubre providers, no módulos**. Terraform no recuerda las versiones seleccionadas de módulos remotos entre ejecuciones. Para garantizar reproducibilidad en módulos, usa restricciones de versión exactas (`= x.y.z`) en el argumento `version`.
+
 ```hcl
 # .terraform.lock.hcl — Autogenerado por terraform init
 provider "registry.terraform.io/hashicorp/aws" {

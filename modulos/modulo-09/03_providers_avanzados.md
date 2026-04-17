@@ -8,7 +8,7 @@
 
 Un Provider es el plugin que traduce la configuración HCL en llamadas API al servicio de infraestructura. AWS, Azure, GCP, GitHub, Kubernetes, Datadog — cada uno tiene su provider. Terraform descarga y gestiona estos plugins automáticamente durante `terraform init`.
 
-> **El profesor explica:** "Pensar en el provider como un driver de base de datos. El SQL (HCL) que escribes es el mismo, pero el driver (provider) sabe cómo traducirlo a llamadas específicas de MySQL, PostgreSQL o SQLite. Cambiar de proveedor cloud es cambiar el driver — no el lenguaje. Eso es la portabilidad de Terraform."
+> **En la práctica:** "Pensar en el provider como un driver de base de datos. El SQL (HCL) que escribes es el mismo, pero el driver (provider) sabe cómo traducirlo a llamadas específicas de MySQL, PostgreSQL o SQLite. Cambiar de proveedor cloud es cambiar el driver — no el lenguaje. Eso es la portabilidad de Terraform."
 
 ---
 
