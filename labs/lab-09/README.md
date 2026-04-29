@@ -25,7 +25,6 @@ Al finalizar este laboratorio serás capaz de:
 
 - Terraform >= 1.5 instalado
 - Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
-- Laboratorio 7 completado (bucket S3 con versionado habilitado)
 - LocalStack en ejecución (para la sección de LocalStack)
 
 ---

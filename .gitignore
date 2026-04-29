@@ -11,6 +11,7 @@ crash.*.log
 *.tfvars.json
 !example.tfvars
 !*.example.tfvars
+!labs/**/*.tfvars
 override.tf
 override.tf.json
 *_override.tf
