@@ -11,7 +11,7 @@
 En este laboratorio configurarás **HCP Terraform** como backend de
 estado y motor de ejecución remota para un proyecto Terraform real que despliega
 infraestructura en AWS. A diferencia del lab07, donde gestionabas tu propio bucket S3 y
-tabla DynamoDB, aquí delgas toda la operación del estado a la plataforma SaaS de
+tabla DynamoDB, aquí delegas toda la operación del estado a la plataforma SaaS de
 HashiCorp: cifrado, versionado, locking y auditoría de runs están incluidos sin
 infraestructura adicional que mantener.
 
@@ -275,9 +275,9 @@ Para que el CLI se autentique contra HCP existen tres tipos de token:
 > El repositorio parte vacío. Los ficheros siguientes se crean paso a paso durante el laboratorio.
 
 ```
-lab07b/
+lab-07b/
 └── aws/
-    ├── providers.tf    Provider AWS ~6.0, bloque cloud {} apuntando a HCP
+    ├── providers.tf    Provider AWS ~>6.0, bloque cloud {} apuntando a HCP
     ├── variables.tf    Variables: región, entorno, cidr_vpc, cidr_subnet
     ├── main.tf         VPC + subnet pública + IGW + route table
     └── outputs.tf      VPC ID, subnet ID, IGW ID
@@ -398,8 +398,8 @@ pertenecen a una organización.
 1. En la sección de Organizations del menú principal selecciona **Create organization** y elige **Personal**
 2. Cuando se pida el nombre de la organización, usa `terraform-labs-<ACCOUNT_ID>` (o
    cualquier nombre único — los nombres de organización son globales en HCP).
-2. Introduce tu correo electrónico como dirección de notificaciones.
-3. Pulsa **Create organization**.
+3. Introduce tu correo electrónico como dirección de notificaciones.
+4. Pulsa **Create organization**.
 
 ```bash
 # Guarda el nombre de tu organización en la variable de entorno
@@ -453,7 +453,7 @@ aplicar permisos de acceso a nivel de proyecto en lugar de workspace a workspace
 3. **Name**: `lab07b-dev`.
 4. **Description**: `Laboratorio 7b — VPC sencilla desplegada desde CLI`.
 5. Verifica que el campo **Project** muestra `lab07b`.
-7. En **Settings → Tags** y añade las etiquetas:
+6. En **Add key value tags** añade las etiquetas:
 
    | Clave | Valor |
    |-------|-------|
@@ -467,7 +467,7 @@ aplicar permisos de acceso a nivel de proyecto en lugar de workspace a workspace
    > (útil cuando se gestionan múltiples entornos con la misma configuración, como se
    > verá en el Reto 3).
 
-6. Pulsa **Create workspace**.
+7. Pulsa **Create**.
 
 ### Crear el IAM OIDC Identity Provider desde la consola AWS
 
@@ -647,7 +647,7 @@ duración. Las credenciales STS expiran automáticamente al finalizar el run.
 
 ### Código Terraform del laboratorio
 
-Crea los ficheros en `labs/lab07b/aws/`:
+Crea los ficheros en `labs/lab-07b/aws/`:
 
 **`providers.tf`:**
 
@@ -720,6 +720,11 @@ variable "cidr_subnet" {
 **`main.tf`:**
 
 ```hcl
+# Resuelve la primera AZ disponible de la region sin asumir su sufijo.
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = var.cidr_vpc
   enable_dns_hostnames = true
@@ -735,7 +740,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.cidr_subnet
   map_public_ip_on_launch = true
-  availability_zone       = "${var.region}a"
+  availability_zone       = data.aws_availability_zones.available.names[0]
 
   tags = {
     Name        = "lab07b-subnet-public-${var.environment}"
@@ -792,7 +797,7 @@ output "igw_id" {
 ### Inicializar y migrar el estado
 
 ```bash
-cd labs/lab07b/aws
+cd labs/lab-07b/aws
 
 terraform init
 ```
@@ -1333,8 +1338,7 @@ Value: `eu-west-1`), HCP pasa el valor al plan exactamente igual que si estuvier
 fichero `.tfvars`. El plan ve `var.region = "eu-west-1"` y planifica los recursos en esa
 región.
 
-Si se usara `TF_VAR_region` como **Environment variable**, el efecto es idéntico porque
-el provider AWS lee la variable de la misma forma. La diferencia es de organización:
+Si se usara `TF_VAR_region` como **Environment variable**, el efecto es idéntico porque Terraform lee la variable de la misma forma. La diferencia es de organización:
 
 | Mecanismo | Visible en el plan | Cifrable como Sensitive |
 |---|---|---|
@@ -1434,7 +1438,7 @@ Asegúrate de estar en el workspace `lab07b-dev` antes de destruir. Si completas
 Reto 3, destruye también `lab07b-prod`:
 
 ```bash
-cd labs/lab07b/aws
+cd labs/lab-07b/aws
 
 # Destruye dev
 terraform workspace select lab07b-dev
@@ -1557,37 +1561,3 @@ la UI.
 **Solución B — habilitar Auto apply:**
 1. UI → **Settings → General → Auto Apply** → activar.
 2. Los siguientes applies se aprobarán automáticamente sin confirmación manual.
-
----
-
-### `AccessDenied` durante el apply a pesar de usar `AdministratorAccess`
-
-**Causa:** la política `AdministratorAccess` no está correctamente adjunta al rol OIDC,
-o la trust policy contiene un typo en el nombre de la organización o del workspace.
-
-**Diagnóstico — verificar permisos del rol (AWS Console):**
-
-1. Abre la [Consola de IAM](https://console.aws.amazon.com/iam/) → **Roles**.
-2. Busca y abre el rol `lab07b-terraform-cloud-role`.
-3. Abre la pestaña **Permissions** y comprueba que aparece
-   **AdministratorAccess** en la lista de políticas adjuntas.
-
-**Diagnóstico — verificar la trust policy (AWS Console):**
-
-1. En el mismo rol, abre la pestaña **Trust relationships**.
-2. Revisa el JSON y comprueba que los valores de las condiciones `StringEquals` y
-   `StringLike` coinciden exactamente con tu organización y workspace en HCP Terraform.
-
-**Solución A — si falta AdministratorAccess:**
-
-1. En la pestaña **Permissions** del rol, haz clic en **Add permissions →
-   Attach policies**.
-2. Busca `AdministratorAccess`, márcala y pulsa **Add permissions**.
-
-**Solución B — si la trust policy tiene un typo:**
-
-1. En la pestaña **Trust relationships**, haz clic en **Edit trust policy**.
-2. Corrige los valores de `StringEquals` (organización) y `StringLike` (workspace)
-   y guarda con **Update policy**.
-3. Lanza de nuevo el `terraform apply` desde el terminal; HCP Terraform obtendrá
-   nuevas credenciales temporales con la trust policy corregida.
