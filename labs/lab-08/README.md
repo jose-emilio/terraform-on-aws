@@ -47,7 +47,7 @@ El comando clásico `terraform import <addr> <id>` es imperativo: modifica el es
 
 El bloque `import {}` es declarativo: vive en el código, se puede revisar en un Pull Request y sirve como documentación del origen del recurso. Además, combinado con `-generate-config-out`, puede generar automáticamente el bloque `resource` correspondiente.
 
-> El bloque `import {}` es idempotente: si el recurso ya está en el estado con el mismo ID, no hace nada. Es seguro dejarlo en el código como documentación.
+> El bloque `import {}` es de migración de un solo uso, igual que `moved {}` y `removed {}`. Tras el apply, elimínalo del código. Aunque es idempotente (si el recurso ya está en el estado con ese ID, no hace nada), mantenerlo indefinidamente añade ruido.
 
 ### Flag `-generate-config-out`
 
@@ -177,7 +177,7 @@ variable "bucket_name" {
 #   terraform plan -generate-config-out=generated.tf
 #
 # Revisa generated.tf, integra el bloque resource en este archivo
-# y elimina generated.tf. El bloque import{} puede mantenerse (es idempotente).
+# y elimina generated.tf. Tras el apply, elimina tambien el bloque import{}.
 
 import {
   to = aws_s3_bucket.app
@@ -244,7 +244,7 @@ resource "aws_s3_bucket" "app" {
 }
 ```
 
-El bloque `import {}` puede mantenerse junto al `resource`: es idempotente. Si el recurso ya está en el estado con ese ID, no hace nada en los planes y applies siguientes.
+El bloque `import {}` se mantiene junto al `resource` para que el apply lo importe al estado. Tras el apply lo eliminaremos (Paso 7).
 
 **Paso 5** — Activa los outputs en `outputs.tf`:
 
@@ -276,6 +276,8 @@ terraform state show aws_s3_bucket.app
 aws s3 ls | grep $TF_VAR_bucket_name
 ```
 
+**Paso 7** — Tras el apply, elimina el bloque `import {}` de `main.tf`. Ya cumplió su función: el recurso está en el estado y el bloque es de un solo uso, equivalente a `moved {}` y `removed {}`. Un nuevo `terraform plan` debe seguir mostrando `No changes`.
+
 ### 1.3 Fase 2 — Refactorización con `moved {}`
 
 El nombre `app` es demasiado genérico. Lo renombraremos a `application` para seguir la convención de nomenclatura del equipo. Si simplemente cambiáramos el nombre en el código sin el bloque `moved {}`, Terraform interpretaría que el recurso `aws_s3_bucket.app` fue eliminado y que hay que crear `aws_s3_bucket.application`: destruiría el bucket existente y crearía uno nuevo.
@@ -296,7 +298,7 @@ resource "aws_s3_bucket" "application" {
 }
 ```
 
-El bloque `import {}` puede eliminarse en este punto: ya cumplió su función en la Fase 1.
+El bloque `import {}` ya fue eliminado al final de la Fase 1, así que `main.tf` ahora solo contiene el `moved {}` y el `resource` renombrado.
 
 Actualiza también `outputs.tf` para referenciar el nuevo nombre:
 
@@ -398,10 +400,11 @@ aws s3 ls | grep $TF_VAR_bucket_name          # el bucket SIGUE existiendo
 # Verificar que el bucket fue importado correctamente al estado
 terraform state list | grep aws_s3_bucket
 
-# Verificar que el recurso renombrado con moved {} no fue recreado
-aws s3api get-bucket-tagging \
-  --bucket $TF_VAR_bucket_name \
-  --query 'TagSet'
+# Verificar que el recurso renombrado con moved {} no fue recreado:
+# si moved {} hubiera recreado el bucket, la CreationDate seria reciente.
+aws s3api list-buckets \
+  --query "Buckets[?Name=='$TF_VAR_bucket_name'].CreationDate" \
+  --output text
 
 # Comprobar que el recurso eliminado con removed {} ya no esta en el estado
 terraform state list
@@ -446,11 +449,11 @@ Los bloques `import {}`, `moved {}` y `removed {}` operan sobre el estado local 
 ## Buenas prácticas aplicadas
 
 - **Prefiere primitivas declarativas sobre comandos imperativos.** Los bloques `import {}`, `moved {}` y `removed {}` quedan en el historial de Git y son revisables en PR. `terraform state mv` y `terraform state rm` modifican el estado sin trazabilidad en el código.
-- **Elimina `moved {}` y `removed {}` tras el apply en producción.** Son bloques de migración de un solo uso. Mantenerlos indefinidamente no causa errores pero aumenta el ruido en el código.
+- **Elimina `import {}`, `moved {}` y `removed {}` tras el apply en producción.** Son bloques de migración de un solo uso. Mantenerlos indefinidamente no causa errores pero aumenta el ruido en el código y diluye la intención del bloque cuando aparezca en otra migración.
 - **Revisa siempre `generated.tf` antes de aplicar.** El archivo puede contener atributos computados (`arn`, `id`, `tags_all`) que provocarán errores en el apply. Limpia el archivo o usa solo los atributos que necesitas gestionar.
 - **Usa `import {}` en combinación con `-generate-config-out` para adoptar recursos existentes.** Si el recurso tiene una configuración compleja con muchos atributos, la generación automática ahorra tiempo y evita errores tipográficos.
 - **`destroy = false` no es permanente en el ciclo de vida del recurso.** Una vez retirado del estado, si otro proyecto lo importa con `destroy = true` por defecto, el recurso podría eliminarse. Coordina con el equipo que tomará la gestión del recurso.
-- **El bloque `import {}` es idempotente.** Si el recurso ya está en el estado con el mismo ID, el bloque no hace nada. Es seguro dejarlo en el código como documentación del origen del recurso.
+- **El historial de Git documenta el origen del recurso, no el bloque `import {}`.** El bloque es idempotente y dejarlo no rompe nada, pero la trazabilidad del PR donde se adoptó el recurso es lo que sirve como documentación; el bloque, una vez aplicado, solo es ruido.
 
 ---
 

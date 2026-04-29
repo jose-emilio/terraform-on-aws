@@ -7,7 +7,7 @@
 #   terraform plan -generate-config-out=generated.tf
 #
 # Revisa generated.tf, integra el bloque resource en este archivo
-# y elimina generated.tf. El bloque import{} puede mantenerse (es idempotente).
+# y elimina generated.tf. Tras el apply, elimina tambien el bloque import{}.
 
 import {
   to = aws_s3_bucket.app

@@ -99,9 +99,9 @@ lab-07/
 
 ## 1. Despliegue
 
-### 1.1 Prerrequisito: bucket del lab02
+### 1.1 Prerrequisito: bucket del lab-02
 
-Verifica que el bucket creado en el lab02 existe y tiene versionado activo:
+Verifica que el bucket creado en el lab-02 existe y tiene versionado activo:
 
 ```bash
 export BUCKET=terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)

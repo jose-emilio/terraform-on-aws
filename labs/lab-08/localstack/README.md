@@ -42,7 +42,7 @@ El comando clásico `terraform import <addr> <id>` es imperativo: modifica el es
 
 El bloque `import {}` es declarativo: vive en el código, se puede revisar en un Pull Request y sirve como documentación del origen del recurso. Además, combinado con `-generate-config-out`, puede generar automáticamente el bloque `resource` correspondiente.
 
-> El bloque `import {}` es idempotente: si el recurso ya está en el estado con el mismo ID, no hace nada. Es seguro dejarlo en el código como documentación.
+> El bloque `import {}` es de migración de un solo uso, igual que `moved {}` y `removed {}`. Tras el apply, elimínalo del código. Aunque es idempotente (si el recurso ya está en el estado con ese ID, no hace nada), mantenerlo indefinidamente añade ruido.
 
 ### Flag `-generate-config-out`
 
@@ -221,11 +221,11 @@ aws --profile localstack s3 rb s3://lab8-import-local --force
 ## 3. Buenas Prácticas
 
 - **Prefiere primitivas declarativas sobre comandos imperativos.** Los bloques `import {}`, `moved {}` y `removed {}` quedan en el historial de Git y son revisables en PR. `terraform state mv` y `terraform state rm` modifican el estado sin trazabilidad en el código.
-- **Elimina `moved {}` y `removed {}` tras el apply en producción.** Son bloques de migración de un solo uso. Mantenerlos indefinidamente no causa errores pero aumenta el ruido en el código.
+- **Elimina `import {}`, `moved {}` y `removed {}` tras el apply en producción.** Son bloques de migración de un solo uso. Mantenerlos indefinidamente no causa errores pero aumenta el ruido en el código y diluye la intención del bloque cuando aparezca en otra migración.
 - **Revisa siempre `generated.tf` antes de aplicar.** El archivo puede contener atributos computados (`arn`, `id`, `tags_all`) que provocarán errores en el apply. Limpia el archivo o usa solo los atributos que necesitas gestionar.
 - **Usa `import {}` en combinación con `-generate-config-out` para adoptar recursos existentes.** Si el recurso tiene una configuración compleja con muchos atributos, la generación automática ahorra tiempo y evita errores tipográficos.
 - **`destroy = false` no es permanente en el ciclo de vida del recurso.** Una vez retirado del estado, si otro proyecto lo importa con `destroy = true` por defecto, el recurso podría eliminarse. Coordina con el equipo que tomará la gestión del recurso.
-- **El bloque `import {}` es idempotente.** Si el recurso ya está en el estado con el mismo ID, el bloque no hace nada. Es seguro dejarlo en el código como documentación del origen del recurso.
+- **El historial de Git documenta el origen del recurso, no el bloque `import {}`.** El bloque es idempotente y dejarlo no rompe nada, pero la trazabilidad del PR donde se adoptó el recurso es lo que sirve como documentación; el bloque, una vez aplicado, solo es ruido.
 
 ---
 
