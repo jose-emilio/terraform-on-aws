@@ -20,7 +20,7 @@ provider "aws" {
 # Los nombres de bucket S3 son globalmente únicos en toda AWS.
 # Sustituye <ACCOUNT_ID> por tu ID de cuenta (aws sts get-caller-identity).
 resource "aws_s3_bucket" "state" {
-  bucket = "terraform-state-labs-<ACCOUNT_ID>"
+  bucket = "terraform-state-labs-510547572113"
 
   tags = {
     ManagedBy = "terraform"

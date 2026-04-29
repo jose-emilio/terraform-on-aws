@@ -1,0 +1,47 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+
+# Variables y secretos
+*.tfvars
+*.tfvars.json
+!example.tfvars
+!*.example.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Planes
+*.tfplan
+*.plan
+
+# CLI config
+.terraformrc
+terraform.rc
+
+# Credenciales AWS
+.aws/
+credentials
+*.pem
+*.key
+
+# LocalStack
+.localstack/
+volume/
+
+# Editores / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

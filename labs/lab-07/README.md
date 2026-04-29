@@ -8,7 +8,7 @@
 
 ## Visión general
 
-En este laboratorio configurarás el backend remoto de Terraform usando el bucket S3 que creaste en el lab02 y una tabla DynamoDB para el bloqueo de estado. Aprenderás a configurar el bloque `backend "s3"` con cifrado y locking, y migrarás un estado local existente al nuevo backend remoto.
+En este laboratorio configurarás el backend remoto de Terraform usando el bucket S3 que creaste en el lab02 y una tabla DynamoDB para el bloqueo de estado. Aprenderás a configurar el bloque `backend "s3"` con cifrado y locking vía DynamoDB, y migrarás un estado local existente al nuevo backend remoto.
 
 > El bucket S3 (`terraform-state-labs-<ACCOUNT_ID>`) ya fue creado y configurado en el lab02 con versionado, cifrado AES-256 y bloqueo de acceso público. Este laboratorio **no vuelve a crear el bucket**: lo referencia y añade la tabla DynamoDB para state locking.
 
@@ -20,12 +20,10 @@ Al finalizar este laboratorio serás capaz de:
 - Configurar el bloque `backend "s3"` con `encrypt = true` y la tabla de DynamoDB
 - Ejecutar `terraform init` para migrar un estado local existente al backend remoto
 - Entender por qué el state locking es crítico en entornos de equipo
-- Usar locking nativo de S3 con `use_lockfile = true` como alternativa sin DynamoDB
 
 ## Requisitos Previos
 
 - Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
-- LocalStack en ejecución (para la sección de LocalStack)
 
 ---
 
@@ -66,32 +64,6 @@ Cuando Terraform inicia una operación que modifica el estado (`plan`, `apply`, 
 
 La Partition Key **debe llamarse exactamente `LockID`**: es el nombre que el provider de AWS espera. Cualquier otro nombre hará que el bloqueo no funcione.
 
-### State Locking nativo de S3 (`use_lockfile`)
-
-Desde la versión `~> 5.0` del provider de AWS, el backend `s3` soporta locking nativo mediante el parámetro `use_lockfile = true`. En lugar de usar DynamoDB, Terraform escribe un archivo `.tflock` junto al `.tfstate` dentro del mismo bucket.
-
-```hcl
-terraform {
-  backend "s3" {
-    bucket       = "terraform-state-labs-123456789012"
-    key          = "lab7-workload/terraform.tfstate"
-    region       = "us-east-1"
-    encrypt      = true
-    use_lockfile = true   # crea terraform-state-labs.../lab7-workload/terraform.tfstate.tflock
-  }
-}
-```
-
-Comparado con DynamoDB:
-
-| Aspecto | DynamoDB (`dynamodb_table`) | Nativo S3 (`use_lockfile`) |
-|---|---|---|
-| Infraestructura extra | Tabla DynamoDB | Ninguna |
-| Coste | Lecturas/escrituras DynamoDB | Operaciones PUT/DELETE S3 (mínimo) |
-| Disponibilidad | Requiere que DynamoDB esté accesible | Solo requiere el bucket |
-| Madurez | Estándar desde hace años | Introducido en provider `~> 5.0` |
-| Recomendado para | Equipos grandes, entornos críticos | Proyectos personales o equipos pequeños |
-
 ### Migración de estado local a remoto
 
 Cuando añades un bloque `backend` a un proyecto que ya tiene estado local, `terraform init` detecta el cambio y ofrece migrar el estado:
@@ -109,31 +81,23 @@ Tras confirmar, el archivo `terraform.tfstate` local queda vacío y el estado vi
 ## Estructura del proyecto
 
 ```
-lab07/
+lab-07/
 ├── aws/
 │   ├── providers.tf   # Bloque terraform{} y provider{}
 │   ├── variables.tf   # Nombre del bucket (lab02), tabla y región
-│   ├── main.tf        # Solo tabla DynamoDB (bucket ya existe del lab02)
-│   └── outputs.tf     # Bloques backend listos para copiar
-├── localstack/
-│   ├── providers.tf   # Endpoints s3 y dynamodb apuntando a LocalStack
-│   ├── variables.tf   # Valores por defecto para entorno local
-│   ├── main.tf        # Bucket + DynamoDB (LocalStack no persiste entre reinicios)
-│   └── outputs.tf     # Nombres de recursos creados
-└── workload/          # Proyecto de aplicación compartido (AWS real y LocalStack)
-    ├── providers.tf           # Provider parametrizado con variables
-    ├── variables.tf           # Variables de recursos y de configuración del provider
-    ├── main.tf                # Bucket S3 de aplicación de ejemplo
+│   ├── main.tf        # Solo tabla DynamoDB (bucket ya existe del lab-02)
+│   └── outputs.tf     # Bloque backend listo para copiar
+└── workload/          # Proyecto de aplicación que migra de estado local a remoto
+    ├── providers.tf       # Bloque terraform{} y provider{}
+    ├── variables.tf       # Región y nombre del bucket de aplicación
+    ├── main.tf            # Bucket S3 de aplicación de ejemplo
     ├── outputs.tf
-    ├── aws.tfvars             # Valores para AWS real
-    ├── localstack.tfvars      # Valores para LocalStack
-    ├── aws.s3.tfbackend       # Backend config parcial para AWS S3
-    └── localstack.s3.tfbackend # Backend config completo para LocalStack S3
+    └── aws.s3.tfbackend   # Backend config parcial (bucket se pasa por CLI)
 ```
 
 ---
 
-## 1. Despliegue en AWS Real
+## 1. Despliegue
 
 ### 1.1 Prerrequisito: bucket del lab02
 
@@ -169,7 +133,7 @@ resource "aws_dynamodb_table" "lock" {
 }
 ```
 
-**`aws/outputs.tf`** — Bloques backend listos para copiar:
+**`aws/outputs.tf`** — Bloque backend listo para copiar:
 
 ```hcl
 output "backend_config" {
@@ -191,14 +155,14 @@ output "backend_config" {
 
 ```bash
 export TF_VAR_bucket_name=$BUCKET
-# Desde lab07/aws/
+# Desde lab-07/aws/
 terraform fmt
 terraform init
 terraform plan
 terraform apply
 ```
 
-Al finalizar, los outputs mostrarán los dos bloques `backend` listos para usar:
+Al finalizar, el output mostrará el bloque `backend` listo para usar:
 
 ```
 backend_config = <<EOT
@@ -212,32 +176,20 @@ backend_config = <<EOT
     }
   }
 EOT
-
-backend_config_native_lock = <<EOT
-  terraform {
-    backend "s3" {
-      bucket       = "terraform-state-labs-123456789012"
-      key          = "PROYECTO/terraform.tfstate"
-      region       = "us-east-1"
-      encrypt      = true
-      use_lockfile = true
-    }
-  }
-EOT
 ```
 
 ### 1.4 Migrar un Estado Local al Backend Remoto
 
-El directorio `workload/` contiene un proyecto de aplicación compartido entre AWS real y LocalStack.
+El directorio `workload/` contiene un proyecto de aplicación que primero se despliega con estado local y luego se migra al backend remoto.
 
 **Paso 1** — Despliega el workload con estado local:
 
 ```bash
-# Desde lab07/workload/
+# Desde lab-07/workload/
 export TF_VAR_app_bucket_name=mi-app-lab7-2024   # sustituye por tu nombre único
 terraform fmt
 terraform init
-terraform apply -var-file=aws.tfvars
+terraform apply
 ```
 
 Terraform crea `terraform.tfstate` en el directorio local.
@@ -251,25 +203,12 @@ terraform {
 }
 ```
 
-**Variante A — con DynamoDB:**
+Inicializa el backend remoto pasando el archivo `.tfbackend` y el nombre del bucket:
 
 ```bash
 terraform init \
   -backend-config=aws.s3.tfbackend \
   -backend-config="bucket=$BUCKET"
-```
-
-**Variante B — locking nativo de S3 (sin DynamoDB):**
-
-> `aws.s3.tfbackend` incluye `dynamodb_table`, que es incompatible con `use_lockfile`. Para la variante B hay que especificar los parámetros directamente:
-
-```bash
-terraform init \
-  -backend-config="bucket=$BUCKET" \
-  -backend-config="key=lab7-workload/terraform.tfstate" \
-  -backend-config="region=us-east-1" \
-  -backend-config="encrypt=true" \
-  -backend-config="use_lockfile=true"
 ```
 
 Terraform detectará el cambio de backend y preguntará si deseas migrar el estado existente:
@@ -290,7 +229,7 @@ Confirma que el estado se ha subido al bucket:
 aws s3 ls s3://$BUCKET/lab7-workload/
 ```
 
-Verifica que la tabla DynamoDB existe y está vacía (Variante A):
+Verifica que la tabla DynamoDB existe y está vacía (no hay locks activos):
 
 ```bash
 aws dynamodb scan --table-name terraform-state-lock
@@ -298,7 +237,7 @@ aws dynamodb scan --table-name terraform-state-lock
 
 ### 1.6 Observar el State Locking en Acción
 
-Abre dos terminales en `lab07/workload/` y ejecuta `terraform apply` en ambas simultáneamente:
+Abre dos terminales en `lab-07/workload/` y ejecuta `terraform apply` en ambas simultáneamente:
 
 ```bash
 # Terminal 1
@@ -308,7 +247,7 @@ terraform apply
 terraform apply
 ```
 
-**Con DynamoDB (Variante A)**, la segunda terminal muestra:
+La segunda terminal muestra el error de bloqueo emitido por DynamoDB:
 
 ```
 Error: Error acquiring the state lock
@@ -319,16 +258,6 @@ Error: Error acquiring the state lock
     Path:      terraform-state-labs-123456789012/lab7-workload/terraform.tfstate
     Operation: OperationTypeApply
     Who:       usuario@maquina
-```
-
-**Con locking nativo de S3 (Variante B)**, el error referencia el archivo `.tflock`:
-
-```
-Error: Error acquiring the state lock
-
-  Error message: state file locked
-  Lock Info:
-    Path:      terraform-state-labs-123456789012/lab7-workload/terraform.tfstate.tflock
 ```
 
 ---
@@ -347,7 +276,7 @@ aws dynamodb describe-table \
   --output table
 
 # Verificar que la migracion de backend fue exitosa (no hay state local)
-ls -la labs/lab07/workload/terraform.tfstate 2>/dev/null \
+ls -la labs/lab-07/workload/terraform.tfstate 2>/dev/null \
   && echo "ADVERTENCIA: state local encontrado" \
   || echo "OK: no hay state local"
 
@@ -366,8 +295,10 @@ aws dynamodb scan \
 
 **Paso 1** — Migra el estado del workload de vuelta al backend local:
 
+Primero elimina (o comenta) el bloque `backend "s3" {}` que añadiste en `workload/providers.tf`. Sin esa línea, Terraform vuelve al backend local por defecto y `init -migrate-state` detectará el cambio:
+
 ```bash
-# Desde lab07/workload/
+# Desde lab-07/workload/
 terraform init -migrate-state
 # Do you want to copy existing state to the new backend? yes
 ```
@@ -375,41 +306,17 @@ terraform init -migrate-state
 **Paso 2** — Destruye los recursos del workload:
 
 ```bash
-terraform destroy -var-file=aws.tfvars
+terraform destroy
 ```
 
 **Paso 3** — Destruye la tabla DynamoDB:
 
 ```bash
-# Desde lab07/aws/
+# Desde lab-07/aws/
 terraform destroy -var="bucket_name=$BUCKET"
 ```
 
 > El bucket `terraform-state-labs-<ACCOUNT_ID>` **no se destruye** aquí. Se usará como backend en el lab10.
-
-```
-
----
-
-## 3. LocalStack
-
-Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
-
-LocalStack soporta S3 y DynamoDB completamente. A diferencia de AWS real, el bucket de estado se crea en el propio laboratorio (LocalStack no persiste entre reinicios del contenedor).
-
----
-
-## 4. Comparativa AWS Real vs LocalStack
-
-| Aspecto | AWS Real | LocalStack |
-|---|---|---|
-| Bucket S3 | Creado en lab02, reutilizado aquí | Creado en este laboratorio (no persiste) |
-| Tabla DynamoDB | Creada en este laboratorio | Creada en este laboratorio |
-| Versionado S3 | Activado desde lab02 | Soportado |
-| Cifrado AES-256 | Activado desde lab02 | Simulado |
-| DynamoDB state locking | Bloqueo real | Soportado |
-| Locking nativo S3 (`use_lockfile`) | Soportado desde provider `~> 5.0` | Soportado |
-| `terraform destroy` del bucket | **No — se usa en lab10** | Sí (se perderá al reiniciar LocalStack igualmente) |
 
 ---
 
@@ -418,7 +325,6 @@ LocalStack soporta S3 y DynamoDB completamente. A diferencia de AWS real, el buc
 - **Usa una `key` diferente por proyecto y entorno.** Una convención habitual es `{proyecto}/{entorno}/terraform.tfstate`. Un único bucket puede alojar los estados de toda la organización.
 - **Nunca almacenes el bucket de estado en el mismo proyecto que gestiona ese bucket.** Si el estado del bucket se corrompe, perderías la capacidad de gestionarlo con Terraform. Este curso sigue esa práctica: el bucket se crea en el lab02 y se referencia, no se recrea, en lab07 y lab10.
 - **El bloque `backend` no acepta variables de Terraform.** Si necesitas parametrizar el backend, usa `-backend-config` en la línea de comandos o un archivo `.tfbackend`.
-- **Elige `use_lockfile` para proyectos simples, DynamoDB para entornos críticos.** El locking nativo de S3 elimina la dependencia de DynamoDB y reduce costos, pero DynamoDB ofrece garantías de consistencia más fuertes.
 - **Protege el bucket con una política de bucket restrictiva.** Solo los roles IAM de CI/CD y los administradores de infraestructura deben tener acceso de escritura al bucket de estado.
 
 ---
@@ -427,6 +333,5 @@ LocalStack soporta S3 y DynamoDB completamente. A diferencia de AWS real, el buc
 
 - [Backend S3 - Documentación de Terraform](https://developer.hashicorp.com/terraform/language/backend/s3)
 - [State Locking](https://developer.hashicorp.com/terraform/language/state/locking)
-- [Parámetro `use_lockfile` en el backend S3](https://developer.hashicorp.com/terraform/language/backend/s3#use_lockfile)
 - [Recurso aws_dynamodb_table](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table)
 - [Recurso aws_s3_bucket_versioning](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_versioning)

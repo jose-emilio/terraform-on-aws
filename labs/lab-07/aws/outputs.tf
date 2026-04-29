@@ -22,18 +22,3 @@ output "backend_config" {
     }
   EOT
 }
-
-output "backend_config_native_lock" {
-  description = "Bloque backend con locking nativo de S3 (sin DynamoDB) listo para copiar"
-  value       = <<-EOT
-    terraform {
-      backend "s3" {
-        bucket       = "${var.bucket_name}"
-        key          = "PROYECTO/terraform.tfstate"
-        region       = "us-east-1"
-        encrypt      = true
-        use_lockfile = true
-      }
-    }
-  EOT
-}
