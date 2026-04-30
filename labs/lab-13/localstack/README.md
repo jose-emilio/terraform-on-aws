@@ -34,7 +34,7 @@ sin necesidad de una cuenta de AWS.
 # Arrancar LocalStack
 localstack start -d
 
-cd labs/lab13/localstack
+cd labs/lab-13/localstack
 terraform init
 terraform plan
 terraform apply

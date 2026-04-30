@@ -128,7 +128,7 @@ lab13/
 ## Despliegue en AWS real
 
 ```bash
-cd labs/lab13/aws
+cd labs/lab-13/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -380,7 +380,7 @@ resource "aws_s3_bucket_policy" "enforce_kms" {
         Action    = "s3:PutObject"
         Resource  = "${aws_s3_bucket.main.arn}/*"
         Condition = {
-          "ForAllValues:StringNotEquals" = {
+          "ForAllValues:StringNotEqualsIfExists" = {
             "s3:x-amz-server-side-encryption-aws-kms-key-id" = [
               aws_kms_key.main.arn,
               aws_kms_key.secondary.arn,
@@ -438,7 +438,7 @@ output "ebs_snapshot_id" {
 }
 ```
 
-**Por qué `terraform apply` puede tardar varios minutos**
+**Por qué `terraform apply` podría tardar varios minutos**
 
 Terraform llama a `ec2:CreateSnapshot` y luego espera a que el estado sea
 `completed` antes de continuar. En volúmenes pequeños y vacíos suele tardar
@@ -455,11 +455,11 @@ aws ec2 describe-snapshots \
 ## Limpieza
 
 ```bash
-cd labs/lab13/aws
+cd labs/lab-13/aws
 terraform destroy
 ```
 
-> Los volúmenes EBS y los snapshots tienen coste por hora aunque estén sin adjuntar.
+> Los volúmenes EBS se facturan por GiB-hora aunque estén sin adjuntar; los snapshots se facturan por GiB-mes.
 > Destruye los recursos al terminar el laboratorio.
 
 ## Buenas prácticas aplicadas
