@@ -127,7 +127,7 @@ lab14/
 En el primer despliegue la CMK aún no existe, por lo que el backend usa SSE-S3:
 
 ```bash
-cd labs/lab14/aws
+cd labs/lab-14/aws
 
 # Si no tienes la variable inicializada de la sección de requisitos previos:
 export BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
@@ -322,39 +322,30 @@ resource "aws_secretsmanager_secret_policy" "db" {
 
 ```bash
 SECRET=$(terraform output -raw secret_name)
-ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-APP_ROLE_ARN=$(terraform output -raw app_role_arn)
 
-# Confirmar que el rol de aplicación existe
+# 1. Confirmar que el rol de aplicación existe
 aws iam get-role --role-name lab14-app-role \
   --query 'Role.{RoleName:RoleName,Arn:Arn}'
 
-# Confirmar que el rol tiene la política inline sobre el secreto
-aws iam list-role-policies --role-name lab14-app-role \
-  --query 'PolicyNames'
-# Esperado: ["lab14-read-secret"]
+# 2. Confirmar que el rol tiene la política inline que permite leer el secreto
+aws iam get-role-policy \
+  --role-name lab14-app-role \
+  --policy-name lab14-read-secret \
+  --query 'PolicyDocument.Statement[0].{Effect:Effect,Action:Action,Resource:Resource}'
+# Esperado: Effect "Allow", Action incluye secretsmanager:GetSecretValue,
+#           Resource = ARN exacto del secreto
 
-# Verificar la política de recurso del secreto
+# 3. Verificar el contenido de la resource policy del secreto
 aws secretsmanager get-resource-policy \
   --secret-id "$SECRET" \
   --query ResourcePolicy --output text | python3 -m json.tool
 # Esperado: Statement con Deny y condición StringNotLike sobre el rol de app
 
-# Simular que el rol de aplicación lee el secreto → debe estar permitido
-aws iam simulate-principal-policy \
-  --policy-source-arn "$APP_ROLE_ARN" \
-  --action-names secretsmanager:GetSecretValue \
-  --resource-arns "$(terraform output -raw secret_arn)" \
-  --query 'EvaluationResults[0].EvalDecision'
-# Esperado: "allowed"
-
-# Simular que un usuario no autorizado intenta leer → debe ser denegado
-aws iam simulate-principal-policy \
-  --policy-source-arn "arn:aws:iam::${ACCOUNT}:user/intruso" \
-  --action-names secretsmanager:GetSecretValue \
-  --resource-arns "$(terraform output -raw secret_arn)" \
-  --query 'EvaluationResults[0].EvalDecision'
-# Esperado: "explicitDeny"
+# 4. Verificación end-to-end: tu usuario actual NO es el rol de app, así que
+#    la resource policy debe denegarte el acceso al secreto. Es la prueba
+#    definitiva de que el control funciona.
+aws secretsmanager get-secret-value --secret-id "$SECRET" 2>&1 | head -3
+# Esperado: AccessDeniedException ... explicit deny in a resource-based policy
 ```
 
 ## Soluciones
@@ -434,7 +425,7 @@ resource "aws_secretsmanager_secret_policy" "db" {
       Effect    = "Deny"
       Principal = { AWS = "*" }
       Action    = "secretsmanager:GetSecretValue"
-      Resource  = "*"
+      Resource  = aws_secretsmanager_secret.db.arn
       Condition = {
         StringNotLike = {
           # El wildcard cubre tanto el ARN del rol como el ARN de las sesiones
@@ -457,10 +448,6 @@ output "app_role_arn" {
   value       = aws_iam_role.app.arn
 }
 
-output "secret_arn" {
-  description = "ARN del secreto en Secrets Manager"
-  value       = aws_secretsmanager_secret.db.arn
-}
 ```
 
 **Efecto neto tras aplicar**
@@ -483,24 +470,42 @@ output "secret_arn" {
 > Esto es intencional — demuestra que el Deny de la política de recurso tiene
 > precedencia sobre cualquier Allow en las políticas de identidad.
 
+> **Implicación al destruir:** Terraform invoca `GetSecretValue` durante el
+> refresh para leer el estado de `aws_secretsmanager_secret_version`. Con la
+> resource policy aplicada tu operador queda bloqueado y `terraform destroy`
+> falla con `AccessDeniedException`. La sección [Limpieza](#limpieza) documenta
+> el workaround.
+
 </details>
 
 ## Limpieza
 
 ```bash
-cd labs/lab14/aws
+cd labs/lab-14/aws
 terraform destroy
 ```
-
-> Si migraste el backend a KMS, revierte `kms_key_id` en `aws.s3.tfbackend`
-> y ejecuta `terraform init -reconfigure` antes de destruir — de lo contrario
-> la CMK se destruirá primero y el estado quedará ilegible.
->
 > La CMK tiene `deletion_window_in_days = 7`: durante esos 7 días está
 > deshabilitada pero no eliminada. Puedes cancelar el borrado con
 > `aws kms cancel-key-deletion --key-id <key-id>`.
 
-## Buenas prácticas aplicadas
+> **Si aplicaste el Reto 1**, la resource policy del secreto deniega
+> `GetSecretValue` a tu operador. Terraform necesita esa acción durante el
+> refresh previo al destroy (para leer el estado de `aws_secretsmanager_secret_version`),
+> así que el destroy fallará con `AccessDeniedException`. Solución:
+>
+> ```bash
+> # Eliminar la resource policy con la CLI
+> aws secretsmanager delete-resource-policy \
+>   --secret-id $(terraform output -raw secret_name)
+>
+> # Refrescar el estado para que Terraform vea que la policy ya no está
+> terraform refresh
+>
+> # Ahora sí, destruir
+> terraform destroy
+> ```
+
+## Buenas prácticas
 
 | Práctica | Implementación |
 |----------|----------------|
@@ -509,7 +514,6 @@ terraform destroy
 | Formato JSON en Secrets Manager | Una sola llamada a `GetSecretValue` devuelve todos los datos de conexión |
 | CMK compartida entre servicios | Una sola llave KMS cifra Secrets Manager, RDS y el backend S3 |
 | Hardening del backend | `kms_key_id` en el backend S3 protege el `.tfstate` que contiene la contraseña |
-| `recovery_window_in_days = 0` | Evita conflictos de nombre al destruir y re-crear el lab |
 | Rotación automática de la CMK | `enable_key_rotation = true` — anual, sin cambio de ARN |
 
 ## Recursos

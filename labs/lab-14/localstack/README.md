@@ -45,7 +45,7 @@ export AWS_ENDPOINT_URL=http://localhost.localstack.cloud:4566
 # Arrancar LocalStack
 localstack start -d
 
-cd labs/lab14/localstack
+cd labs/lab-14/localstack
 terraform init -backend-config=localstack.s3.tfbackend
 terraform plan
 terraform apply

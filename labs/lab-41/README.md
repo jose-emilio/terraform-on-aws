@@ -1599,7 +1599,6 @@ git config --global --unset credential.UseHttpPath
 ## Recursos
 
 - [AWS CodeCommit — Approval Rule Templates](https://docs.aws.amazon.com/codecommit/latest/userguide/approval-rule-templates.html)
-- [AWS CodeCommit — Restricciones de rama con IAM](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-conditional-branch.html)
 - [AWS CodeStar Notifications](https://docs.aws.amazon.com/dtconsole/latest/userguide/welcome.html)
 - [Amazon SNS — Suscripciones y filtraje de mensajes](https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html)
 - [Amazon EventBridge — Reglas de eventos](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rules.html)
