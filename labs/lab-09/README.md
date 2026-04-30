@@ -422,7 +422,33 @@ El resultado: el `precondition` corta la ejecución antes de que el `check` lleg
 
 ---
 
-## 4. Limpieza
+## 4. Verificación del despliegue
+
+Ejecuta estas comprobaciones antes de la limpieza, mientras los recursos siguen desplegados.
+
+```bash
+# Ver los workspaces existentes
+terraform workspace list
+# Esperado: default, dev, prod (también staging si completaste el reto)
+
+# Verificar el workspace activo
+terraform workspace show
+# Esperado: prod (o dev segun el contexto)
+
+# Comprobar que los recursos del workspace prod tienen el CIDR correcto
+aws ec2 describe-vpcs \
+  --filters "Name=tag:Environment,Values=prod" \
+  --query 'Vpcs[*].{ID:VpcId,CIDR:CidrBlock}' \
+  --output table
+
+# Comprobar que el check {} no lanza UNKNOWN en el workspace dev
+terraform workspace select dev
+terraform plan -detailed-exitcode
+```
+
+---
+
+## 5. Limpieza
 
 **AWS real:**
 
@@ -459,15 +485,15 @@ terraform workspace delete staging
 
 ---
 
-## 5. LocalStack
+## 6. LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
-El comportamiento de workspaces, `check {}` y `precondition` es idéntico al de AWS real. Requiere que el bucket de estado de `lab07/localstack/` esté desplegado previamente.
+El comportamiento de workspaces, `check {}` y `precondition` es idéntico al de AWS real. Requiere que el bucket de estado de `lab02/localstack/` esté desplegado previamente.
 
 ---
 
-## 6. Comparativa AWS Real vs LocalStack
+## 7. Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -481,30 +507,6 @@ El comportamiento de workspaces, `check {}` y `precondition` es idéntico al de 
 
 ---
 
-## Verificación final
-
-```bash
-# Ver los workspaces existentes
-terraform workspace list
-# Esperado: default, dev, prod
-
-# Verificar el workspace activo
-terraform workspace show
-# Esperado: prod (o dev segun el contexto)
-
-# Comprobar que los recursos del workspace prod tienen el CIDR correcto
-aws ec2 describe-vpcs \
-  --filters "Name=tag:Workspace,Values=prod" \
-  --query 'Vpcs[*].{ID:VpcId,CIDR:CidrBlock}' \
-  --output table
-
-# Comprobar que el check {} no lanza UNKNOWN en el workspace dev
-terraform workspace select dev
-terraform plan -detailed-exitcode
-```
-
----
-
 ## Buenas prácticas aplicadas
 
 - **Usa workspaces para entornos del mismo proyecto, no como sustituto de repositorios separados.** Los workspaces comparten el mismo código; si los entornos divergen significativamente en infraestructura, considera directorios separados o módulos.
@@ -512,7 +514,7 @@ terraform plan -detailed-exitcode
 - **No uses el workspace `default` para producción.** Es fácil olvidar cambiar de workspace. Reserva `default` para pruebas puntuales o usa siempre workspaces nombrados.
 - **Combina `check` y `precondition` según la criticidad.** `check` para inconsistencias que merecen atención pero no son bloqueantes; `precondition` para invariantes de seguridad que nunca deben violarse.
 - **El estado de cada workspace es independiente pero el código es compartido.** Un `terraform destroy` en el workspace `dev` no afecta al workspace `prod`. Sin embargo, un cambio en el código afecta a todos los workspaces en el próximo `plan`.
-- **En backends remotos, el workspace se refleja en la `key` del estado.** Con el backend S3 de lab07, el estado de `prod` se almacena en `env:/prod/<key>`. Documenta esta convención en el equipo.
+- **En backends remotos, el workspace se refleja en la `key` del estado.** Con el backend S3 de lab02, el estado de `prod` se almacena en `env:/prod/<key>`. Documenta esta convención en el equipo.
 
 ---
 

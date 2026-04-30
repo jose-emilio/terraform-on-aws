@@ -48,7 +48,7 @@ terraform.tfstate.d/dev/terraform.tfstate
 terraform.tfstate.d/prod/terraform.tfstate
 ```
 
-Con el backend S3 (lab07), la `key` se prefija automáticamente con el nombre del workspace: `env:/dev/lab9/terraform.tfstate`.
+Con el backend S3 (lab02), la `key` se prefija automáticamente con el nombre del workspace: `env:/dev/lab09/terraform.tfstate`.
 
 ### Configuración dinámica con `lookup()`
 
@@ -164,7 +164,7 @@ El flujo es idéntico a la sección AWS real:
 ```bash
 # Desde lab09/localstack/
 terraform fmt
-terraform init
+terraform init -backend-config=localstack.s3.tfbackend
 
 terraform workspace new dev
 terraform apply -var-file=dev.tfvars
@@ -205,7 +205,7 @@ terraform workspace delete prod
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
 | VPC con CIDR diferenciado | Infraestructura real, costes por recursos | Simulada, sin coste |
-| Estado por workspace | Archivo local o S3 (lab07) | Archivo local |
+| Estado por workspace | Archivo local o S3 (lab02) | S3 en LocalStack (lab02) |
 | Bloque `check {}` | Idéntico — no llama a la API | Idéntico |
 | `lifecycle { precondition }` | Idéntico — no llama a la API | Idéntico |
 | Verificación de VPCs | `aws ec2 describe-vpcs` | `aws --endpoint-url=... ec2 describe-vpcs` |
@@ -219,7 +219,7 @@ terraform workspace delete prod
 - **No uses el workspace `default` para producción.** Es fácil olvidar cambiar de workspace. Reserva `default` para pruebas puntuales o usa siempre workspaces nombrados.
 - **Combina `check` y `precondition` según la criticidad.** `check` para inconsistencias que merecen atención pero no son bloqueantes; `precondition` para invariantes de seguridad que nunca deben violarse.
 - **El estado de cada workspace es independiente pero el código es compartido.** Un `terraform destroy` en el workspace `dev` no afecta al workspace `prod`. Sin embargo, un cambio en el código afecta a todos los workspaces en el próximo `plan`.
-- **En backends remotos, el workspace se refleja en la `key` del estado.** Con el backend S3 de lab07, el estado de `prod` se almacena en `env:/prod/<key>`. Documenta esta convención en el equipo.
+- **En backends remotos, el workspace se refleja en la `key` del estado.** Con el backend S3 de lab02, el estado de `prod` se almacena en `env:/prod/<key>`. Documenta esta convención en el equipo.
 
 ---
 
