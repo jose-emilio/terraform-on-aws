@@ -141,7 +141,7 @@ lab12/
 ## Despliegue en AWS real
 
 ```bash
-cd labs/lab12/aws
+cd labs/lab-12/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -414,7 +414,7 @@ resource "aws_iam_role" "ec2" {
   name               = "${var.project}-ec2-role"
   path               = "/"
   assume_role_policy = data.aws_iam_policy_document.ec2_trust.json
-  description        = "Rol para instancias EC2 del lab12"
+  description        = "Rol para instancias EC2 del Lab12"
   permissions_boundary = aws_iam_policy.boundary.arn   # <-- añadido
 
   tags = merge(local.tags, { Name = "${var.project}-ec2-role" })
@@ -426,7 +426,7 @@ resource "aws_iam_role" "ec2" {
 ## Limpieza
 
 ```bash
-cd labs/lab12/aws
+cd labs/lab-12/aws
 terraform destroy
 ```
 

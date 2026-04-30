@@ -33,7 +33,7 @@ Este entorno cubre únicamente la creación y validación de los recursos IAM.
 # Arrancar LocalStack
 localstack start -d
 
-cd labs/lab12/localstack
+cd labs/lab-12/localstack
 terraform init
 terraform plan
 terraform apply
