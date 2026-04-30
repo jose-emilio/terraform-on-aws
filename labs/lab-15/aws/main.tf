@@ -2,15 +2,15 @@
 data "aws_caller_identity" "current" {}
 
 # ── OIDC Provider: GitHub Actions ────────────────────────────────────────────
-# El thumbprint corresponde al certificado raíz de token.actions.githubusercontent.com.
-# GitHub publica actualizaciones en: https://github.blog/changelog/
+# Desde julio 2023 AWS valida automáticamente los JWT de GitHub Actions contra
+# el JWKS público (https://token.actions.githubusercontent.com/.well-known/jwks)
+# sin necesidad de configurar thumbprint_list. El provider Terraform lo soporta
+# desde 5.x: el campo es opcional. Antes era obligatorio y todo el mundo
+# hardcodeaba el thumbprint del DigiCert root CA, requiriendo actualizaciones
+# manuales cada vez que GitHub rotaba el certificado.
 resource "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
-
+  url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
-
-  # Thumbprint SHA-1 del certificado raíz (DigiCert High Assurance EV Root CA)
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 
   tags = {
     Name      = "${var.project}-github-oidc"
@@ -62,42 +62,32 @@ resource "aws_iam_role" "github_actions" {
   }
 }
 
-# ── Política inline: permisos mínimos para Terraform plan/apply ──────────────
-data "aws_iam_policy_document" "terraform_permissions" {
-  # Leer y escribir el estado en S3
-  statement {
-    sid    = "TerraformStateS3"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:ListBucket",
-    ]
-    resources = [
-      "arn:aws:s3:::terraform-state-labs-${data.aws_caller_identity.current.account_id}",
-      "arn:aws:s3:::terraform-state-labs-${data.aws_caller_identity.current.account_id}/*",
-    ]
-  }
-
-  # Permisos IAM de sólo lectura (para terraform plan sin cambios en IAM)
-  statement {
-    sid    = "IAMReadOnly"
-    effect = "Allow"
-    actions = [
-      "iam:GetRole",
-      "iam:GetPolicy",
-      "iam:GetPolicyVersion",
-      "iam:ListRolePolicies",
-      "iam:ListAttachedRolePolicies",
-      "iam:GetOpenIDConnectProvider",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "github_actions_terraform" {
-  name   = "${var.project}-terraform-permissions"
-  role   = aws_iam_role.github_actions.id
-  policy = data.aws_iam_policy_document.terraform_permissions.json
+# ── Permisos del rol: PowerUserAccess ────────────────────────────────────────
+#
+# Para simplificar el laboratorio adjuntamos la política gestionada por AWS
+# `PowerUserAccess`, que concede acceso a casi todos los servicios (S3, KMS,
+# EC2, Lambda, etc.) excluyendo la gestión de IAM, organizaciones y account
+# settings. Es la política "todoterreno" que permite que el pipeline ejecute
+# Terraform contra prácticamente cualquier recurso sin tener que ampliar la
+# policy cada vez que el alumno cambia el demo.
+#
+# ⚠️ EN PRODUCCIÓN NO se usa así.
+#
+# El principio de privilegio mínimo (PoLP) exige conceder solo los permisos
+# imprescindibles para el caso de uso concreto. Una política inline restringida
+# a, por ejemplo:
+#
+#   - s3:Get*/Put*/List* solo sobre el bucket de estado
+#   - kms:Encrypt/Decrypt solo sobre la CMK del proyecto
+#   - ec2:Describe* y los Create/Delete específicos para los recursos del módulo
+#
+# reduce el blast radius si las credenciales temporales se vieran filtradas:
+# un atacante con esas credenciales solo podría tocar lo que el rol gestiona,
+# no exfiltrar otros servicios o cuentas. Esto es lo que un equipo real
+# despliega — y cuesta mantener cada vez que la infraestructura crece, motivo
+# por el que el lab simplifica con PowerUserAccess. Ver el [Reto 2] del README
+# para el ejercicio de convertir esto a privilegio mínimo real.
+resource "aws_iam_role_policy_attachment" "github_actions_poweruser" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
 }

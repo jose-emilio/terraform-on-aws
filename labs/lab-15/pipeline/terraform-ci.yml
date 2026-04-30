@@ -4,11 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "labs/Lab15/aws/**"
+      - "terraform/**"
+      - "policies/**"
   pull_request:
     branches: [main]
     paths:
-      - "labs/Lab15/aws/**"
+      - "terraform/**"
+      - "policies/**"
 
 permissions:
   id-token: write   # Requerido para solicitar el token OIDC
@@ -16,7 +18,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  TF_DIR: labs/Lab15/aws
+  TF_DIR: terraform
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
@@ -28,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── Checkov: análisis de compliance ──────────────────────────────────
       - name: Checkov — escaneo de configuraciones Terraform
@@ -37,50 +39,51 @@ jobs:
           directory: ${{ env.TF_DIR }}
           framework: terraform
           output_format: cli
-          # Fallos que se aceptan en este laboratorio (recursos de práctica):
-          soft_fail_on: CKV_AWS_117,CKV_AWS_116  # Lambda dentro de VPC (no aplica)
           download_external_modules: false
 
-      # ── tfsec: análisis de seguridad específico de Terraform ─────────────
-      - name: tfsec — análisis de seguridad Terraform
-        uses: aquasecurity/tfsec-action@v1.0.0
+      # ── Trivy: análisis de seguridad IaC (sucesor de tfsec) ──────────────
+      - name: Trivy — análisis de seguridad IaC
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          working_directory: ${{ env.TF_DIR }}
-          format: lovely
-          additional_args: --minimum-severity MEDIUM
+          version: v0.70.0
+          scan-type: config
+          scan-ref: ${{ env.TF_DIR }}
+          severity: MEDIUM,HIGH,CRITICAL
+          exit-code: "1"
 
       # ── OPA/Conftest: políticas personalizadas ────────────────────────────
       - name: Conftest — validación de políticas OPA/Rego
         run: |
-          # Instalar conftest
-          CONFTEST_VERSION="0.51.0"
+          # Instalar conftest (>= 0.56 entiende if/contains/in sin imports explícitos)
+          CONFTEST_VERSION="0.68.2"
           curl -sL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
             | tar xz conftest
           sudo mv conftest /usr/local/bin/
 
-          # Instalar terraform para generar el plan en JSON
-          # (en un pipeline real, reutiliza el plan de terraform-plan)
-          # Aquí se valida el directorio de terraform directamente
-          # conftest no descubre .tf automáticamente: se pasan con glob explícito
+          # Validar el código Terraform contra las políticas Rego.
+          # conftest no descubre .tf automáticamente: se pasan con glob explícito.
           conftest test ${{ env.TF_DIR }}/*.tf \
-            --policy labs/Lab15/policies/ \
+            --policy policies/ \
             --parser hcl2 \
             --all-namespaces \
             --no-color
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 2: Terraform plan (sólo en PR) — requiere OIDC
+  # Job 2: Terraform plan (en PR y en push a main) — requiere OIDC
+  # En push a main genera el tfplan que apply reutiliza (sin plan drift).
   # ─────────────────────────────────────────────────────────────────────────
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
     needs: security-scan
-    if: github.event_name == 'pull_request'
+    # Corre en PRs (para que el reviewer vea el plan) y también en push a main
+    # (para que apply reutilice ese plan exacto - evita el "plan drift").
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     environment: aws-readonly   # Entorno de GitHub con aprobación opcional
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── Autenticación OIDC: sin AWS_ACCESS_KEY_ID ni AWS_SECRET_ACCESS_KEY ─
       - name: Configurar credenciales AWS via OIDC
@@ -91,9 +94,9 @@ jobs:
           role-session-name: GitHubActions-Lab15-Plan
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: "~> 1.5"
+          terraform_version: "~> 1.10"
 
       - name: Terraform Init
         working-directory: ${{ env.TF_DIR }}
@@ -108,15 +111,12 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ env.TF_DIR }}
-        run: |
-          terraform plan \
-            -var="github_org=${{ github.repository_owner }}" \
-            -var="github_repo=${{ github.event.repository.name }}" \
-            -var="allowed_ref=ref:refs/heads/main" \
-            -out=tfplan
+        # Si tu código necesita variables, ponlas en un fichero
+        # *.auto.tfvars dentro de TF_DIR — Terraform las cargará automáticamente.
+        run: terraform plan -out=tfplan
 
       - name: Guardar plan como artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: ${{ env.TF_DIR }}/tfplan
@@ -128,13 +128,15 @@ jobs:
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
+    # Depende de plan: ahora plan también corre en push a main, así que apply
+    # reutiliza el artefacto tfplan generado en este mismo run (sin plan drift).
     needs: [security-scan, terraform-plan]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: aws-production   # Requiere aprobación manual en GitHub
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar credenciales AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -144,9 +146,9 @@ jobs:
           role-session-name: GitHubActions-Lab15-Apply
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: "~> 1.5"
+          terraform_version: "~> 1.10"
 
       - name: Terraform Init
         working-directory: ${{ env.TF_DIR }}
@@ -155,10 +157,15 @@ jobs:
             -backend-config=aws.s3.tfbackend \
             -backend-config="bucket=terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
 
+      # Descargar el plan generado por terraform-plan en este mismo run.
+      # Aplicarlo directamente garantiza que apply ejecuta exactamente lo que
+      # se planificó - sin plan drift entre validación y ejecución.
+      - name: Descargar artefacto del plan
+        uses: actions/download-artifact@v8
+        with:
+          name: tfplan
+          path: ${{ env.TF_DIR }}
+
       - name: Terraform Apply
         working-directory: ${{ env.TF_DIR }}
-        run: |
-          terraform apply -auto-approve \
-            -var="github_org=${{ github.repository_owner }}" \
-            -var="github_repo=${{ github.event.repository.name }}" \
-            -var="allowed_ref=ref:refs/heads/main"
+        run: terraform apply tfplan

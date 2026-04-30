@@ -76,7 +76,7 @@ GitHub Actions Job
                     └─────┬──────┘
                           │ permisos mínimos
                           ▼
-                    S3 (tfstate) + DynamoDB (lock)
+                    S3 (tfstate + lock nativo .tflock)
 ```
 
 ## Conceptos clave
@@ -92,13 +92,6 @@ y emite credenciales STS temporales si la Trust Policy lo permite.
 
 **Ventaja clave**: las credenciales tienen TTL de 1 hora y nunca se almacenan.
 No hay secreto que filtrar en GitHub.
-
-### Thumbprint del OIDC Provider
-
-El thumbprint es el hash SHA-1 del certificado raíz de la CA que firma el TLS de
-`token.actions.githubusercontent.com`. AWS lo usa para validar la identidad del
-IdP. El valor `6938fd4d98bab03faadb97b34396831e3780aea1` corresponde a DigiCert
-High Assurance EV Root CA.
 
 ### Trust Policy y el claim `sub`
 
@@ -177,11 +170,14 @@ lab15/
 ├── aws/
 │   ├── providers.tf          # Terraform + provider AWS
 │   ├── variables.tf          # region, project, github_org, github_repo, allowed_ref
-│   ├── main.tf               # OIDC provider + IAM role + política inline
+│   ├── main.tf               # OIDC provider + IAM role + PowerUserAccess attachment
 │   ├── outputs.tf            # ARN del rol y del OIDC provider
 │   └── aws.s3.tfbackend      # Configuración parcial del backend S3
 ├── pipeline/
-│   └── terraform-ci.yml      # Workflow GitHub Actions (security-scan → plan → apply)
+│   ├── terraform-ci.yml      # Workflow GitHub Actions (security-scan → plan → apply)
+│   └── terraform/            # Ejemplo Terraform de partida que el alumno copia a su repo
+│       ├── main.tf           # KMS key mínimo - pasa todos los gates de seguridad
+│       └── aws.s3.tfbackend  # Backend del demo
 ├── policies/
 │   ├── s3_encryption.rego    # Política OPA/Rego: S3 debe usar SSE-KMS
 │   └── fixtures/
@@ -193,7 +189,7 @@ lab15/
 ## Despliegue en AWS real
 
 ```bash
-cd labs/lab15/aws
+cd labs/lab-15/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -272,24 +268,24 @@ aws iam get-role \
 ```bash
 # Checkov
 pip install checkov
-checkov --directory labs/lab15/aws --framework terraform
+checkov --directory . --framework terraform
 
 # Trivy
 brew install trivy   # macOS; en Linux: descarga el binario de GitHub Releases
-trivy config labs/lab15/aws
+trivy config .
 
 # Conftest + política Rego (instalar una sola vez)
-brew install conftest  # o descarga el binario de GitHub Releases https://github.com/aquasecurity/trivy/releases/
+brew install conftest
 
 # Probar la política s3_encryption con los fixtures incluidos
-conftest test labs/lab15/policies/fixtures/bad_s3.tf \
-  --policy labs/lab15/policies/ \
+conftest test ../policies/fixtures/bad_s3.tf \
+  --policy ../policies/ \
   --parser hcl2 \
   --all-namespaces
 
-# Validar código propio (p.ej. lab13 que sí tiene S3)
-conftest test labs/lab13/aws/*.tf \
-  --policy labs/lab15/policies/ \
+# Validar código propio (p.ej. lab-13 que sí tiene S3)
+conftest test *.tf \
+  --policy ../policies/ \
   --parser hcl2 \
   --all-namespaces
 ```
@@ -341,8 +337,9 @@ STS devuelve `Not authorized to perform sts:AssumeRoleWithWebIdentity`.
 
 ### Paso 1 — Crear el entorno `production` en GitHub
 
-El rol fue desplegado con la restricción por entorno (Reto 1). Antes de poder
-asumir el rol, necesitas que exista el entorno en GitHub.
+Si has restringido el rol con `allowed_ref = "environment:production"` (en
+lugar del default `"*"`), antes de poder asumirlo necesitas que exista el
+entorno en GitHub.
 
 1. Ve a tu repositorio → **Settings** → **Environments** → **New environment**
 2. Nombre: `production`
@@ -358,7 +355,6 @@ El ARN del rol creado por Terraform debe estar disponible en el workflow como se
 Obtén el valor:
 
 ```bash
-cd labs/lab15/aws
 terraform output -raw github_actions_role_arn
 # Ejemplo: arn:aws:iam::510547572113:role/lab15-github-actions
 ```
@@ -373,7 +369,7 @@ En GitHub: **Settings** → **Secrets and variables** → **Actions** →
 
 ### Paso 3 — Crear el workflow de prueba
 
-Crea el fichero `.github/workflows/test-oidc.yml` en tu repositorio con el
+Desde la consola de GitHub, crea el fichero `.github/workflows/test-oidc.yml` en tu repositorio con el
 siguiente contenido:
 
 ```yaml
@@ -521,7 +517,6 @@ ejecutarse de nuevo para obtener credenciales frescas.
 |---|---|---|
 | Step bloqueado / timeout | Falta `permissions: id-token: write` | Añadir el bloque `permissions` al workflow |
 | `Not authorized to perform sts:AssumeRoleWithWebIdentity` | El `sub` del token no coincide con la Trust Policy | Verificar `github_org`, `github_repo` y `allowed_ref` con `terraform output` y redesplegar |
-| `InvalidIdentityToken` | El thumbprint del OIDC provider no coincide | Recrear el `aws_iam_openid_connect_provider` con `terraform taint` |
 | `ExpiredTokenException` | Las credenciales caducaron (TTL 1h) | Ejecutar el workflow de nuevo |
 
 Para comparar el `sub` real con la Trust Policy en cualquier momento:
@@ -534,6 +529,166 @@ aws iam get-role \
 
 # El sub real lo muestra el Paso A del workflow en el log de Actions
 ```
+
+---
+
+## Despliegue del pipeline DevSecOps
+
+Una vez verificada la federación OIDC, el siguiente paso del lab es activar el
+pipeline completo de [`pipeline/terraform-ci.yml`](pipeline/terraform-ci.yml).
+Combina los tres jobs del flujo DevSecOps:
+
+1. **`security-scan`** — Checkov + Trivy + Conftest (sin credenciales AWS).
+2. **`terraform-plan`** — en pull requests **y** en push a `main`, con OIDC y entorno `aws-readonly`. En el push a main genera el `tfplan` que reutiliza el job de apply.
+3. **`terraform-apply`** — solo en push a `main`, descarga el `tfplan` del job anterior y lo aplica con OIDC y aprobación manual en `aws-production`.
+
+### Paso 1 — Crear los entornos `aws-readonly` y `aws-production`
+
+En GitHub: **Settings** → **Environments** → **New environment**. Crea dos:
+
+| Entorno | Uso | Recomendación |
+|---|---|---|
+| `aws-readonly` | `terraform plan` en pull requests | Sin reviewers — automático |
+| `aws-production` | `terraform apply` tras merge a `main` | **Required reviewers** activado |
+
+> El workflow de test OIDC del apartado anterior usaba el entorno `production`
+> (más simple). Este pipeline usa dos entornos distintos para separar lectura
+> y escritura: alinea el `allowed_ref` del rol con los `sub` que GitHub emitirá
+> (`repo:<org>/<repo>:environment:aws-readonly` y `:environment:aws-production`).
+
+### Paso 2 — Ajustar el `allowed_ref` del rol IAM
+
+La Trust Policy debe aceptar los dos entornos. La forma más simple es usar `*`
+y dejar que GitHub Environments haga el control de aprobación, pero si quieres
+restricción estricta:
+
+```bash
+terraform apply \
+  -var="github_org=<tu-org>" \
+  -var="github_repo=<tu-repo>" \
+  -var='allowed_ref=environment:aws-*'
+```
+
+### Paso 3 — Preparar el repo de pruebas y activar el pipeline
+
+GitHub Actions solo ejecuta workflows ubicados en `.github/workflows/` **del
+repo configurado en `github_org`/`github_repo`** (el que la Trust Policy del
+rol autoriza a asumir credenciales). No copies nada a este repo del curso —
+todo va al tuyo.
+
+El pipeline está escrito para trabajar sobre una estructura genérica:
+
+```
+<tu-repo>/
+├── .github/workflows/
+│   └── terraform-ci.yml      ← el pipeline (de lab-15/pipeline/)
+├── terraform/                ← código Terraform a desplegar (TF_DIR)
+│   ├── main.tf
+│   └── aws.s3.tfbackend
+└── policies/                 ← políticas OPA/Rego (--policy)
+    └── *.rego
+```
+
+Como punto de partida, dentro de [`pipeline/terraform/`](pipeline/terraform/)
+del lab tienes un **ejemplo mínimo y seguro** (clave KMS + rotación automática)
+diseñado para pasar todos los gates del pipeline sin intervención. Puedes
+sustituirlo después por tu propia infraestructura.
+
+Si aún no tienes un repo de pruebas, clónalo en `/tmp/` y trabaja desde ahí:
+
+```bash
+# Sustituye <tu-org>/<tu-repo> por los valores que pasaste a Terraform
+cd /tmp
+git clone git@github.com:<tu-org>/<tu-repo>.git
+cd <tu-repo>
+
+# Ajusta esto a la ruta absoluta de tu clon local del curso
+export LAB_REPO="$HOME/path/al/curso/terraform-on-aws"
+
+# 1. Copiar el workflow
+mkdir -p .github/workflows
+cp $LAB_REPO/labs/lab-15/pipeline/terraform-ci.yml .github/workflows/terraform-ci.yml
+
+# 2. Copiar las políticas OPA (puedes empezar con las del lab y añadir más)
+mkdir -p policies
+cp $LAB_REPO/labs/lab-15/policies/*.rego policies/
+
+# 3. Copiar el ejemplo Terraform mínimo de partida
+mkdir -p terraform
+cp $LAB_REPO/labs/lab-15/pipeline/terraform/* terraform/
+
+git add .github/workflows/terraform-ci.yml policies/ terraform/
+git commit -m "Activar pipeline DevSecOps de lab-15"
+git push
+```
+
+A partir de aquí, cualquier cambio en `terraform/**` o `policies/**` dispara
+el pipeline. Cuando quieras desplegar tu propia infraestructura, sustituye
+los `*.tf` de `terraform/` por tu código (manteniendo la coherencia con el
+backend declarado en `aws.s3.tfbackend`).
+
+#### Probar los dos flujos del pipeline
+
+Para ver con tus propios ojos el comportamiento condicional de los jobs (que
+ya viste documentado en la sección anterior), prueba los dos escenarios:
+
+**A. Push directo a `main`** — dispara el flujo completo (security-scan →
+plan → apply con aprobación):
+
+```bash
+# Edita un fichero dentro de terraform/ para forzar el trigger del pipeline
+echo "# trigger inicial" >> terraform/main.tf
+git add terraform/main.tf
+git commit -m "Trigger inicial del pipeline"
+git push origin main
+```
+
+En la pestaña **Actions** del repo verás:
+- ✅ `security-scan`
+- ✅ `terraform-plan` (corre en push a main para generar el `tfplan`)
+- ⏸ `terraform-apply` — pausa esperando aprobación en `aws-production`. Apruébalo manualmente y observa el `terraform apply tfplan`.
+
+**B. Crear una rama, push y abrir PR contra `main`** — dispara solo
+security-scan + plan (apply queda esperando al merge):
+
+```bash
+git checkout -b feature/probar-pr
+echo "# cambio en una rama feature" >> terraform/main.tf
+git add terraform/main.tf
+git commit -m "Probar el flujo de PR"
+git push origin feature/probar-pr
+# Abre la PR desde la UI de GitHub o con: gh pr create --base main
+```
+
+En el run del PR:
+- ✅ `security-scan`
+- ✅ `terraform-plan` (el reviewer puede inspeccionar el log antes de aprobar)
+- ⏭ `terraform-apply` — *skipped* (no es un push a main, todavía no toca aplicar)
+
+Cuando mergees la PR, GitHub dispara un nuevo run sobre `main` que sí
+ejecutará apply (con su pausa de aprobación).
+
+> **¿Pipeline no se dispara?** Suele ser por el filtro `paths:` del workflow:
+> si tu commit no toca `terraform/**` ni `policies/**`, GitHub no lanza el
+> workflow. Verifica con `git diff --name-only origin/main...HEAD`.
+
+### Paso 4 — Permisos del rol
+
+El rol IAM tiene adjunta la política gestionada `PowerUserAccess`
+([aws/main.tf:65-93](aws/main.tf)), que concede acceso a casi todos los
+servicios AWS (S3, KMS, EC2, Lambda, etc.) salvo IAM, Organizations y
+Account settings. Permite que el pipeline despliegue casi cualquier
+infraestructura sin tener que ampliar la policy cada vez que cambias el demo.
+
+> ⚠️ **PowerUserAccess no es producción.** Es una decisión didáctica para
+> simplificar el lab. En producción se aplica el **principio de mínimo
+> privilegio**: una policy inline restringida a los ARNs y acciones concretas
+> que el rol necesita para gestionar sus recursos. Ver el [Reto](#reto--sustituir-poweruseraccess-por-una-policy-de-mínimo-privilegio)
+> para hacer ese ejercicio de fortificación.
+
+> El **workflow de prueba OIDC** del apartado anterior es independiente: sigue
+> sirviendo para depurar la federación de forma aislada sin ejecutar Terraform
+> ni los gates de seguridad.
 
 ---
 
@@ -606,11 +761,14 @@ desenvolver el array.
 
 ### Paso 1 — Estructura básica del fichero
 
-Crea `labs/lab15/policies/sg_no_public_ingress.rego` con el paquete y el
-conjunto de CIDRs prohibidos:
+Crea `labs/lab-15/policies/sg_no_public_ingress.rego` con el paquete, el
+import del syntax v1 (compatibilidad con versiones de OPA anteriores a la 1.0)
+y el conjunto de CIDRs prohibidos:
 
 ```rego
 package terraform.security_groups
+
+import rego.v1
 
 public_cidrs := {"0.0.0.0/0", "::/0"}
 ```
@@ -700,8 +858,8 @@ aws_security_group "restricted"  cidr_blocks      = ["10.0.0.0/8"] → sin fallo
 Ejecuta:
 
 ```bash
-conftest test labs/lab15/policies/fixtures/bad_sg.tf \
-  --policy labs/lab15/policies/ \
+conftest test labs/lab-15/policies/fixtures/bad_sg.tf \
+  --policy labs/lab-15/policies/ \
   --parser hcl2 \
   --all-namespaces
 ```
@@ -720,159 +878,151 @@ El `restricted` produce el "1 passed" — su CIDR `10.0.0.0/8` no está en `publ
 
 ---
 
-## Retos
+## Reto — Sustituir PowerUserAccess por una policy de mínimo privilegio
 
-### Reto 1 — Restringir el rol al entorno `production` de GitHub
+El rol del lab tiene `PowerUserAccess`, lo que es cómodo para el demo pero
+sería inaceptable en producción: si las credenciales temporales se filtraran,
+el atacante podría tocar prácticamente cualquier servicio de la cuenta.
 
-Por defecto el rol acepta cualquier ref (`allowed_ref = "*"`). Añade soporte
-para restringir también por **entorno de GitHub** (el claim `sub` incluye
-`environment:<nombre>` cuando el workflow declara `environment:`).
+Tu tarea es sustituir el `aws_iam_role_policy_attachment` actual por una
+**policy inline de mínimo privilegio** que conceda exactamente lo que el demo
+del pipeline (`pipeline/terraform/main.tf`) necesita y nada más:
 
-**Objetivo**: el rol sólo debe ser asumible desde el entorno `production` del
-repositorio autorizado, no desde ninguna rama directamente.
+- `s3:Get*/Put*/List*/Delete*` solo sobre el bucket de estado (con condition
+  de prefijo si quieres ser aún más estricto).
+- Permisos KMS para gestionar la CMK del demo (CreateKey, CreateAlias,
+  Describe/Get/Put policy, EnableKeyRotation, TagResource, ScheduleKeyDeletion...).
+- `iam:GetRole`, `iam:GetOpenIDConnectProvider` y similares para el refresh
+  del estado del propio lab-15.
 
-**Pista**: el claim `sub` en ese caso tiene la forma
-`repo:<org>/<repo>:environment:production`.
-
-#### Prueba
-
-```bash
-# Comprueba que la Trust Policy actualizada contiene el entorno
-aws iam get-role \
-  --role-name lab15-github-actions \
-  --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition.StringLike'
-# Esperado: {"token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:environment:production"}
-```
-
----
-
-### Reto 2 — Añadir permiso de sólo lectura sobre EC2 al rol
-
-El rol actual sólo puede operar sobre S3 y DynamoDB (para el estado de
-Terraform). Extiéndelo para que pueda ejecutar `terraform plan` en
-infraestructuras que incluyan recursos EC2, añadiendo los permisos de lectura
-necesarios (`ec2:Describe*`).
-
-**Requisito**: no usar políticas gestionadas AWS (`ReadOnlyAccess`); define los
-permisos con granularidad mínima en la política inline existente.
+**Requisito**: nada de políticas gestionadas AWS (`ReadOnlyAccess`,
+`PowerUserAccess`, etc.). Todo en `data.aws_iam_policy_document` declarando
+acciones y recursos concretos.
 
 #### Prueba
 
 ```bash
 ROLE_NAME=$(terraform output -raw github_actions_role_name)
 
-# Verificar que el nuevo statement aparece en la política inline
+# 1. Confirmar que PowerUserAccess ya no está adjunto
+aws iam list-attached-role-policies --role-name "$ROLE_NAME"
+# Esperado: lista vacía o sin "PowerUserAccess"
+
+# 2. Confirmar que la policy inline existe con los statements esperados
+aws iam list-role-policies --role-name "$ROLE_NAME"
+# Esperado: ["lab15-terraform-permissions"] (o el nombre que le hayas dado)
+
 aws iam get-role-policy \
   --role-name "$ROLE_NAME" \
   --policy-name lab15-terraform-permissions \
-  --query 'PolicyDocument.Statement[?Sid==`EC2ReadOnly`]'
-# Esperado: statement con Action ["ec2:Describe*"] y Effect "Allow"
+  --query 'PolicyDocument.Statement[].Sid'
+# Esperado: nombres de tus statements (TerraformStateS3, KMSManagement, IAMReadOnly, etc.)
+
+# 3. Re-ejecutar el pipeline en tu repo de pruebas. El plan y el apply del
+#    demo (KMS) deben seguir funcionando. Si añades un recurso fuera del
+#    alcance de la policy (ej. un aws_s3_bucket), el apply debe fallar con
+#    AccessDenied — eso prueba que el principio funciona.
 ```
 
-## Soluciones
+## Solución
 
 <details>
-<summary>Reto 1 — Restringir al entorno production</summary>
+<summary>Sustituir PowerUserAccess por una policy inline mínima</summary>
 
-Actualiza `variables.tf` para documentar el nuevo formato y aplica con:
+**Paso 1 — Eliminar el attachment de PowerUserAccess en `aws/main.tf`**:
 
-```bash
-terraform apply \
-  -var="github_org=<tu-org>" \
-  -var="github_repo=<tu-repo>" \
-  -var='allowed_ref=environment:production'
-```
+Borra el recurso `aws_iam_role_policy_attachment.github_actions_poweruser`.
 
-La variable `allowed_ref` ya se incluye directamente en el claim `sub`:
-`repo:<org>/<repo>:environment:production`. El recurso `aws_iam_openid_connect_provider`
-y la Trust Policy no cambian — sólo el valor de `allowed_ref`.
-
-**Por qué funciona**: la condición `StringLike` en la Trust Policy compara el
-claim `sub` del JWT con el patrón `repo:<org>/<repo>:<allowed_ref>`. Si el
-workflow declara `environment: production`, GitHub emite el token con
-`sub = repo:<org>/<repo>:environment:production`, que coincide exactamente con
-el patrón. Si el job no declara entorno, `sub` será `repo:<org>/<repo>:ref:refs/heads/<rama>`
-y la condición fallará — el rol no se asumirá.
-
-**Verificación**:
-```bash
-aws iam get-role \
-  --role-name lab15-github-actions \
-  --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition'
-```
-
-Resultado esperado:
-```json
-{
-  "StringEquals": {
-    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-  },
-  "StringLike": {
-    "token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:environment:production"
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Reto 2 — Permisos EC2 mínimos en la política inline</summary>
-
-Añade un statement en `data.aws_iam_policy_document.terraform_permissions` en
-`main.tf`:
+**Paso 2 — Declarar la policy inline con los statements mínimos**:
 
 ```hcl
-statement {
-  sid    = "EC2ReadOnly"
-  effect = "Allow"
-  actions = [
-    "ec2:DescribeInstances",
-    "ec2:DescribeInstanceTypes",
-    "ec2:DescribeImages",
-    "ec2:DescribeSecurityGroups",
-    "ec2:DescribeSubnets",
-    "ec2:DescribeVpcs",
-    "ec2:DescribeVolumes",
-    "ec2:DescribeKeyPairs",
-    "ec2:DescribeAvailabilityZones",
-    "ec2:DescribeTags",
-    "ec2:DescribeInternetGateways",
-    "ec2:DescribeRouteTables",
-    "ec2:DescribeNetworkInterfaces",
-    "ec2:DescribeInstanceAttribute",
-  ]
-  resources = ["*"]  # Las acciones Describe* de EC2 no admiten recursos específicos
+data "aws_iam_policy_document" "terraform_permissions" {
+  # Estado de Terraform en S3
+  statement {
+    sid    = "TerraformStateS3"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::terraform-state-labs-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::terraform-state-labs-${data.aws_caller_identity.current.account_id}/*",
+    ]
+  }
+
+  # Gestión de la CMK del demo del pipeline.
+  # KMS no soporta ARNs específicos en CreateKey/CreateAlias - hay que usar "*".
+  statement {
+    sid    = "KMSManagement"
+    effect = "Allow"
+    actions = [
+      "kms:CreateKey", "kms:CreateAlias", "kms:DeleteAlias", "kms:UpdateAlias",
+      "kms:DescribeKey", "kms:GetKeyPolicy", "kms:PutKeyPolicy",
+      "kms:GetKeyRotationStatus", "kms:EnableKeyRotation", "kms:DisableKeyRotation",
+      "kms:UpdateKeyDescription",
+      "kms:TagResource", "kms:UntagResource", "kms:ListResourceTags",
+      "kms:ListAliases", "kms:ListKeys",
+      "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion",
+    ]
+    resources = ["*"]
+  }
+
+  # IAM read-only para el refresh del estado del propio lab-15
+  statement {
+    sid    = "IAMReadOnly"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:GetPolicy", "iam:GetPolicyVersion",
+      "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
+      "iam:GetOpenIDConnectProvider",
+    ]
+    resources = ["*"]
+  }
+
+  # STS para que aws_caller_identity funcione
+  statement {
+    sid       = "STSCallerIdentity"
+    effect    = "Allow"
+    actions   = ["sts:GetCallerIdentity"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_terraform" {
+  name   = "${var.project}-terraform-permissions"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.terraform_permissions.json
 }
 ```
 
-Luego aplica:
+**Paso 3 — Aplicar y verificar**:
+
 ```bash
-terraform apply \
-  -var="github_org=<tu-org>" \
-  -var="github_repo=<tu-repo>"
+terraform apply -var="github_org=<tu-org>" -var="github_repo=<tu-repo>"
 ```
 
-**Por qué `resources = ["*"]`**: las acciones `ec2:Describe*` son operaciones
-de lista/lectura que operan sobre la API regional — no hay un ARN de recurso
-específico que se pueda restringir. IAM requiere `"*"` para estas acciones.
-Esto es diferente de las acciones que operan sobre un recurso concreto (ej.
-`ec2:StartInstances` acepta ARN de instancia).
+**Por qué algunos statements usan `resources = ["*"]`**: muchas acciones
+KMS de creación (`CreateKey`, `CreateAlias`) no admiten ARNs específicos
+porque el recurso aún no existe en el momento de la llamada. IAM requiere
+`"*"` para esos casos. Donde sí se puede (S3 buckets concretos), se usa el
+ARN específico.
 
-**Verificación** (los permisos de identidad sí son evaluables con `simulate-principal-policy`):
-```bash
-aws iam simulate-principal-policy \
-  --policy-source-arn "$(terraform output -raw github_actions_role_arn)" \
-  --action-names "ec2:DescribeInstances" \
-  --resource-arns "*"
-# Esperado: EvalDecision: allowed
-```
+**Si añades nuevos recursos al demo**: cuando sustituyes `pipeline/terraform/`
+por código que use otros servicios (RDS, EC2, Lambda...), el apply fallará
+con `AccessDenied` hasta que añadas los statements correspondientes a esta
+policy. Esto es el principio funcionando — vas concediendo permisos
+deliberadamente, no por defecto.
 
 </details>
 
 ## Limpieza
 
 ```bash
-cd labs/lab15/aws
+cd labs/lab-15/aws
 terraform destroy \
   -var="github_org=<tu-org>" \
   -var="github_repo=<tu-repo>"
@@ -882,11 +1032,12 @@ terraform destroy \
 
 - **Sin credenciales estáticas**: el rol IAM sólo es asumible via OIDC, nunca con `AWS_ACCESS_KEY_ID`.
 - **Lock nativo de S3**: Terraform ≥ 1.10 gestiona el lock con un fichero `.tflock` en el propio bucket — sin dependencia de DynamoDB.
-- **Principio de mínimo privilegio**: la política inline limita acciones a S3 del estado + IAM read-only.
 - **Restricción por repositorio y ref**: la condición `StringLike` en `sub` evita que otros repositorios asuman el rol.
+- **Separación de entornos GitHub**: `aws-readonly` para `plan` (automático) y `aws-production` para `apply` (con aprobación manual). El claim `sub` del JWT incluye el entorno, lo que permitiría incluso usar dos roles distintos en AWS.
+- **Plan reutilizado en apply**: el `terraform apply` consume el `tfplan` generado por el job de plan en el mismo run — sin re-plan ni "plan drift" entre validación y ejecución.
 - **Seguridad desplazada a la izquierda**: Checkov y Trivy ejecutan antes del `plan` — un fallo de seguridad bloquea el pipeline sin consumir llamadas a AWS.
 - **Política como código**: OPA/Rego permite versionar, revisar y reutilizar reglas de compliance igual que el código de infraestructura.
-- **Entorno de aprobación**: el job `terraform-apply` requiere aprobación manual en el entorno `aws-production` de GitHub.
+- **PowerUserAccess solo para el lab**: el rol del pipeline tiene una política gestionada amplia para simplificar el aprendizaje, pero el [Reto](#reto--sustituir-poweruseraccess-por-una-policy-de-mínimo-privilegio) muestra cómo sustituirla por una policy inline de mínimo privilegio — patrón obligatorio en producción.
 
 ## Recursos
 

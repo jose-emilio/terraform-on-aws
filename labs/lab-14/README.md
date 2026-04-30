@@ -480,10 +480,10 @@ output "app_role_arn" {
 
 ## Limpieza
 
-```bash
-cd labs/lab-14/aws
-terraform destroy
-```
+> Si migraste el backend a KMS, revierte `kms_key_id` en `aws.s3.tfbackend`
+> y ejecuta `terraform init -backend-config=aws.s3.tfbackend -backend-config="bucket=$BUCKET" -reconfigure` antes de destruir — de lo contrario
+> la CMK se destruirá primero y el estado quedará ilegible.
+>
 > La CMK tiene `deletion_window_in_days = 7`: durante esos 7 días está
 > deshabilitada pero no eliminada. Puedes cancelar el borrado con
 > `aws kms cancel-key-deletion --key-id <key-id>`.
@@ -500,12 +500,12 @@ terraform destroy
 >
 > # Refrescar el estado para que Terraform vea que la policy ya no está
 > terraform refresh
->
-> # Ahora sí, destruir
-> terraform destroy
-> ```
 
-## Buenas prácticas
+```bash
+terraform destroy
+```
+
+## Buenas prácticas aplicadas
 
 | Práctica | Implementación |
 |----------|----------------|
@@ -514,6 +514,7 @@ terraform destroy
 | Formato JSON en Secrets Manager | Una sola llamada a `GetSecretValue` devuelve todos los datos de conexión |
 | CMK compartida entre servicios | Una sola llave KMS cifra Secrets Manager, RDS y el backend S3 |
 | Hardening del backend | `kms_key_id` en el backend S3 protege el `.tfstate` que contiene la contraseña |
+| `recovery_window_in_days = 0` | Evita conflictos de nombre al destruir y re-crear el lab |
 | Rotación automática de la CMK | `enable_key_rotation = true` — anual, sin cambio de ARN |
 
 ## Recursos
