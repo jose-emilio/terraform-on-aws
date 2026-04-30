@@ -8,7 +8,7 @@ Esta guía adapta el lab11 para ejecutarse íntegramente en LocalStack. Los conc
 ## Prerrequisitos
 
 - LocalStack corriendo: `localstack start -d`
-- lab07/localstack desplegado (crea bucket `terraform-state-labs`)
+- lab02/localstack desplegado (crea bucket `terraform-state-labs`)
 - AWS CLI configurado para LocalStack:
 
 ```bash
@@ -128,15 +128,24 @@ awslocal s3api list-object-versions \
 # Guardar VersionId de la versión sana
 GOOD_VERSION="<VersionId de la versión anterior>"
 
-# Corromper el estado actual
-echo '{"corrupted": true}' | awslocal s3 cp - s3://terraform-state-labs/lab11/terraform.tfstate
+# Corromper el estado actual (payload no-JSON para que Terraform falle al cargarlo)
+echo 'CORRUPTED' | awslocal s3 cp - s3://terraform-state-labs/lab11/terraform.tfstate
 ```
 
 Verifica que el estado está corrupto:
 
 ```bash
 terraform plan
-# Error: Failed to read state...
+# ╷
+# │ Error: Unsupported state file format
+# │
+# │ The state file could not be parsed as JSON: syntax error at byte offset 1.
+# ╵
+# ╷
+# │ Error: Unsupported state file format
+# │
+# │ The state file does not have a "version" attribute, which is required to identify the format version.
+# ╵
 ```
 
 ### 4.3 Restaurar el estado sano

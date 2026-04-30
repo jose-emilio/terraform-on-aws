@@ -24,8 +24,7 @@ Aprender a detectar y gestionar el **drift de infraestructura** (divergencia ent
 
 ## Prerrequisitos
 
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
-- lab07/aws desplegado (bucket S3 con versionado habilitado)
+- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
 - AWS CLI configurado con credenciales válidas
 - Terraform >= 1.5
 
@@ -262,20 +261,27 @@ echo "Versión sana: $GOOD_VERSION"
 ### 4.2 Simular la corrupción del estado
 
 ```bash
-# Sobreescribir el estado con contenido inválido
-echo '{"version":4,"corrupted":true}' | \
+# Sobreescribir el estado con contenido inválido (no es JSON parseable)
+echo 'CORRUPTED' | \
   aws s3 cp - s3://$BUCKET/lab11/terraform.tfstate
 ```
+
+> **Por qué `CORRUPTED` y no, por ejemplo,  `{"version":4,"corrupted":true}`:** este último es JSON válido con la versión actual del schema, así que Terraform lo aceptaría como un state vacío y respondería con un plan que recrearía toda la infraestructura — más peligroso que un error claro. Un payload no-JSON garantiza un fallo inmediato en la carga del estado.
 
 Verifica que Terraform ya no puede leer el estado:
 
 ```bash
 terraform plan
-# ╷#
- Error: state data in S3 does not have the expected content.
-│
-│ The state data in S3 does not have the expected content.
-│
+# ╷
+# │ Error: Unsupported state file format
+# │
+# │ The state file could not be parsed as JSON: syntax error at byte offset 1.
+# ╵
+# ╷
+# │ Error: Unsupported state file format
+# │
+# │ The state file does not have a "version" attribute, which is required to identify the format version.
+# ╵
 ```
 
 ### 4.3 Restaurar el estado sano desde S3
@@ -427,8 +433,7 @@ El tag `Environment = "staging"` está en el código y en la infraestructura. El
 ## 7. Limpieza
 
 ```bash
-terraform destroy \
-  -var="region=us-east-1"
+terraform destroy 
 ```
 
 > **Nota:** No destruyas el bucket S3, ya que es un recurso compartido entre laboratorios (lab02).
@@ -440,30 +445,6 @@ terraform destroy \
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
 El flujo es idéntico, sustituyendo `aws` por `awslocal` en todos los comandos de AWS CLI.
-
----
-
-## Verificación final
-
-```bash
-# Verificar el estado actual del bucket de aplicacion
-aws s3api get-bucket-tagging \
-  --bucket $(terraform output -raw app_bucket_name)
-
-# Detectar drift (si los tags han sido modificados manualmente)
-terraform plan -refresh-only
-
-# Comprobar las versiones del state en S3
-aws s3api list-object-versions \
-  --bucket $(terraform output -raw state_bucket_name) \
-  --prefix "lab11/terraform.tfstate" \
-  --query 'Versions[*].{Version:VersionId,LastModified:LastModified}' \
-  --output table
-
-# Confirmar que el estado esta sincronizado (no hay cambios pendientes)
-terraform plan -detailed-exitcode
-echo "Exit code: $? (0=sin cambios, 2=hay cambios)"
-```
 
 ---
 
