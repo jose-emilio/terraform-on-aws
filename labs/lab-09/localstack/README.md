@@ -246,13 +246,11 @@ El laboratorio despliega dos entornos (`dev` y `prod`). Tu tarea es añadir un t
 - Los tres workspaces tienen estados independientes.
 - Puedes explicar el comportamiento del bloque `check` en el punto 4.
 
-[Ver solución →](#6-solución-del-reto)
+[Ver solución →](#5-solución-del-reto)
 
 ---
 
 ## 5. Solución del Reto
-
-<a name="6-solución-del-reto"></a>
 
 > Intenta resolver el reto antes de leer esta sección.
 

@@ -25,7 +25,6 @@ Al finalizar este laboratorio serás capaz de:
 
 - Terraform >= 1.5 instalado
 - Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
-- Laboratorio 7 completado (bucket S3 con versionado habilitado)
 - LocalStack en ejecución — para la sección LocalStack
 
 ---
@@ -206,6 +205,11 @@ output "subnet_id" {
   description = "ID de la subred pública."
   value       = aws_subnet.public.id
 }
+
+output "vpc_cidr" {
+  description = "Bloque CIDR de la VPC."
+  value       = aws_vpc.main.cidr_block
+}
 ```
 
 **`aws/compute/main.tf`** — Capa de Cómputo que consume la red:
@@ -228,7 +232,7 @@ locals {
 
 resource "aws_security_group" "app" {
   name        = "app-lab10"
-  description = "Security group de la capa de computo (lab10)"
+  description = "Security group de la capa de computo (Lab10)"
   vpc_id      = local.vpc_id
 
   egress {
@@ -239,7 +243,7 @@ resource "aws_security_group" "app" {
   }
 
   tags = {
-    Name      = "sg-app-lab10"
+    Name      = "app-lab10"
     ManagedBy = "terraform"
     Layer     = "compute"
   }
@@ -249,7 +253,8 @@ resource "aws_security_group" "app" {
 ### 1.3 Despliegue de la Capa de Red
 
 ```bash
-# Desde lab10/aws/network/
+# Desde lab-10/aws/network/
+
 terraform fmt
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -270,7 +275,8 @@ vpc_id    = "vpc-0a1b2c3d4e5f67890"
 ### 1.4 Despliegue de la Capa de Cómputo
 
 ```bash
-# Desde lab10/aws/compute/
+# Desde lab-10/aws/compute/
+
 terraform fmt
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -295,7 +301,8 @@ Esta es la demostración central del laboratorio. Vas a destruir completamente l
 **Paso 1** — Destruye la capa de cómputo:
 
 ```bash
-# Desde lab10/aws/compute/
+# Desde lab-10/aws/compute/
+
 terraform destroy -var="network_state_bucket=$STATE_BUCKET"
 ```
 
@@ -308,7 +315,8 @@ Plan: 0 to add, 0 to change, 1 to destroy.
 **Paso 2** — Verifica que la capa de red no fue afectada:
 
 ```bash
-# Desde lab10/aws/network/
+# Desde lab-10/aws/network/
+
 terraform state list
 ```
 
@@ -336,7 +344,8 @@ La VPC aparece con `State = available`. El blast radius del destroy de cómputo 
 **Paso 4** — Redespliega la capa de cómputo sin tocar la de red:
 
 ```bash
-# Desde lab10/aws/compute/
+# Desde lab-10/aws/compute/
+
 terraform apply -var="network_state_bucket=$STATE_BUCKET"
 ```
 
@@ -347,7 +356,8 @@ El security group se recrea referenciando el mismo `vpc_id` que ya existía. La 
 Puedes leer los outputs de la capa de red en cualquier momento sin necesidad de estar en el directorio de red:
 
 ```bash
-# Desde lab10/aws/compute/ (o cualquier directorio)
+# Desde lab-10/aws/compute/ (o cualquier directorio)
+
 aws s3 cp s3://$STATE_BUCKET/lab10/network/terraform.tfstate - | \
   python3 -c "import sys,json; s=json.load(sys.stdin); \
   [print(k,'=',v['value']) for k,v in s['outputs'].items()]"
@@ -384,7 +394,7 @@ La capa de red actual despliega una sola subred pública. Tu tarea es añadir un
 - El output de red `private_subnet_id` es accesible desde la capa de cómputo vía `terraform_remote_state`.
 - Puedes destruir y redesplegar la capa de cómputo sin afectar la capa de red.
 
-[Ver solución →](#6-solución-del-reto-segunda-subred)
+[Ver solución →](#3-solución-del-reto-segunda-subred)
 
 ---
 
@@ -430,7 +440,7 @@ El plan muestra `1 to add` (la nueva subred). Los recursos existentes no cambian
 ```hcl
 resource "aws_security_group" "internal" {
   name        = "internal-lab10"
-  description = "Security group interno de la capa de computo (lab10)"
+  description = "Security group interno de la capa de computo (Lab10)"
   vpc_id      = local.vpc_id
 
   egress {
@@ -441,7 +451,7 @@ resource "aws_security_group" "internal" {
   }
 
   tags = {
-    Name      = "sg-internal-lab10"
+    Name      = "internal-lab10"
     ManagedBy = "terraform"
     Layer     = "compute"
   }
@@ -463,9 +473,6 @@ output "internal_security_group_id" {
 # Desde compute/
 # AWS real:
 terraform apply -var="network_state_bucket=$STATE_BUCKET"
-
-# LocalStack:
-terraform apply
 ```
 
 El plan muestra `1 to add` (el nuevo security group). El security group existente no cambia y la capa de red no es tocada.
@@ -507,7 +514,7 @@ Tu tarea es leer el CIDR de la VPC desde el estado de la capa de red y usarlo pa
 - El output `vpc_cidr` de la capa de cómputo coincide exactamente con el de la capa de red.
 - Destruir y redesplegar la capa de cómputo no afecta al estado de la capa de red.
 
-[Ver solución →](#8-solución-del-reto-adicional)
+[Ver solución →](#5-solución-del-reto-adicional)
 
 ---
 
@@ -532,7 +539,7 @@ El output `vpc_cidr` ya existe en la capa de red desde el inicio del laboratorio
 ```hcl
 resource "aws_security_group" "app" {
   name        = "app-lab10"
-  description = "Security group de la capa de computo (lab10)"
+  description = "Security group de la capa de computo (Lab10)"
   vpc_id      = local.vpc_id
 
   ingress {
@@ -571,11 +578,8 @@ output "vpc_cidr" {
 
 ```bash
 # Desde compute/
-# AWS real:
-terraform apply -var="network_state_bucket=$STATE_BUCKET"
 
-# LocalStack:
-terraform apply
+terraform apply -var="network_state_bucket=$STATE_BUCKET"
 ```
 
 El plan debe mostrar exactamente:
@@ -621,17 +625,17 @@ terraform plan
 
 ---
 
-## Verificación final
+## 6. Verificación del despliegue
 
 ```bash
 # Verificar que la capa de red esta desplegada
-cd labs/lab10/aws/network
+cd labs/lab-10/aws/network
 terraform output vpc_id
-terraform output public_subnet_ids
+terraform output subnet_id
 
 # Verificar que la capa de computo consume el estado de red
 cd ../compute
-terraform output instance_public_ip
+terraform output security_group_id
 
 # Confirmar que terraform_remote_state lee correctamente los outputs de red
 terraform console <<'EOF'
@@ -640,22 +644,20 @@ EOF
 
 # Verificar que no hay cambios pendientes en ninguna capa
 cd ../network && terraform plan -detailed-exitcode
-cd ../compute && terraform plan -detailed-exitcode
+cd ../compute && terraform plan -detailed-exitcode -var="network_state_bucket=$STATE_BUCKET"
 ```
 
 ---
 
-## 6. Limpieza
+## 7. Limpieza
 
 Destruye en orden inverso: primero cómputo (que depende de red), luego red.
 
 > Si intentas destruir la capa de red antes que la de cómputo, el security group huérfano seguirá asociado a la VPC e impedirá su eliminación. Destruye siempre de hoja a raíz.
 
-**AWS real:**
-
 ```bash
 # Primero la capa de computo
-cd lab10/aws/compute/
+cd lab-10/aws/compute/
 terraform destroy -var="network_state_bucket=$STATE_BUCKET"
 
 # Luego la capa de red
@@ -663,21 +665,9 @@ cd ../network/
 terraform destroy
 ```
 
-**LocalStack:**
-
-```bash
-# Primero la capa de computo
-cd lab10/localstack/compute/
-terraform destroy
-
-# Luego la capa de red
-cd ../network/
-terraform destroy
-```
-
 ---
 
-## 7. LocalStack
+## 8. LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
@@ -685,7 +675,7 @@ En LocalStack se usa backend local en lugar de S3 para la capa de remote state. 
 
 ---
 
-## 8. Comparativa AWS Real vs LocalStack
+## 9. Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
