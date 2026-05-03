@@ -23,9 +23,9 @@ Implementar un sistema de nombres interno (`.internal`) sin necesidad de un domi
 
 ## Prerrequisitos
 
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
+- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.5
+- Terraform >= 1.10 (necesario para `use_lockfile` en el backend S3)
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -36,7 +36,7 @@ echo "Bucket: $BUCKET"
 ## Estructura del proyecto
 
 ```
-lab21/
+lab-21/
 ├── README.md                    <- Esta guía
 ├── aws/
 │   ├── providers.tf             <- Backend S3 parcial
@@ -84,7 +84,7 @@ Una VPC con:
 - Una **Zona Hospedada Privada** `app.internal` asociada a la VPC
 - Un registro **Alias** `web.app.internal` que apunta al ALB
 - Un registro **A** `db.app.internal` que apunta a la IP privada de una instancia (simulando una DB)
-- Una instancia de test para verificar la resolucion DNS con `nslookup` y `dig`
+- Una instancia de test para verificar la resolución DNS con `nslookup` y `dig`
 
 ### 1.2 Zona Hospedada Privada — DNS solo interno
 
@@ -175,7 +175,7 @@ Ambas opciones deben estar habilitadas para que Route 53 Private Hosted Zones fu
 ## 2. Despliegue
 
 ```bash
-cd labs/lab21/aws
+cd labs/lab-21/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -184,7 +184,7 @@ terraform init \
 terraform apply
 ```
 
-Terraform creará ~25 recursos: VPC, subredes, IGW, NAT Gateway, ALB, instancias EC2, Route 53 PHZ, registros DNS, IAM role SSM.
+Terraform creará ~32 recursos: 1 VPC, 4 subredes (2 públicas + 2 privadas), 1 IGW + tabla pública + ruta + 2 asociaciones, 1 EIP + 1 NAT Gateway, 1 tabla privada + ruta + 2 asociaciones, 4 Security Groups (alb, web, db, test), 1 ALB + 1 Target Group + 1 listener + 1 target group attachment, 3 IAM (rol SSM + attachment + instance profile), 3 instancias EC2 (web, db, test), 1 Route 53 Private Hosted Zone y 2 registros DNS (web Alias + db A).
 
 ```bash
 terraform output
@@ -193,13 +193,14 @@ terraform output
 # web_fqdn               = "web.app.internal"
 # db_fqdn                = "db.app.internal"
 # db_private_ip          = "10.17.10.10"
+# web_private_ip         = "10.17.10.5"
 # alb_dns_name           = "lab21-alb-xxxxxxxxx.us-east-1.elb.amazonaws.com"
 # test_instance_id       = "i-0abc..."
 ```
 
 ---
 
-## Verificación final
+## 3. Verificación final
 
 ### 3.1 Zona Hospedada Privada
 
@@ -232,7 +233,7 @@ Deberías ver:
 - `db.app.internal.` tipo A (IP privada)
 - `app.internal.` tipo NS y SOA (creados automáticamente)
 
-### 3.3 Verificar resolucion DNS desde dentro de la VPC
+### 3.3 Verificar resolución DNS desde dentro de la VPC
 
 Conectarse a la instancia de test via SSM:
 
@@ -298,7 +299,7 @@ Esto confirma que la zona es **estrictamente privada** — los nombres solo exis
 3. Desde la instancia de test, comparar con `dig` el comportamiento de los tres registros:
    - `web.app.internal` (Alias → ALB): resuelve directo a IP en una consulta
    - `api.app.internal` (A → IP fija): resuelve directo a IP en una consulta
-   - `api-lb.app.internal` (CNAME → ALB DNS): resuelve en dos pasos (CNAME + resolucion del target)
+   - `api-lb.app.internal` (CNAME → ALB DNS): resuelve en dos pasos (CNAME + resolución del target)
 **Pistas**:
 - No puedes tener un CNAME y un A para el mismo nombre — usa nombres diferentes (`api` vs `api-lb`)
 - `dig +short` muestra solo la respuesta, `dig` completo muestra la sección ANSWER con el tipo de registro
@@ -341,24 +342,39 @@ aws ssm start-session --target $(terraform output -raw test_instance_id)
 ```
 
 ```bash
-# Alias (web) → resuelve directo a IP, sin paso intermedio
+# Alias (web) → resuelve directo a IPs del ALB. El ALB está desplegado en
+# 2 AZs (subnets private-1 y private-2), así que tiene 2 ENIs con 2 IPs
+# privadas, y la respuesta DNS contiene AMBAS — el cliente hace round-robin
+# entre ellas. Por eso ves DOS líneas, no una.
 dig web.app.internal +short
-# 10.17.x.x
+# 10.17.x.x      ← IP del ALB en la primera AZ
+# 10.17.y.y      ← IP del ALB en la segunda AZ
 
-# A (api) → resuelve directo a IP fija
+# A (api) → resuelve directo a la IP fija de la instancia web (registro A
+# simple, una única IP).
 dig api.app.internal +short
 # 10.17.10.x
 
-# CNAME (api-lb) → primero muestra el CNAME, luego resuelve la IP del target
+# CNAME (api-lb) → la ANSWER SECTION suele incluir el CNAME y las As del
+# target en la misma respuesta porque el resolutor de la VPC sigue la
+# cadena automáticamente. Si solo aparece el CNAME, ejecuta dig de nuevo
+# sobre el target o usa `dig +trace api-lb.app.internal` para ver el
+# camino completo paso a paso.
 dig api-lb.app.internal
-# ANSWER SECTION:
-# api-lb.app.internal. 300 IN CNAME internal-lab21-alb-xxxx.us-east-1.elb.amazonaws.com.
-# internal-lab21-alb-xxxx... 60 IN A 10.17.x.x
+# ;; ANSWER SECTION:
+# api-lb.app.internal.   300  IN  CNAME  internal-lab21-alb-xxxx.us-east-1.elb.amazonaws.com.
+# internal-lab21-alb-xxxx.us-east-1.elb.amazonaws.com.  60  IN  A  10.17.x.x
+# internal-lab21-alb-xxxx.us-east-1.elb.amazonaws.com.  60  IN  A  10.17.y.y
+
+# Si solo viste el CNAME, sigue la cadena manualmente:
+dig +short $(dig api-lb.app.internal +short | head -1)
+# 10.17.x.x
+# 10.17.y.y
 
 exit
 ```
 
-La diferencia clave: el CNAME genera una consulta adicional (resolución del target), mientras que Alias y A resuelven en un solo paso. Además, el CNAME expone el nombre DNS del ALB al cliente, mientras que el Alias lo oculta.
+La diferencia clave: el CNAME requiere **resolver dos nombres** (el alias y luego el target), aunque el resolutor moderno de Route 53 normalmente devuelve ambos registros en una sola consulta para ahorrar latencia. El registro **Alias** no necesita ese paso intermedio porque Route 53 sabe que el target es un recurso AWS y devuelve directamente la(s) IP(s) en la respuesta. Además, el CNAME **expone el nombre DNS del ALB** al cliente, mientras que el Alias lo oculta — útil si quieres cambiar de ALB sin tocar a los consumidores.
 
 ---
 
@@ -372,7 +388,7 @@ La diferencia clave: el CNAME genera una consulta adicional (resolución del tar
 2. Eliminar el registro A `db.app.internal` de la zona padre (no puede coexistir un A y un NS para el mismo nombre)
 3. En la zona padre (`app.internal`), crear un registro NS que delegue `db.app.internal` a los nameservers de la zona hija
 4. Crear registros A en la zona hija: `primary.db.app.internal` → IP privada de la instancia db, y `replica.db.app.internal` → otra IP (puede ser ficticia como `10.17.10.20`)
-5. Verificar desde la instancia de test que `primary.db.app.internal` y `replica.db.app.internal` resuelven correctamente con `dig`, y que `db.app.internal` ya no resuelve (el registro A fue eliminado y la delegacion NS solo aplica a subdominios)
+5. Verificar desde la instancia de test que `primary.db.app.internal` y `replica.db.app.internal` resuelven correctamente con `dig`, y que `db.app.internal` ya no resuelve (el registro A fue eliminado y la delegación NS solo aplica a subdominios)
 
 **Pistas**:
 - La zona hija tiene sus propios nameservers (atributo `name_servers` del recurso `aws_route53_zone`)
@@ -404,7 +420,7 @@ resource "aws_route53_zone" "db" {
 
 ### Paso 2: Eliminar el registro A de db.app.internal en la zona padre
 
-El registro A `db.app.internal` creado en el laboratorio base entra en conflicto con la delegacion — no puede existir un registro A y un NS para el mismo nombre. Eliminar o comentar el recurso `aws_route53_record.db` de `main.tf`:
+El registro A `db.app.internal` creado en el laboratorio base entra en conflicto con la delegación — no puede existir un registro A y un NS para el mismo nombre. Eliminar o comentar el recurso `aws_route53_record.db` de `main.tf`:
 
 ```hcl
 # ELIMINAR:
@@ -416,6 +432,15 @@ El registro A `db.app.internal` creado en el laboratorio base entra en conflicto
 #   records = [aws_instance.db.private_ip]
 # }
 ```
+
+> **⚠️ Actualiza también `outputs.tf`:** el output `db_fqdn` referencia `aws_route53_record.db.fqdn`, así que al eliminar el recurso, `terraform plan` falla con `Reference to undeclared resource "aws_route53_record" "db"`. Repúntalo al nuevo registro NS de la delegación (creado en el Paso 3), conservando el nombre del output para no romper a quien ya consume `db_fqdn` desde otro state o desde scripts:
+>
+> ```hcl
+> output "db_fqdn" {
+>   description = "FQDN del subdominio delegado db (NS → zona hija)"
+>   value       = aws_route53_record.db_delegation.fqdn
+> }
+> ```
 
 ### Paso 3: Registro NS en la zona padre (delegación)
 
@@ -467,13 +492,21 @@ dig primary.db.app.internal +short
 dig replica.db.app.internal +short
 # 10.17.10.20
 
-# db.app.internal ya no resuelve (se eliminó el registro A de la zona padre
-# y la delegación NS solo aplica a subdominios como primary.db.app.internal)
-dig db.app.internal +short
-# (sin respuesta)
+# db.app.internal ya no tiene un registro A: se eliminó de la zona padre
+# y la delegación NS solo aplica a subdominios como primary.db.app.internal.
+# Por eso una consulta de tipo A devuelve vacío:
+dig db.app.internal +short        # (sin respuesta — no hay registro A)
+
+# Pero la zona hija sí existe y tiene su apex con NS y SOA generados por
+# Route 53 automáticamente. Si consultas explícitamente por NS o SOA, sí
+# obtienes respuesta:
+dig db.app.internal NS +short     # ns-xxxx.awsdns-yy.com. ...
+dig db.app.internal SOA +short    # ns-xxxx.awsdns-yy.com. awsdns-hostmaster... 1 7200 900 1209600 86400
 
 exit
 ```
+
+> **Nota técnica — nameservers de zonas privadas:** Route 53 publica nameservers para todas las zonas (públicas y privadas), pero los de las **zonas privadas no son resolibles desde Internet**. Funcionan exclusivamente desde dentro de las VPCs asociadas: el resolutor interno de la VPC (`169.254.169.253`) los reconoce y reenvía las consultas al servicio Route 53 internamente. Por eso la delegación NS de zona padre privada → zona hija privada funciona aunque los nameservers tengan aspecto de hostnames públicos (`ns-xxxx.awsdns-yy.com`) — la resolución la hace el resolutor de la VPC, no el DNS público.
 
 ### Reflexión: ¿cuándo delegar?
 
@@ -491,11 +524,10 @@ La delegación permite que cada equipo gestione su subdominio con políticas IAM
 ## 8. Limpieza
 
 ```bash
-terraform destroy \
-  -var="region=us-east-1"
+terraform destroy
 ```
 
-> **Nota:** No destruyas el bucket S3 (lab02).
+> **Nota:** El laboratorio no crea ningún bucket S3 propio. No destruyas el bucket de tfstate del lab-02 (`terraform-state-labs-<ACCOUNT_ID>`), ya que es un recurso compartido entre laboratorios.
 
 ---
 
@@ -507,14 +539,14 @@ LocalStack emula Route 53 a nivel de API. El ALB no está disponible en Communit
 
 ---
 
-## Buenas practicas aplicadas
+## Buenas prácticas aplicadas
 
-- **Zona hospedada privada sin dominio público**: crear una PHZ con sufijo `.internal` o `.corp` permite tener un sistema DNS interno completamente controlado sin comprar un dominio en Internet ni exponer nombres internos.
-- **Registros Alias para endpoints AWS**: usar registros Alias en lugar de CNAME para ALBs y otros recursos AWS evita el costo adicional de resoluciones DNS y garantiza actualizaciones automáticas si la IP del endpoint cambia.
-- **Habilitar `enable_dns_support` y `enable_dns_hostnames` en la VPC**: sin estos dos atributos activos, Route 53 no puede resolver los nombres de la PHZ desde la VPC.
-- **`private_zone = true` en data sources de Route 53**: filtrar explícitamente por zonas privadas evita confusiones con zonas públicas del mismo nombre si ambas existen.
-- **TTL bajo durante el desarrollo**: durante el laboratorio, un TTL de 60 segundos permite iterar rápidamente en los registros. En producción, aumentarlo reduce la carga en los resolvers DNS.
-- **Asociar la PHZ a múltiples VPCs**: las zonas privadas se pueden asociar a varias VPCs de la misma o diferente cuenta, lo que facilita la resolución de nombres en arquitecturas multi-VPC.
+- **Zona hospedada privada sin dominio público**: crear una PHZ con sufijo `.internal`, `.corp` o `.private` permite tener un sistema DNS interno completamente controlado sin comprar un dominio en Internet ni exponer nombres internos. Evitar `.local` (reservado para mDNS).
+- **Registros Alias para endpoints AWS**: usar registros Alias en lugar de CNAME para ALBs y otros recursos AWS (CloudFront, S3, NLB, Global Accelerator) evita el coste adicional de las resoluciones DNS, permite usarlo en el apex (`app.internal` puede ser Alias pero no CNAME) y delega en Route 53 la actualización de la IP cuando el endpoint cambia.
+- **Habilitar `enable_dns_support` y `enable_dns_hostnames` en la VPC**: sin estos dos atributos activos, Route 53 no puede resolver los nombres de la PHZ desde la VPC. Es la causa más frecuente de "la zona existe pero `nslookup` devuelve `NXDOMAIN` desde dentro".
+- **TTL bajo durante el desarrollo**: durante el laboratorio, un TTL de 60–300 segundos permite iterar rápidamente en los registros. En producción, valores de 600–3600 reducen la carga en los resolvers DNS y el coste por consulta a Route 53.
+- **Asociar la PHZ a múltiples VPCs cuando lo necesites**: el bloque `vpc {}` dentro de `aws_route53_zone` solo declara la **primera** asociación. Para añadir VPCs adicionales (incluso de otras cuentas) se usa el recurso aparte `aws_route53_zone_association` — útil en arquitecturas hub-and-spoke donde varias VPCs comparten la misma zona privada. Este lab solo asocia una VPC; el patrón multi-VPC se aplica replicando el `aws_route53_zone_association` por cada VPC adicional.
+- **Delegación de subdominio para autonomía por equipo**: una PHZ hija (`db.app.internal` → otra zona privada) con un registro NS en la zona padre permite que cada equipo gestione sus propios registros con permisos IAM independientes. Se demuestra en el Reto 2.
 
 ---
 

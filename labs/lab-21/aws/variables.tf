@@ -1,6 +1,6 @@
 variable "region" {
   type        = string
-  description = "Region de AWS donde se despliega la infraestructura"
+  description = "Región de AWS donde se despliega la infraestructura"
   default     = "us-east-1"
 }
 

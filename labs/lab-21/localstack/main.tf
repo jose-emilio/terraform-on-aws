@@ -1,9 +1,14 @@
 # ===========================================================================
-# Lab21 — Zonas Hospedadas Privadas y Resolucion DNS (LocalStack)
+# Lab21 — Zonas Hospedadas Privadas y Resolución DNS (LocalStack)
 # ===========================================================================
-# Nota: LocalStack emula Route 53 a nivel de API pero no ejecuta resolucion
-# DNS real. El ALB no esta disponible en Community, por lo que se usa un
-# registro A con IP fija en lugar de Alias.
+# Nota: LocalStack emula Route 53 a nivel de API pero no ejecuta resolución
+# DNS real desde las "instancias EC2" emuladas. ELBv2 (ALB / NLB) sigue
+# siendo una funcionalidad de pago en LocalStack: está incluida en los
+# planes Base y Ultimate, pero NO en Community Edition ni en el nuevo plan
+# gratuito Hobby (vigente desde marzo 2026, sustituye a Community). Por eso
+# usamos un registro A con la IP privada de la instancia "web" en lugar de
+# un Alias al ALB. Verificado contra docs.localstack.cloud/aws/services/elb/
+# (revisado en mayo 2026).
 
 # --- Data Sources ---
 
@@ -55,8 +60,10 @@ resource "aws_subnet" "private" {
 # ===========================================================================
 
 resource "aws_instance" "web" {
+  # AMI e instance_type alineados con la versión aws/ (AL2023 ARM + t4g.micro)
+  # para mantener paridad. LocalStack no ejecuta tráfico ni user_data real.
   ami           = "ami-00000000000000000"
-  instance_type = "t3.micro"
+  instance_type = "t4g.micro"
   subnet_id     = aws_subnet.private["private-1"].id
 
   tags = merge(local.common_tags, {
@@ -65,8 +72,10 @@ resource "aws_instance" "web" {
 }
 
 resource "aws_instance" "db" {
+  # AMI e instance_type alineados con la versión aws/ (AL2023 ARM + t4g.micro)
+  # para mantener paridad. LocalStack no ejecuta tráfico ni user_data real.
   ami           = "ami-00000000000000000"
-  instance_type = "t3.micro"
+  instance_type = "t4g.micro"
   subnet_id     = aws_subnet.private["private-1"].id
   private_ip    = cidrhost(aws_subnet.private["private-1"].cidr_block, 10)
 
@@ -76,8 +85,10 @@ resource "aws_instance" "db" {
 }
 
 resource "aws_instance" "test" {
+  # AMI e instance_type alineados con la versión aws/ (AL2023 ARM + t4g.micro)
+  # para mantener paridad. LocalStack no ejecuta tráfico ni user_data real.
   ami           = "ami-00000000000000000"
-  instance_type = "t3.micro"
+  instance_type = "t4g.micro"
   subnet_id     = aws_subnet.private["private-2"].id
 
   tags = merge(local.common_tags, {

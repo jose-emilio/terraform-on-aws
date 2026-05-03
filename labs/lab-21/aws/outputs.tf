@@ -28,6 +28,11 @@ output "db_private_ip" {
   value       = aws_instance.db.private_ip
 }
 
+output "web_private_ip" {
+  description = "IP privada de la instancia web (usada como destino del registro A `api.app.internal` del Reto 1)"
+  value       = aws_instance.web.private_ip
+}
+
 output "alb_dns_name" {
   description = "DNS interno del ALB"
   value       = aws_lb.main.dns_name

@@ -1,10 +1,10 @@
 # ===========================================================================
-# Lab21 — Zonas Hospedadas Privadas y Resolucion DNS
+# Lab21 — Zonas Hospedadas Privadas y Resolución DNS
 # ===========================================================================
 # Zona Hospedada Privada app.internal con:
 #   - web.app.internal → ALB (registro Alias)
 #   - db.app.internal  → IP privada EC2 (registro A)
-# Instancia de test para verificar resolucion con nslookup/dig.
+# Instancia de test para verificar resolución con nslookup/dig.
 
 # --- Data Sources ---
 
@@ -17,19 +17,51 @@ data "aws_availability_zones" "available" {
   }
 }
 
-# AMI Amazon Linux 2023 estandar (incluye SSM Agent + nslookup/dig)
+# AMI Amazon Linux 2023 estándar (NO minimal): incluye SSM Agent preinstalado.
+# La instancia de test usa esta misma AMI para tener nslookup/dig (paquete
+# bind-utils, instalado en el user_data — ver mas abajo).
+#
+# Patrones de nombre AL2023 publicados por Amazon (owner = "amazon"):
+#   - estándar : al2023-ami-2023.X.YYYYMMDD.0-kernel-X.Y-arm64
+#   - minimal  : al2023-ami-minimal-2023.X.YYYYMMDD.0-kernel-X.Y-arm64
+# Filtramos exigiendo "kernel-*-arm64" en el nombre y ANCLANDO el prefijo a
+# "al2023-ami-2023." (con el punto), de modo que el patron de minimal —que
+# inserta "minimal-" entre "al2023-ami-" y "2023."— queda excluido sin
+# ambiguedad. Los filtros adicionales por owner-alias, image-type,
+# virtualization-type y root-device-type evitan matches accidentales con
+# imagenes de marketplace o copias de terceros.
 data "aws_ami" "al2023" {
   most_recent = true
   owners      = ["amazon"]
 
   filter {
     name   = "name"
-    values = ["al2023-ami-2023*-arm64"]
+    values = ["al2023-ami-2023.*-kernel-*-arm64"]
+  }
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
   }
 
   filter {
     name   = "architecture"
     values = ["arm64"]
+  }
+
+  filter {
+    name   = "image-type"
+    values = ["machine"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
   }
 
   filter {
@@ -64,7 +96,7 @@ resource "aws_vpc" "main" {
   })
 }
 
-# --- Subredes publicas ---
+# --- Subredes públicas ---
 
 resource "aws_subnet" "public" {
   for_each = { for idx, az in local.azs : "public-${idx + 1}" => { az = az, index = idx } }
@@ -105,7 +137,7 @@ resource "aws_internet_gateway" "main" {
   })
 }
 
-# --- Tabla de rutas publica ---
+# --- Tabla de rutas pública ---
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -382,8 +414,14 @@ resource "aws_instance" "web" {
 
   user_data = <<-EOT
     #!/bin/bash
+    set -euo pipefail
     dnf install -y httpd
-    INSTANCE_ID=$(ec2-metadata -i | cut -d' ' -f2)
+    # AL2023 NO incluye el script `ec2-metadata` (era de AL1/AL2): consultamos
+    # IMDSv2 con curl + token de sesion para obtener el instance-id.
+    TOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" \
+      -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+    INSTANCE_ID=$(curl -sH "X-aws-ec2-metadata-token: $TOKEN" \
+      http://169.254.169.254/latest/meta-data/instance-id)
     echo "<h1>Lab21 — web.${var.internal_domain}</h1><p>Instancia: $INSTANCE_ID</p>" > /var/www/html/index.html
     systemctl enable httpd && systemctl start httpd
   EOT
