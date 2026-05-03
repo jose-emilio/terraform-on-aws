@@ -1,5 +1,5 @@
 # ===========================================================================
-# Lab18 — Seguridad y Control de Trafico en VPC (LocalStack)
+# Lab18 — Seguridad y Control de Tráfico en VPC (LocalStack)
 # ===========================================================================
 # Nota: LocalStack emula la mayoria de recursos de red (VPC, subnets, SGs,
 # NACLs, ALB, Flow Logs) pero no ejecuta trafico real. El objetivo de esta
@@ -76,7 +76,7 @@ resource "aws_internet_gateway" "main" {
   })
 }
 
-# --- Tabla de rutas publica ---
+# --- Tabla de rutas pública ---
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -154,7 +154,7 @@ resource "aws_route_table_association" "private" {
 
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
-  description = "Trafico HTTP/HTTPS desde Internet hacia el ALB"
+  description = "Tráfico HTTP/HTTPS desde Internet hacia el ALB"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, {
@@ -194,7 +194,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_all" {
 
 resource "aws_security_group" "app" {
   name        = "app-${var.project_name}"
-  description = "Trafico solo desde el ALB"
+  description = "Tráfico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, {
@@ -335,8 +335,12 @@ resource "aws_network_acl" "private" {
 # ===========================================================================
 # Application Load Balancer — No disponible en LocalStack Community
 # ===========================================================================
-# ELBv2 (ALB) requiere licencia de pago en LocalStack.
-# Descomenta los siguientes bloques si dispones de una cuenta Pro.
+# ELBv2 (ALB / NLB) sigue siendo una funcionalidad de pago en LocalStack:
+# está incluida en los planes Base y Ultimate, pero NO en Community Edition
+# ni en el nuevo plan gratuito Hobby (vigente desde marzo 2026, sustituye a
+# Community). Descomenta los siguientes bloques solo si dispones de una
+# suscripción de pago. Verificado contra docs.localstack.cloud/aws/services/elb/
+# y la página de pricing (revisado en mayo 2026).
 
 # resource "aws_lb" "main" {
 #   name               = "${var.project_name}-alb"

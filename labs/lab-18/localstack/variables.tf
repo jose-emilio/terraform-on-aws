@@ -36,6 +36,6 @@ variable "blocked_ip" {
 
 variable "flow_log_retention_days" {
   type        = number
-  description = "Dias de retencion de los VPC Flow Logs en CloudWatch"
+  description = "Días de retención de los VPC Flow Logs en CloudWatch"
   default     = 7
 }

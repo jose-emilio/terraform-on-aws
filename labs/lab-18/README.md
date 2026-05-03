@@ -88,7 +88,7 @@ El SG se declara "vacío" (sin reglas inline) y cada regla vive en su propio rec
 ```hcl
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
-  description = "Trafico HTTP/HTTPS desde Internet"
+  description = "Tráfico HTTP/HTTPS desde Internet"
   vpc_id      = aws_vpc.main.id
 }
 
@@ -130,7 +130,7 @@ Cuando las reglas son bloques inline dentro de `aws_security_group`, Terraform l
 ```hcl
 resource "aws_security_group" "app" {
   name        = "app-${var.project_name}"
-  description = "Trafico solo desde el ALB"
+  description = "Tráfico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
 }
 
@@ -161,8 +161,9 @@ resource "aws_network_acl" "public" {
   vpc_id     = aws_vpc.main.id
   subnet_ids = [for k, s in aws_subnet.this : s.id if local.subnets[k].public]
 
-  # Regla 50: Bloquear IP maliciosa (DENY tiene prioridad sobre ALLOW cuando
-  # el numero de regla es menor)
+  # Regla 50: Bloquear IP maliciosa. Las NACLs evalúan reglas en orden numérico
+  # ascendente y aplican la primera que coincida (sea allow o deny), por eso
+  # esta regla tiene número 50: se evalúa antes que el allow del puerto 80 (100).
   ingress {
     rule_no    = 50
     action     = "deny"
@@ -436,8 +437,16 @@ resource "aws_network_acl" "public" {
 
 ```bash
 terraform plan
-# Plan: 1 to change (la NACL se actualiza con las 3 reglas deny)
+# Resultado esperado: la NACL pública aparece como
+#   ~ update in-place
+# en aws_network_acl.public. La línea de resumen final será similar a
+#   Plan: 0 to add, 1 to change, 0 to destroy.
+# El "1 to change" puede variar (ver nota más abajo).
+```
 
+> **Nota:** el `1 to change` es un valor *plausible* pero no garantizado. Antes había una sola regla `deny` (la 50) y ahora hay tres (50, 51, 52); Terraform lo modela como una mutación del recurso `aws_network_acl.public`, no como tres reglas independientes (los bloques `ingress` son inline en el recurso). Si la versión del provider o el orden de evaluación cambian la representación, podrías ver `Plan: 1 to add, 0 to change, 1 to destroy.` (recreación) en lugar de un update in-place. Lo importante es revisar el diff línea a línea: deben aparecer las 3 entradas `cidr_block = "192.0.2.0/24"`, `"198.51.100.0/24"` y `"203.0.113.0/24"` con `rule_no = 50, 51, 52` y `action = "deny"`.
+
+```bash
 terraform apply
 ```
 
@@ -456,7 +465,15 @@ Añade una IP a la lista y verifica que solo cambia lo necesario:
 
 ```bash
 terraform plan -var='blocked_ips=["192.0.2.0/24","198.51.100.0/24","203.0.113.0/24","100.64.0.0/10"]'
-# ~ update in place: 1 regla deny añadida (regla 53)
+```
+
+Resultado esperado: el `plan` muestra `~ update in-place` sobre `aws_network_acl.public`, con un nuevo bloque `ingress` que añade la entrada `cidr_block = "100.64.0.0/10"` con `rule_no = 53` (= 50 + index 3 en la lista). Ninguna otra regla cambia. Tras `terraform apply`, confirma con `aws ec2 describe-network-acls` que ahora hay 4 entradas `deny` (50, 51, 52, 53):
+
+```bash
+aws ec2 describe-network-acls \
+  --filters Name=tag:Project,Values=lab18 \
+  --query 'NetworkAcls[].Entries[?RuleAction==`deny` && !Egress].{RuleNum: RuleNumber, CIDR: CidrBlock}' \
+  --output table
 ```
 
 ---

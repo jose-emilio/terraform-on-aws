@@ -1,8 +1,8 @@
 # ===========================================================================
-# Lab18 — Seguridad y Control de Trafico en VPC
+# Lab18 — Seguridad y Control de Tráfico en VPC
 # ===========================================================================
 # Modelo de seguridad por capas: NACL (Capa 4) + Security Groups (Capa 4/7)
-# Patron ALB -> EC2 con referencia por Security Group
+# Patrón ALB -> EC2 con referencia por Security Group
 # VPC Flow Logs para diagnostico de trafico REJECT
 
 # --- Data Sources ---
@@ -100,7 +100,7 @@ resource "aws_internet_gateway" "main" {
   })
 }
 
-# --- Tabla de rutas publica ---
+# --- Tabla de rutas pública ---
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -185,7 +185,7 @@ resource "aws_route_table_association" "private" {
 
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
-  description = "Trafico HTTP/HTTPS desde Internet hacia el ALB"
+  description = "Tráfico HTTP/HTTPS desde Internet hacia el ALB"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, {
@@ -223,12 +223,12 @@ resource "aws_vpc_security_group_egress_rule" "alb_all" {
 # ===========================================================================
 # Security Group de las EC2 — Solo trafico desde el ALB
 # ===========================================================================
-# Patron clave: referenced_security_group_id apunta al SG del ALB, no a un
+# Patrón clave: referenced_security_group_id apunta al SG del ALB, no a un
 # CIDR. Si el ALB cambia de IP, la regla sigue funcionando.
 
 resource "aws_security_group" "app" {
   name        = "app-${var.project_name}"
-  description = "Trafico solo desde el ALB"
+  description = "Tráfico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, {
@@ -261,7 +261,7 @@ resource "aws_vpc_security_group_egress_rule" "app_all" {
 }
 
 # ===========================================================================
-# Network ACL — Subred publica (bloqueo de IP maliciosa)
+# Network ACL — Subred pública (bloqueo de IP maliciosa)
 # ===========================================================================
 # Las NACLs son stateless: necesitan reglas explicitas para trafico de
 # entrada Y salida. Las reglas se evaluan en orden numerico ascendente;
