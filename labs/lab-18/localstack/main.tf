@@ -148,33 +148,43 @@ resource "aws_route_table_association" "private" {
 # ===========================================================================
 # Security Group del ALB — Puertos dinamicos desde Internet
 # ===========================================================================
+# Las reglas se gestionan en recursos independientes
+# (aws_vpc_security_group_ingress_rule / aws_vpc_security_group_egress_rule),
+# sucesores oficiales de aws_security_group_rule desde el provider AWS 5.x.
 
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
   description = "Trafico HTTP/HTTPS desde Internet hacia el ALB"
   vpc_id      = aws_vpc.main.id
 
-  dynamic "ingress" {
-    for_each = var.alb_ingress_ports
-    content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Puerto ${ingress.value} desde Internet"
-    }
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Todo el trafico saliente"
-  }
-
   tags = merge(local.common_tags, {
     Name = "alb-sg-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_ports" {
+  for_each = { for p in var.alb_ingress_ports : tostring(p) => p }
+
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = each.value
+  to_port           = each.value
+  ip_protocol       = "tcp"
+  description       = "Puerto ${each.value} desde Internet"
+
+  tags = merge(local.common_tags, {
+    Name = "alb-ingress-${each.key}-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_all" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Todo el trafico saliente"
+
+  tags = merge(local.common_tags, {
+    Name = "alb-egress-${var.project_name}"
   })
 }
 
@@ -187,24 +197,32 @@ resource "aws_security_group" "app" {
   description = "Trafico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-    description     = "HTTP desde el ALB"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Todo el trafico saliente"
-  }
-
   tags = merge(local.common_tags, {
     Name = "app-sg-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  security_group_id            = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  description                  = "HTTP desde el ALB"
+
+  tags = merge(local.common_tags, {
+    Name = "app-ingress-from-alb-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_all" {
+  security_group_id = aws_security_group.app.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Todo el trafico saliente"
+
+  tags = merge(local.common_tags, {
+    Name = "app-egress-${var.project_name}"
   })
 }
 
@@ -370,8 +388,11 @@ resource "aws_network_acl" "private" {
 resource "aws_instance" "app" {
   for_each = local.private_subnets
 
-  ami                    = "ami-00000000000000000" # AMI ficticia para LocalStack
-  instance_type          = "t3.micro"
+  # AMI e instance_type se alinean con la version aws/ (AL2023 minimal arm64 + t4g.micro)
+  # para mantener paridad de configuracion. LocalStack no ejecuta tráfico ni
+  # user_data real, asi que la AMI es ficticia y el tipo solo se valida a nivel de API.
+  ami                    = "ami-00000000000000000"
+  instance_type          = "t4g.micro"
   subnet_id              = aws_subnet.this[each.key].id
   vpc_security_group_ids = [aws_security_group.app.id]
 

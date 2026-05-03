@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -14,7 +14,7 @@ terraform {
 }
 
 provider "aws" {
-  region                      = "us-east-1"
+  region                      = var.region
   access_key                  = "test"
   secret_key                  = "test"
   skip_credentials_validation = true
@@ -24,11 +24,11 @@ provider "aws" {
   s3_use_path_style = true
 
   endpoints {
-    ec2            = "http://localhost.localstack.cloud:4566"
-    s3             = "http://localhost.localstack.cloud:4566"
-    elbv2          = "http://localhost.localstack.cloud:4566"
-    iam            = "http://localhost.localstack.cloud:4566"
-    sts            = "http://localhost.localstack.cloud:4566"
-    logs           = "http://localhost.localstack.cloud:4566"
+    ec2   = "http://localhost.localstack.cloud:4566"
+    s3    = "http://localhost.localstack.cloud:4566"
+    elbv2 = "http://localhost.localstack.cloud:4566"
+    iam   = "http://localhost.localstack.cloud:4566"
+    sts   = "http://localhost.localstack.cloud:4566"
+    logs  = "http://localhost.localstack.cloud:4566"
   }
 }

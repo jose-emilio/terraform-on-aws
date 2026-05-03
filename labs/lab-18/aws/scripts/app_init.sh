@@ -14,7 +14,7 @@ cat > /var/www/html/index.html <<HTML
 <!DOCTYPE html>
 <html>
 <body>
-  <h1>Lab18 — Seguridad y Control de Trafico en VPC</h1>
+  <h1>Lab-18 — Seguridad y Control de Trafico en VPC</h1>
   <p>Instancia: ${INSTANCE_ID}</p>
   <p>AZ: ${AZ}</p>
 </body>

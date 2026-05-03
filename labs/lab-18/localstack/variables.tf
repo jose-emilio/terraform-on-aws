@@ -1,6 +1,6 @@
 variable "region" {
   type        = string
-  description = "Region (fija en LocalStack)"
+  description = "Región declarada al provider AWS. En LocalStack es informativa (todos los servicios responden bajo el mismo endpoint local), pero se respeta para mantener paridad con la versión aws/."
   default     = "us-east-1"
 }
 

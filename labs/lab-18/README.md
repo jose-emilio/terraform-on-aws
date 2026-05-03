@@ -47,9 +47,9 @@ Internet
 
 ## Prerrequisitos
 
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
+- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.5
+- Terraform >= 1.10 (necesario para `use_lockfile` en el backend S3)
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -60,18 +60,21 @@ echo "Bucket: $BUCKET"
 ## Estructura del proyecto
 
 ```
-lab18/
+lab-18/
 ├── README.md                    <- Esta guía
 ├── aws/
 │   ├── providers.tf             <- Backend S3 parcial
 │   ├── variables.tf             <- Variables: región, CIDR, proyecto, puertos, IP bloqueada
 │   ├── main.tf                  <- VPC + ALB + EC2 + SGs + NACLs + Flow Logs
 │   ├── outputs.tf               <- IDs, DNS del ALB, SG IDs
-│   └── aws.s3.tfbackend         <- Parámetros del backend (sin bucket)
+│   ├── aws.s3.tfbackend         <- Parámetros del backend (sin bucket)
+│   └── scripts/
+│       └── app_init.sh          <- user_data de las EC2 (httpd + SSM agent)
 └── localstack/
+    ├── README.md                <- Guía específica para LocalStack
     ├── providers.tf
     ├── variables.tf
-    ├── main.tf                  <- Estructura equivalente (sin tráfico real)
+    ├── main.tf                  <- Estructura equivalente (sin tráfico real, sin ALB)
     ├── outputs.tf
     └── localstack.s3.tfbackend  <- Backend completo para LocalStack
 ```
@@ -80,37 +83,47 @@ lab18/
 
 ### 1.1 Security Group del ALB — Puerta de entrada controlada
 
+El SG se declara "vacío" (sin reglas inline) y cada regla vive en su propio recurso `aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule` (sucesores oficiales de `aws_security_group_rule` desde el provider AWS 5.x):
+
 ```hcl
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
   description = "Trafico HTTP/HTTPS desde Internet"
   vpc_id      = aws_vpc.main.id
+}
 
-  dynamic "ingress" {
-    for_each = var.alb_ingress_ports
-    content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Puerto ${ingress.value} desde Internet"
-    }
-  }
+# Una regla por cada puerto en var.alb_ingress_ports (80 y 443 por defecto).
+resource "aws_vpc_security_group_ingress_rule" "alb_ports" {
+  for_each = { for p in var.alb_ingress_ports : tostring(p) => p }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = each.value
+  to_port           = each.value
+  ip_protocol       = "tcp"
+  description       = "Puerto ${each.value} desde Internet"
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_all" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
 }
 ```
 
-El bloque `dynamic "ingress"` itera sobre `var.alb_ingress_ports` (por defecto `[80, 443]`) y genera una regla por cada puerto. Si en el futuro necesitas abrir el puerto 8080, basta con añadir el valor a la lista — sin tocar el recurso.
+El recurso `aws_vpc_security_group_ingress_rule` se crea con `for_each` sobre `var.alb_ingress_ports` (por defecto `[80, 443]`), generando una regla por puerto. Si en el futuro necesitas abrir el 8080, basta con añadir el valor a la lista — sin tocar nada más. Cada regla queda con su propio address en el state (`aws_vpc_security_group_ingress_rule.alb_ports["80"]`, `["443"]`), lo que permite gestionarlas con `lifecycle`, importarlas o destruirlas individualmente.
 
-**¿Por qué `dynamic` y no reglas fijas?**
+> **Nota sobre el puerto 443:** el SG y la NACL abren tanto 80 como 443 para reflejar el patrón habitual en producción, pero **el ALB de este laboratorio solo expone un listener HTTP en el puerto 80** (no se configura listener HTTPS porque eso requiere un certificado ACM, fuera del alcance del lab). Una conexión a `https://<alb_dns>` será rechazada por el ALB aunque el tráfico atraviese el SG y la NACL: el handshake TLS falla porque no hay nadie escuchando en 443. Mantenemos la regla 443 abierta como ejemplo de configuración defensiva: cuando añadas el listener HTTPS y el certificado, no tendrás que tocar ni el SG ni la NACL.
 
-Con reglas fijas, cada nuevo puerto requiere copiar y pegar un bloque `ingress` completo. Con `dynamic`, la lista de puertos es una variable que puede cambiar por entorno (dev podría abrir el 8080 para depuración; producción solo 80 y 443).
+**¿Por qué `for_each` sobre la variable y no reglas fijas?**
+
+Con reglas fijas, cada nuevo puerto requiere copiar y pegar un recurso completo. Con `for_each` parametrizado, la lista de puertos es una variable que puede cambiar por entorno (dev podría abrir el 8080 para depuración; producción solo 80 y 443) sin duplicación de código.
+
+**¿Por qué reglas en recursos separados en vez de bloques `ingress`/`egress` inline?**
+
+Cuando las reglas son bloques inline dentro de `aws_security_group`, Terraform las gestiona como parte del propio SG. Eso provoca dos problemas frecuentes:
+1. **Drift al editar reglas a mano** (consola, CLI, otra herramienta): el siguiente `apply` revierte todo lo que no esté en el código.
+2. **Dependencias circulares** cuando dos SGs se referencian mutuamente — Terraform no puede crear el SG-A porque su regla apunta al SG-B y viceversa. Con reglas separadas, los SGs se crean primero (vacíos) y las reglas después, rompiendo el ciclo.
 
 ### 1.2 Security Group de las EC2 — Solo tráfico desde el ALB
 
@@ -119,25 +132,25 @@ resource "aws_security_group" "app" {
   name        = "app-${var.project_name}"
   description = "Trafico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
+}
 
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-    description     = "HTTP desde el ALB"
-  }
+resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  security_group_id            = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.alb.id   # <-- identidad, no IP
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  description                  = "HTTP desde el ALB"
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_egress_rule" "app_all" {
+  security_group_id = aws_security_group.app.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
 }
 ```
 
-Punto clave: el `ingress` usa `security_groups` (referencia al SG del ALB) en lugar de `cidr_blocks`. Esto significa que **solo las instancias asociadas al SG del ALB** pueden enviar tráfico a las EC2 en el puerto 80. Si alguien intenta acceder directamente a la IP de la EC2, el tráfico se descarta.
+Punto clave: la regla de entrada usa `referenced_security_group_id` (identidad del SG del ALB) en lugar de `cidr_ipv4`. Esto significa que **solo las instancias asociadas al SG del ALB** pueden enviar tráfico a las EC2 en el puerto 80. Si alguien intenta acceder directamente a la IP de la EC2, el tráfico se descarta.
 
 **Ventaja sobre CIDR:** Si el ALB cambia de IP (por escalado, reemplazo, etc.), la regla sigue funcionando porque referencia la identidad del SG, no una IP fija.
 
@@ -188,6 +201,18 @@ resource "aws_network_acl" "public" {
     to_port    = 65535
     cidr_block = "0.0.0.0/0"
   }
+
+  # Regla de salida: las NACLs son stateless, así que el tráfico saliente
+  # (incluida la respuesta a las conexiones entrantes permitidas arriba)
+  # también necesita una regla allow explícita.
+  egress {
+    rule_no    = 100
+    action     = "allow"
+    protocol   = "-1"
+    from_port  = 0
+    to_port    = 0
+    cidr_block = "0.0.0.0/0"
+  }
 }
 ```
 
@@ -222,7 +247,7 @@ Los logs se almacenan en un CloudWatch Log Group con retención configurable (po
 ## 2. Despliegue
 
 ```bash
-cd labs/lab18/aws
+cd labs/lab-18/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -231,7 +256,7 @@ terraform init \
 terraform apply
 ```
 
-Terraform creará ~30 recursos: VPC, 6 subredes, IGW, NAT Gateway, ALB, 2 instancias EC2, Security Groups, NACLs, Flow Logs, IAM roles, CloudWatch Log Group.
+Terraform creará ~38 recursos: VPC, 4 subredes (2 públicas + 2 privadas), IGW + tabla de rutas pública + asociaciones, EIP + NAT Gateway + tabla de rutas privada + asociaciones, 2 Security Groups (ALB y app) + 5 reglas separadas (2 ingress ALB + 1 egress ALB + 1 ingress app + 1 egress app), 2 NACLs (pública y privada), ALB + Target Group + listener HTTP + 2 attachments, IAM role + policy attachment + instance profile para SSM, 2 instancias EC2, CloudWatch Log Group + IAM role/policy + recurso `aws_flow_log`.
 
 ```bash
 terraform output
@@ -243,7 +268,7 @@ terraform output
 
 ---
 
-## Verificación final
+## 3. Verificación final
 
 ### 3.1 Verificar el patrón ALB -> EC2 (referencia por SG)
 
@@ -298,18 +323,7 @@ Cada línea muestra: interfaz, IP origen, IP destino, puerto origen, puerto dest
 
 ---
 
-## 4. Limpieza
-
-```bash
-terraform destroy \
-  -var="region=us-east-1"
-```
-
-> **Nota:** No destruyas el bucket S3, ya que es un recurso compartido entre laboratorios (lab02).
-
----
-
-## 5. Reto: WAF básico con NACL dinámica
+## 4. Reto: WAF básico con NACL dinámica
 
 **Situación**: El equipo de seguridad te proporciona una lista de IPs maliciosas que cambia semanalmente. Necesitas una NACL que bloquee todas esas IPs de forma mantenible, sin copiar y pegar reglas.
 
@@ -326,11 +340,11 @@ terraform destroy \
 - Usa `50 + index(var.blocked_ips, ingress.value)` para generar números de regla consecutivos
 - La NACL completa se define en un solo recurso `aws_network_acl` con múltiples bloques `ingress`
 
-La solución está en la [sección 6](#6-solucion-del-reto).
+La solución está en la [sección 5](#5-solución-del-reto).
 
 ---
 
-## 6. Solución del Reto
+## 5. Solución del Reto
 
 ### Paso 1: Cambiar la variable
 
@@ -447,6 +461,18 @@ terraform plan -var='blocked_ips=["192.0.2.0/24","198.51.100.0/24","203.0.113.0/
 
 ---
 
+## 6. Limpieza
+
+Cuando hayas terminado el laboratorio (incluido el Reto si lo has completado), destruye toda la infraestructura para evitar costes:
+
+```bash
+terraform destroy
+```
+
+> **Nota:** El laboratorio no crea ningún bucket S3 propio. No destruyas el bucket de tfstate del lab-02 (`terraform-state-labs-<ACCOUNT_ID>`), ya que es un recurso compartido entre laboratorios.
+
+---
+
 ## 7. LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta el directorio `localstack/`.
@@ -461,8 +487,8 @@ LocalStack emula Security Groups, NACLs y VPC Flow Logs a nivel de API, pero no 
 - **NACLs como defensa en profundidad**: los Security Groups son stateful (las respuestas se permiten automáticamente), las NACLs son stateless. Usar ambas capas proporciona una segunda línea de defensa ante configuraciones incorrectas de Security Groups.
 - **Bloques `dynamic` para reglas de NACL**: las NACLs requieren números de regla y muchas entradas repetitivas. El bloque `dynamic` genera las reglas desde una lista de objetos, reduciendo la duplicación y facilitando el mantenimiento.
 - **VPC Flow Logs para diagnóstico**: habilitar Flow Logs permite diagnosticar tráfico denegado sin necesitar acceso a las instancias. El patrón `REJECT` en los logs indica un bloqueo de SG o NACL.
-- **Efímeral port range en NACLs de salida**: las NACLs deben permitir el rango de puertos efímeros (1024-65535) en las reglas de salida de las subnets que reciben conexiones TCP entrantes, o el handshake de tres vías falla.
-- **Separar las reglas de SG en recursos independientes (`aws_security_group_rule`)**: gestionar cada regla por separado evita dependencias cíclicas cuando dos Security Groups se referencian mutuamente.
+- **Rango de puertos efímeros en NACLs de salida**: las NACLs deben permitir el rango de puertos efímeros (1024-65535) en las reglas de salida de las subnets que reciben conexiones TCP entrantes, o el handshake de tres vías falla.
+- **Reglas de Security Group como recursos independientes (`aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule`)**: el lab declara los SGs vacíos y gestiona cada regla en su propio recurso (sucesores oficiales del antiguo `aws_security_group_rule`, soft-deprecated desde el provider AWS 5.x). Ventajas: (1) cada regla tiene su propio address en el state y se puede importar / destruir / aplicar `lifecycle` por separado; (2) evita el drift cuando alguien añade reglas fuera de Terraform, ya que el SG en sí no las controla; (3) rompe dependencias circulares cuando dos SGs se referencian entre sí — los SGs se crean primero (vacíos) y las reglas después.
 
 ---
 

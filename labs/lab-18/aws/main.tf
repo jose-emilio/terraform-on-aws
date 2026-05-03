@@ -172,65 +172,91 @@ resource "aws_route_table_association" "private" {
 # ===========================================================================
 # Security Group del ALB — Puertos dinamicos desde Internet
 # ===========================================================================
+# Las reglas se gestionan en recursos independientes
+# (aws_vpc_security_group_ingress_rule / aws_vpc_security_group_egress_rule),
+# sucesores oficiales de aws_security_group_rule desde el provider AWS 5.x.
+# Ventajas frente a los bloques `ingress`/`egress` inline:
+#   - Cada regla es un recurso con su propio ciclo de vida y address en el
+#     state, lo que permite lifecycle granular (ignore_changes, taint, etc.).
+#   - Evita drifts cuando AWS o un humano añade reglas fuera de Terraform:
+#     el SG en sí queda "open" (sin reglas declaradas inline) y solo las
+#     reglas con su propio recurso son gestionadas.
+#   - Rompe dependencias circulares cuando dos SGs se referencian entre si.
 
 resource "aws_security_group" "alb" {
   name        = "alb-${var.project_name}"
   description = "Trafico HTTP/HTTPS desde Internet hacia el ALB"
   vpc_id      = aws_vpc.main.id
 
-  dynamic "ingress" {
-    for_each = var.alb_ingress_ports
-    content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Puerto ${ingress.value} desde Internet"
-    }
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Todo el trafico saliente"
-  }
-
   tags = merge(local.common_tags, {
     Name = "alb-sg-${var.project_name}"
+  })
+}
+
+# Una regla por cada puerto en var.alb_ingress_ports (80 y 443 por defecto).
+resource "aws_vpc_security_group_ingress_rule" "alb_ports" {
+  for_each = { for p in var.alb_ingress_ports : tostring(p) => p }
+
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = each.value
+  to_port           = each.value
+  ip_protocol       = "tcp"
+  description       = "Puerto ${each.value} desde Internet"
+
+  tags = merge(local.common_tags, {
+    Name = "alb-ingress-${each.key}-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_all" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Todo el trafico saliente"
+
+  tags = merge(local.common_tags, {
+    Name = "alb-egress-${var.project_name}"
   })
 }
 
 # ===========================================================================
 # Security Group de las EC2 — Solo trafico desde el ALB
 # ===========================================================================
-# Patron clave: security_groups referencia al SG del ALB, no un CIDR.
-# Si el ALB cambia de IP, la regla sigue funcionando.
+# Patron clave: referenced_security_group_id apunta al SG del ALB, no a un
+# CIDR. Si el ALB cambia de IP, la regla sigue funcionando.
 
 resource "aws_security_group" "app" {
   name        = "app-${var.project_name}"
   description = "Trafico solo desde el ALB"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-    description     = "HTTP desde el ALB"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Todo el trafico saliente (actualizaciones, SSM, etc.)"
-  }
-
   tags = merge(local.common_tags, {
     Name = "app-sg-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  security_group_id            = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  description                  = "HTTP desde el ALB"
+
+  tags = merge(local.common_tags, {
+    Name = "app-ingress-from-alb-${var.project_name}"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_all" {
+  security_group_id = aws_security_group.app.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Todo el trafico saliente (actualizaciones, SSM, etc.)"
+
+  tags = merge(local.common_tags, {
+    Name = "app-egress-${var.project_name}"
   })
 }
 
