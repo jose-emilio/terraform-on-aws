@@ -1,9 +1,9 @@
 # ===========================================================================
-# Modulo secure-bucket — Bucket S3 listo para produccion
+# Módulo secure-bucket — Bucket S3 listo para producción
 # ===========================================================================
-# Bucket con buenas practicas: bloqueo publico, versionado, cifrado y
-# logging opcionales. Disenado para ser publicado y consumido por otros
-# equipos via Git tags con versionado semantico.
+# Bucket con buenas prácticas: bloqueo público, versionado, cifrado y
+# logging opcionales. Diseñado para ser publicado y consumido por otros
+# equipos vía Git tags con versionado semántico.
 # ===========================================================================
 
 locals {
@@ -27,7 +27,7 @@ resource "aws_s3_bucket" "this" {
   })
 }
 
-# --- Bloqueo de acceso publico ---
+# --- Bloqueo de acceso público ---
 
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket = aws_s3_bucket.this.id

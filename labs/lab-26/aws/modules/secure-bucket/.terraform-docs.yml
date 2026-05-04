@@ -1,10 +1,10 @@
-# Configuracion de terraform-docs para el modulo secure-bucket.
-# Genera automaticamente las tablas de variables y outputs dentro del README.md.
+# Configuración de terraform-docs para el módulo secure-bucket.
+# Genera automáticamente las tablas de variables y outputs dentro del README.md.
 #
 # Uso:
 #   terraform-docs markdown table --config .terraform-docs.yml .
 #
-# O con el flag de inyeccion:
+# O con el flag de inyección:
 #   terraform-docs markdown table --output-file README.md --output-mode inject .
 
 formatter: "markdown table"

@@ -20,7 +20,7 @@ La mayor parte de este laboratorio **no requiere AWS**:
 Los ejemplos `basic/` y `advanced/` funcionan con LocalStack ya que solo usan S3 (completamente soportado en Community):
 
 ```bash
-cd labs/lab26/aws/modules/secure-bucket/examples/basic
+cd labs/lab-26/aws/modules/secure-bucket/examples/basic
 
 # Adaptar el provider para LocalStack antes de ejecutar
 terraform init
@@ -28,7 +28,7 @@ terraform apply
 terraform destroy
 ```
 
-> **Nota:** Para usar LocalStack, necesitas adaptar el bloque `provider "aws"` de cada ejemplo con los endpoints de LocalStack. Consulta los labs anteriores (ej: lab22/localstack) para ver la configuración del proveedor.
+> **Nota:** Para usar LocalStack, necesitas adaptar el bloque `provider "aws"` de cada ejemplo con los endpoints de LocalStack. Consulta los labs anteriores (ej: [lab-22/localstack](../../lab-22/localstack/README.md) o [lab-25/localstack](../../lab-25/localstack/README.md)) para ver la configuración del proveedor.
 
 ## Pipeline local recomendado
 

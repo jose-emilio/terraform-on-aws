@@ -22,7 +22,7 @@ Preparar un módulo Terraform para ser consumido por otros equipos con garantía
 | **Git tag** | Etiqueta inmutable que marca un commit específico. Terraform puede referenciar un módulo en un commit concreto con `source = "git::url?ref=v1.0.0"` |
 | **`?ref=`** | Parámetro en el source de Git que fija la versión. Sin él, Terraform usa la rama por defecto, que puede cambiar en cualquier momento |
 
-## Comparativa: Distribucion de modulos
+## Comparativa: Distribución de módulos
 
 | Método | Ventajas | Desventajas | Caso de uso |
 |---|---|---|---|
@@ -34,7 +34,7 @@ Preparar un módulo Terraform para ser consumido por otros equipos con garantía
 ## Prerrequisitos
 
 - Git configurado
-- Terraform >= 1.5
+- **Terraform >= 1.10** (necesario para `use_lockfile` en el backend S3 del consumer)
 - AWS CLI configurado con credenciales válidas (para los ejemplos)
 - Herramientas opcionales (se instalan durante el lab):
   - `terraform-docs` >= 0.18
@@ -43,18 +43,22 @@ Preparar un módulo Terraform para ser consumido por otros equipos con garantía
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo "Account: $ACCOUNT_ID"
+
+# Verificar versión de Terraform
+terraform version
+# Terraform v1.10.0+ requerido (backend `use_lockfile`)
 ```
 
 ## Estructura del proyecto
 
 ```
-lab26/
+lab-26/
 ├── README.md                                          <- Esta guía
 ├── aws/
 │   ├── .pre-commit-config.yaml                        <- Hooks de pre-commit
 │   ├── consumer/
-│   │   ├── aws.s3.tfbackend                           <- Parametros del backend S3 (sin bucket)
-│   │   └── main.tf                                    <- Proyecto que consume el módulo via Git
+│   │   ├── aws.s3.tfbackend                           <- Parámetros del backend S3 (sin bucket)
+│   │   └── main.tf                                    <- Proyecto que consume el módulo vía Git
 │   └── modules/
 │       └── secure-bucket/                             <- El módulo a publicar
 │           ├── main.tf                                <- Bucket + bloqueo + versionado + cifrado + logging
@@ -83,7 +87,7 @@ lab26/
 │                                                                    │
 │  1. Desarrollar ──► modules/secure-bucket/                         │
 │  2. Documentar  ──► terraform-docs (auto-genera tablas)            │
-│  3. Validar     ──► pre-commit (fmt + docs + trivy)                │
+│  3. Validar     ──► pre-commit (fmt + validate + docs + trivy)                │
 │  4. Publicar    ──► git tag v1.0.0                                 │
 │  5. Consumir    ──► source = "git::...?ref=v1.0.0"                 │
 │                                                                    │
@@ -263,20 +267,31 @@ source = "git::https://github.com/<org>/terraform-aws-secure-bucket.git"
 
 **terraform-docs:**
 
-> **Importante:** Ejecuta la descarga desde un directorio temporal (ej: `/tmp`), **no** desde el directorio del módulo. El tar.gz incluye un `README.md` que sobreescribiría el README del módulo.
+```bash
+# macOS (Homebrew, recomendado)
+brew install terraform-docs
+```
 
 ```bash
-# Linux (ejecutar desde /tmp o cualquier directorio temporal)
+# Linux con Homebrew (linuxbrew)
+brew install terraform-docs
+```
+
+```bash
+# Linux sin gestor de paquetes — descarga del binario oficial
+# Importante: ejecútalo desde un directorio temporal (/tmp). El tar.gz incluye
+# un README.md que, extraído en otra ubicación, sobreescribiría archivos.
+TFDOCS_VERSION=v0.19.0
 cd /tmp
-curl -sSLo terraform-docs.tar.gz https://terraform-docs.io/dl/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz
+curl -sSLo terraform-docs.tar.gz \
+  "https://terraform-docs.io/dl/${TFDOCS_VERSION}/terraform-docs-${TFDOCS_VERSION}-linux-amd64.tar.gz"
 tar -xzf terraform-docs.tar.gz
 chmod +x terraform-docs && sudo mv terraform-docs /usr/local/bin/
 rm -f terraform-docs.tar.gz README.md LICENSE
 cd -
-
-# macOS
-brew install terraform-docs
 ```
+
+Otras opciones: `go install github.com/terraform-docs/terraform-docs@v0.19.0` si tienes Go, o el paquete oficial vía [terraform-docs.io](https://terraform-docs.io/user-guide/installation/).
 
 **pre-commit:**
 
@@ -301,7 +316,7 @@ pre-commit --version
 ### 2.2 Generar documentación
 
 ```bash
-cd labs/lab26/aws/modules/secure-bucket
+cd labs/lab-26/aws/modules/secure-bucket
 
 terraform-docs markdown table \
   --output-file README.md \
@@ -314,7 +329,7 @@ Verifica que el README del módulo ahora tiene las tablas de variables y outputs
 ### 2.3 Configurar pre-commit
 
 ```bash
-cd labs/lab26/aws
+cd labs/lab-26/aws
 
 # Instalar los hooks en el repositorio Git local
 pre-commit install
@@ -353,12 +368,12 @@ terraform destroy
 
 ---
 
-## Verificación final
+## 3. Verificación final
 
 ### 3.1 Verificar terraform-docs
 
 ```bash
-cd labs/lab26/aws
+cd labs/lab-26/aws
 
 # Ver el README generado
   cat modules/secure-bucket/README.md
@@ -387,7 +402,7 @@ rm modules/secure-bucket/test_fmt.tf
 
 ```bash
 # Simular la publicación del módulo
-cd labs/lab26/aws
+cd labs/lab-26/aws
 
 # Crear un tag semántico
 git tag -a v1.0.0 -m "Release v1.0.0: modulo secure-bucket"
@@ -498,7 +513,7 @@ En `modules/secure-bucket/variables.tf`:
 ```hcl
 variable "expiration_days" {
   type        = number
-  description = "Dias tras los cuales los objetos expiran automaticamente. 0 = desactivado."
+  description = "Días tras los cuales los objetos expiran automáticamente. 0 = desactivado."
   default     = 0
 }
 ```
@@ -536,11 +551,11 @@ En `modules/secure-bucket/variables.tf`, renombrar la variable **y actualizar la
 ```hcl
 variable "name" {    # Antes: variable "bucket_name"
   type        = string
-  description = "Nombre del bucket S3. Debe ser globalmente unico."
+  description = "Nombre del bucket S3. Debe ser globalmente único."
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.name))  # Antes: var.bucket_name
-    error_message = "El nombre del bucket solo puede contener minusculas, numeros, puntos y guiones (3-63 caracteres)."
+    error_message = "El nombre del bucket solo puede contener minúsculas, números, puntos y guiones (3-63 caracteres)."
   }
 }
 ```
@@ -579,6 +594,29 @@ module "data_bucket" {
   name                  = "example-adv-data-${local.account_id}"  # Antes: bucket_name
   # ...
 }
+```
+
+Actualizar también el **proyecto consumidor** (que representa al equipo cliente afectado por el breaking change):
+
+```hcl
+# consumer/main.tf
+module "app_bucket" {
+  source = "../modules/secure-bucket"
+  name              = "consumer-app-${data.aws_caller_identity.current.account_id}"  # Antes: bucket_name
+  environment       = "production"
+  enable_versioning = true
+  enable_encryption = true
+  force_destroy     = true
+  # ...
+}
+```
+
+Y los ejemplos de uso del propio README del módulo (`modules/secure-bucket/README.md`, líneas con `bucket_name = ...`). Cuando el hook `terraform_docs` regenere el bloque entre `<!-- BEGIN_TF_DOCS -->` / `<!-- END_TF_DOCS -->` reflejará el rename en la tabla de variables, pero los ejemplos manuales en español hay que actualizarlos a mano.
+
+Verifica que no quedan referencias a `bucket_name` antes de hacer commit:
+
+```bash
+grep -rn "bucket_name" modules/secure-bucket/ consumer/ || echo "OK: ninguna referencia"
 ```
 
 > **Nota:** `moved {}` no aplica a variables — solo a recursos y módulos. Renombrar una variable siempre es un breaking change porque el consumidor debe actualizar su código.
@@ -646,7 +684,7 @@ La solución está en la [sección 7](#7-solución-del-reto-2).
 En `modules/secure-bucket/tests/examples_basic.tftest.hcl`:
 
 ```hcl
-# Test que ejecuta el ejemplo basico para verificar que funciona
+# Test que ejecuta el ejemplo básico para verificar que funciona
 
 run "basic_example_works" {
   command = apply
@@ -657,12 +695,12 @@ run "basic_example_works" {
 
   assert {
     condition     = output.bucket_id != ""
-    error_message = "El ejemplo basico debe crear un bucket"
+    error_message = "El ejemplo básico debe crear un bucket"
   }
 
   assert {
     condition     = output.bucket_arn != ""
-    error_message = "El ejemplo basico debe producir un ARN"
+    error_message = "El ejemplo básico debe producir un ARN"
   }
 }
 ```
@@ -698,12 +736,16 @@ run "advanced_example_works" {
 
 ### Paso 2: Ejecutar
 
+`terraform test` se invoca **desde la raíz del módulo** (donde están los `.tf` y la carpeta `examples/`). El `init` descarga los providers necesarios para los ejemplos:
+
 ```bash
 cd modules/secure-bucket
 
 terraform init
 terraform test
 ```
+
+> **Nota:** Si el módulo no tiene un `providers.tf` propio (caso habitual cuando se publica), `terraform init` se queja. Puedes añadir un `providers.tf` mínimo (solo `required_providers`) o ejecutar el test desde un directorio que sí lo tenga (ej: `examples/basic/`) y referenciar el módulo con `source = "../../"`.
 
 ```
 tests/examples_advanced.tftest.hcl... in progress
@@ -772,6 +814,8 @@ Consulta [localstack/README.md](localstack/README.md) para más detalles.
 
 - **`terraform-docs` como fuente de verdad**: generar documentación automáticamente desde el código evita que el README quede desincronizado con las variables y outputs reales del módulo.
 - **Hooks de pre-commit para calidad continua**: bloquear commits con código sin formatear o documentación desactualizada garantiza que el repositorio siempre esté en un estado publicable.
+- **Pinear la versión de los hooks (`rev:`)**: fijar la revisión de cada repositorio en `.pre-commit-config.yaml` evita que actualizaciones del hook (a veces con cambios de comportamiento) rompan los commits sin previo aviso. Actualizar con `pre-commit autoupdate` cuando se quiera adoptar una nueva versión.
+- **Análisis de seguridad con Trivy**: usar `terraform_trivy` (sucesor de `tfsec`) en pre-commit detecta misconfiguraciones antes del push y permite filtrar por severidad (`--severity HIGH,CRITICAL`) para no bloquear con avisos menores.
 - **Versionado semántico en módulos**: usar tags `vMAJOR.MINOR.PATCH` permite a los consumidores fijar la versión exacta y actualizar de forma controlada, evitando cambios inesperados.
 - **Catálogo de ejemplos (`/examples`)**: los ejemplos `basic` y `advanced` sirven como documentación ejecutable y como tests de integración de facto.
 - **Separación entre módulo y consumidor**: el directorio `consumer/` demuestra el patrón real de uso sin contaminar el módulo con configuración específica del entorno.

@@ -6,7 +6,7 @@
 #   2. Bucket de datos (con versionado, cifrado y logging hacia el bucket de logs)
 
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -15,8 +15,14 @@ terraform {
   }
 }
 
+variable "region" {
+  type        = string
+  description = "Región AWS donde desplegar los buckets de ejemplo."
+  default     = "us-east-1"
+}
+
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
 data "aws_caller_identity" "current" {}

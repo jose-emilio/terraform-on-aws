@@ -1,16 +1,16 @@
 variable "bucket_name" {
   type        = string
-  description = "Nombre del bucket S3. Debe ser globalmente unico."
+  description = "Nombre del bucket S3. Debe ser globalmente único."
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.bucket_name))
-    error_message = "El nombre del bucket solo puede contener minusculas, numeros, puntos y guiones (3-63 caracteres)."
+    error_message = "El nombre del bucket solo puede contener minúsculas, números, puntos y guiones (3-63 caracteres)."
   }
 }
 
 variable "environment" {
   type        = string
-  description = "Entorno de despliegue. Controla el nivel de proteccion del bucket."
+  description = "Entorno de despliegue. Controla el nivel de protección del bucket."
   default     = "lab"
 
   validation {
@@ -21,7 +21,7 @@ variable "environment" {
 
 variable "enable_versioning" {
   type        = bool
-  description = "Habilitar versionado en el bucket. Recomendado para datos criticos."
+  description = "Habilitar versionado en el bucket. Recomendado para datos críticos."
   default     = true
 }
 
@@ -51,12 +51,12 @@ variable "logging_target_prefix" {
 
 variable "force_destroy" {
   type        = bool
-  description = "Permitir destruir el bucket aunque contenga objetos. Usar false en produccion."
+  description = "Permitir destruir el bucket aunque contenga objetos. Usar false en producción."
   default     = false
 }
 
 variable "tags" {
   type        = map(string)
-  description = "Etiquetas adicionales que se combinan con las del modulo."
+  description = "Etiquetas adicionales que se combinan con las del módulo."
   default     = {}
 }

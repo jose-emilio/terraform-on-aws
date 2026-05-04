@@ -1,14 +1,14 @@
-# Configuracion de pre-commit para el proyecto.
+# Configuración de pre-commit para el proyecto.
 # Instalar: pip install pre-commit && pre-commit install
-# Los hooks se ejecutan automaticamente en cada git commit.
+# Los hooks se ejecutan automáticamente en cada git commit.
 # Si alguno falla, el commit se rechaza hasta corregir el problema.
 
 repos:
-  # --- Formato de Terraform ---
+  # --- Formato, validación y documentación de Terraform ---
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.96.3
     hooks:
-      # Verifica que el codigo esta formateado con terraform fmt
+      # Verifica que el código está formateado con terraform fmt
       - id: terraform_fmt
 
       # Valida la sintaxis de los archivos .tf
@@ -16,17 +16,18 @@ repos:
         args:
           - --hook-config=--retry-once-with-cleanup=true
 
-      # Genera/actualiza documentacion con terraform-docs
+      # Genera/actualiza documentación con terraform-docs
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
           - --hook-config=--add-to-existing-file=true
           - --hook-config=--create-file-if-not-exist=false
 
-  # --- Analisis de seguridad ---
+  # --- Análisis de seguridad ---
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.96.3
     hooks:
-      - id: terraform_tfsec
+      # Trivy reemplaza al antiguo tfsec (Aqua fusionó tfsec dentro de Trivy).
+      - id: terraform_trivy
         args:
-          - --args=--soft-fail
+          - --args=--severity=HIGH,CRITICAL

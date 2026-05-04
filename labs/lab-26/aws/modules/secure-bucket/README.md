@@ -3,10 +3,10 @@
 ![Terraform on AWS](../../../../../images/lab-banner.svg)
 
 
-Modulo Terraform que crea un bucket S3 con buenas practicas de seguridad:
-bloqueo de acceso publico, versionado, cifrado y logging opcionales.
+Módulo Terraform que crea un bucket S3 con buenas prácticas de seguridad:
+bloqueo de acceso público, versionado, cifrado y logging opcionales.
 
-## Uso basico
+## Uso básico
 
 ```hcl
 module "bucket" {

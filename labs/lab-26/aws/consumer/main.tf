@@ -1,12 +1,12 @@
 # ===========================================================================
-# Proyecto consumidor — Usa el modulo secure-bucket via Git tag
+# Proyecto consumidor — Usa el módulo secure-bucket vía Git tag
 # ===========================================================================
-# Simula como otro equipo consumiria el modulo publicado, referenciando
-# una version especifica con ?ref=v1.0.0 para garantizar estabilidad.
+# Simula cómo otro equipo consumiría el módulo publicado, referenciando
+# una versión específica con ?ref=v1.0.0 para garantizar estabilidad.
 # ===========================================================================
 
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -14,20 +14,26 @@ terraform {
     }
   }
 
-  # Configuracion parcial del backend. Todos los parametros estan en
-  # aws.s3.tfbackend. Usalo asi:
+  # Configuración parcial del backend. Todos los parámetros están en
+  # aws.s3.tfbackend. Úsalo así:
   #   terraform init -backend-config=aws.s3.tfbackend -backend-config="bucket=terraform-state-labs-<ACCOUNT_ID>"
   backend "s3" {}
 }
 
+variable "region" {
+  type        = string
+  description = "Región AWS donde desplegar el bucket del consumidor."
+  default     = "us-east-1"
+}
+
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
 data "aws_caller_identity" "current" {}
 
-# --- Invocacion del modulo via ruta local (simula Git tag) ---
-# En un escenario real, el source seria:
+# --- Invocación del módulo vía ruta local (simula Git tag) ---
+# En un escenario real, el source sería:
 #   source = "git::https://github.com/<org>/terraform-aws-secure-bucket.git?ref=v1.0.0"
 #
 # Para este laboratorio usamos la ruta local equivalente:
