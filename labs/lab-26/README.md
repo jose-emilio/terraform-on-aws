@@ -66,13 +66,16 @@ lab-26/
 │           ├── outputs.tf                             <- Salidas documentadas
 │           ├── README.md                              <- Docs con marcadores terraform-docs
 │           ├── .terraform-docs.yml                    <- Configuración de terraform-docs
+│           ├── .trivyignore                           <- Hallazgos Trivy suprimidos con justificación
 │           └── examples/
 │               ├── basic/
 │               │   ├── main.tf                        <- Mínima configuración
-│               │   └── README.md
+│               │   ├── README.md
+│               │   └── .trivyignore                   <- (replicado del módulo, leído por Trivy en este CWD)
 │               └── advanced/
 │                   ├── main.tf                        <- Con cifrado y logging
-│                   └── README.md
+│                   ├── README.md
+│                   └── .trivyignore                   <- (replicado del módulo, leído por Trivy en este CWD)
 └── localstack/
     └── README.md                                      <- Notas sobre LocalStack
 ```
@@ -87,7 +90,7 @@ lab-26/
 │                                                                    │
 │  1. Desarrollar ──► modules/secure-bucket/                         │
 │  2. Documentar  ──► terraform-docs (auto-genera tablas)            │
-│  3. Validar     ──► pre-commit (fmt + validate + docs + trivy)                │
+│  3. Validar     ──► pre-commit (fmt + validate + docs + trivy)     │
 │  4. Publicar    ──► git tag v1.0.0                                 │
 │  5. Consumir    ──► source = "git::...?ref=v1.0.0"                 │
 │                                                                    │
@@ -291,7 +294,7 @@ rm -f terraform-docs.tar.gz README.md LICENSE
 cd -
 ```
 
-Otras opciones: `go install github.com/terraform-docs/terraform-docs@v0.19.0` si tienes Go, o el paquete oficial vía [terraform-docs.io](https://terraform-docs.io/user-guide/installation/).
+Otras opciones: `go install github.com/terraform-docs/terraform-docs@v0.22.0` si tienes Go, o el paquete oficial vía [terraform-docs.io](https://terraform-docs.io/user-guide/installation/).
 
 **pre-commit:**
 
@@ -307,7 +310,7 @@ Verificar instalación:
 
 ```bash
 terraform-docs version
-# v0.19.0
+# v0.22.0
 
 pre-commit --version
 # pre-commit 3.x.x
@@ -328,12 +331,81 @@ Verifica que el README del módulo ahora tiene las tablas de variables y outputs
 
 ### 2.3 Configurar pre-commit
 
-```bash
-cd labs/lab-26/aws
+`pre-commit install` engancha los hooks al repositorio Git **donde se encuentre el `cd`**. Si lo ejecutas dentro de `labs/lab-26/aws`, Git localiza el repo padre (el del curso) y los hooks dispararían en cada commit a cualquier lab — no es lo que queremos.
 
-# Instalar los hooks en el repositorio Git local
+Para simular el escenario real (un repositorio independiente del módulo `secure-bucket`), creamos un sandbox aislado en `/tmp` y copiamos solo lo necesario:
+
+```bash
+# Desde labs/lab-26/aws
+SANDBOX=/tmp/secure-bucket-sandbox
+rm -rf "$SANDBOX" && mkdir -p "$SANDBOX"
+
+# Copiamos el módulo, los ejemplos y el .pre-commit-config.yaml
+cp -r modules "$SANDBOX/"
+cp .pre-commit-config.yaml "$SANDBOX/"
+
+cd "$SANDBOX"
+
+# Inicializamos un repo Git nuevo (simula el repo del módulo publicable)
+git init -q -b main
+git add .
+git commit -q -m "chore: initial import of secure-bucket"
+
+# Instalamos los hooks de pre-commit
 pre-commit install
+
+# Pre-descargamos los entornos de los hooks (la primera ejecución es lenta)
+pre-commit run --all-files
 ```
+
+La primera ejecución típicamente falla por dos motivos esperables:
+
+**1) `terraform_docs` Failed — "files were modified by this hook"**
+
+El hook ha regenerado las tablas dentro del `README.md` del módulo (los marcadores `<!-- BEGIN_TF_DOCS -->` / `<!-- END_TF_DOCS -->` se rellenan). Esto es deseable: el hook protege contra docs desincronizadas. Basta con re-staging y volver a ejecutar:
+
+```bash
+git add modules/secure-bucket/README.md
+pre-commit run --all-files
+```
+
+**2) `terraform_trivy` Failed — `AWS-0132` (HIGH)**
+
+Trivy detecta que el bucket no usa `SSE-KMS` con clave gestionada por el cliente. Es un hallazgo real: el módulo cifra con `SSE-S3` (AES256). En gobernanza hay dos respuestas posibles:
+
+- **Arreglar**: añadir `var.kms_key_arn` y permitir SSE-KMS condicional. Mejora futura, fuera del alcance del lab.
+- **Suprimir conscientemente**: documentar la decisión en un `.trivyignore` con justificación. Es lo que se hace aquí.
+
+El módulo incluye un archivo `.trivyignore` con el suprimido y la razón:
+
+```bash
+cat modules/secure-bucket/.trivyignore
+# AWS-0132   ← suprimido con justificación al lado
+```
+
+> **Importante — ubicación del `.trivyignore`:** Trivy busca este archivo **solo en el directorio actual de trabajo** (no recursivamente en padres). El hook `terraform_trivy` lanza Trivy una vez por cada directorio con `.tf`, así que necesitamos copias del archivo en los tres directorios donde Trivy entra:
+>
+> ```
+> modules/secure-bucket/.trivyignore                     ← scan #1 (módulo)
+> modules/secure-bucket/examples/basic/.trivyignore      ← scan #2
+> modules/secure-bucket/examples/advanced/.trivyignore   ← scan #3
+> ```
+>
+> Las copias en los ejemplos son necesarias porque cuando Trivy escanea `examples/basic/` sigue el `module { source = "../../" }` y vuelve a reportar `AWS-0132` en `../../main.tf` desde un CWD distinto. La alternativa (un único `.trivyignore` y `--args=--ignorefile=...` en el hook) requiere scripting porque el CWD cambia en cada invocación.
+
+Tras la segunda ejecución todos los hooks pasan:
+
+```bash
+pre-commit run --all-files
+# Terraform fmt............................................Passed
+# Terraform validate.......................................Passed
+# Terraform docs...........................................Passed
+# Terraform validate with trivy............................Passed
+```
+
+> **Nota:** Si Trivy imprime *"Unable to derive number of available CPU cores"*, es un aviso inocuo (Trivy no detecta el límite de CPU del host). Puedes silenciarlo añadiendo `--hook-config=--parallelism-ci-cpu-cores=N` (donde `N` = nº de cores) al hook `terraform_trivy` del `.pre-commit-config.yaml`.
+
+A partir de aquí, todos los `git commit` posteriores en el sandbox pasarán por los hooks. Las pruebas de la sección 3.2 (commit con archivo desformateado) se ejecutan dentro de este sandbox. Cuando termines puedes borrarlo con `rm -rf /tmp/secure-bucket-sandbox`.
 
 ### 2.4 Probar el ejemplo básico
 
@@ -373,36 +445,81 @@ terraform destroy
 ### 3.1 Verificar terraform-docs
 
 ```bash
-cd labs/lab-26/aws
-
 # Ver el README generado
-  cat modules/secure-bucket/README.md
+  more ../../README.md
 ```
 
 Debe contener tablas con todas las variables y outputs entre los marcadores `<!-- BEGIN_TF_DOCS -->` y `<!-- END_TF_DOCS -->`.
 
 ### 3.2 Verificar pre-commit
 
+Dentro del sandbox creado en 2.3 (`/tmp/secure-bucket-sandbox`):
+
 ```bash
-# Descformatear un archivo intencionalmente
-echo "   resource    \"aws_s3_bucket\"    \"test\"   {}" > /tmp/test_fmt.tf
-cp /tmp/test_fmt.tf modules/secure-bucket/test_fmt.tf
+cd /tmp/secure-bucket-sandbox
+
+# Crear un archivo .tf desformateado intencionalmente
+printf '   resource    "aws_s3_bucket"    "test"   {}\n' \
+  > modules/secure-bucket/test_fmt.tf
 
 # Intentar commitear — debe fallar
 git add modules/secure-bucket/test_fmt.tf
 git commit -m "test: unformatted file"
-# terraform_fmt... Failed
-# (el commit se rechaza)
-
-# Limpiar
-rm modules/secure-bucket/test_fmt.tf
 ```
+
+Salida esperada:
+
+```
+Terraform fmt............................................Failed
+- hook id: terraform_fmt
+- files were modified by this hook
+Terraform validate.......................................Passed
+Terraform docs...........................................Failed
+- hook id: terraform_docs
+- files were modified by this hook
+Terraform validate with trivy............................Failed
+- hook id: terraform_trivy
+- exit code: 1
+
+main.tf (terraform)
+Tests: 12 (SUCCESSES: 0, FAILURES: 12)
+Failures: 12 (HIGH: 12, CRITICAL: 0)
+
+AWS-0086 (HIGH): No public access block so not blocking public acls
+AWS-0087 (HIGH): No public access block so not blocking public policies
+AWS-0091 (HIGH): No public access block so not blocking public acls (ignore)
+AWS-0093 (HIGH): No public access block so not restricting public buckets
+```
+
+Lo que ocurre:
+
+- **`terraform_fmt` Failed**: el archivo tiene espaciado incorrecto. El hook lo **reformatea** (modifica el archivo) y reporta fallo para que vuelvas a hacer staging del cambio.
+- **`terraform_validate` Passed**: la sintaxis HCL del recurso vacío es válida (`resource "aws_s3_bucket" "test" {}` es legal aunque inútil).
+- **`terraform_docs` Failed**: al añadir un nuevo recurso `aws_s3_bucket.test`, terraform-docs detecta que la tabla del README del módulo ya no está sincronizada y la regenera.
+- **`terraform_trivy` Failed**: el recurso vacío introduce 4 misconfigs nuevos (`AWS-0086`, `AWS-0087`, `AWS-0091`, `AWS-0093`) porque **no tiene su `aws_s3_bucket_public_access_block` asociado**. Cada misconfig se reporta tres veces (una por cada invocación de Trivy: módulo + 2 ejemplos), de ahí los 12 failures totales.
+
+> **Lo que demuestra esto:** un commit con un solo recurso S3 sin proteger es exactamente el tipo de regresión de seguridad que el hook está pensado para frenar. En el módulo "real" cada bucket viene con su `public_access_block` adyacente; el recurso de prueba no, y Trivy lo detecta. Es el caso de uso canónico de pre-commit + Trivy.
+
+El commit queda rechazado. Limpia el archivo y vuelve al estado anterior:
+
+```bash
+rm modules/secure-bucket/test_fmt.tf
+
+# Restaurar el README del módulo (terraform_docs lo modificó)
+git checkout -- modules/secure-bucket/README.md
+
+# Quitar el archivo del staging
+git reset HEAD modules/secure-bucket/test_fmt.tf 2>/dev/null || true
+```
+
+> **Lección clave:** un solo archivo desformateado dispara una cascada de validaciones. El commit se rechaza no porque alguno sea "más importante" que otro, sino porque **cualquier hook que modifique archivos** falla por diseño — la idea es forzarte a revisar y re-añadir los cambios al staging antes de commitear.
 
 ### 3.3 Verificar versionado con Git tag
 
+Seguimos en el sandbox (`/tmp/secure-bucket-sandbox`), que es el repo que representa al módulo publicable:
+
 ```bash
-# Simular la publicación del módulo
-cd labs/lab-26/aws
+cd /tmp/secure-bucket-sandbox
 
 # Crear un tag semántico
 git tag -a v1.0.0 -m "Release v1.0.0: modulo secure-bucket"
@@ -415,15 +532,56 @@ git tag -l "v1.*"
 git show v1.0.0
 ```
 
-### 3.4 Probar el proyecto consumidor
+### 3.4 Probar el proyecto consumidor consumiendo el módulo por tag
+
+El consumer vive en el repo del curso, **no en el sandbox**. El objetivo de este paso es cerrar el ciclo de gobernanza: ahora que el sandbox tiene `v1.0.0` etiquetado, el consumer debe **fetchear el módulo por tag** desde el sandbox — exactamente como lo haría en producción contra GitHub.
+
+Para esa demostración usamos el protocolo `git::file://` de Terraform (cualquier repo Git local sirve como remoto):
+
+#### Paso 1: Apuntar el consumer al sandbox por tag
+
+Edita `aws/consumer/main.tf` y cambia el `source` del módulo:
+
+```hcl
+module "app_bucket" {
+  # Antes (desarrollo en monorepo):
+  # source = "../modules/secure-bucket"
+
+  # Ahora (consumiendo el módulo publicado en el sandbox):
+  source = "git::file:///tmp/secure-bucket-sandbox//modules/secure-bucket?ref=v1.0.0"
+
+  bucket_name       = "consumer-app-${data.aws_caller_identity.current.account_id}"
+  # ... (el resto igual)
+}
+```
+
+> **Sintaxis:** la doble barra `//` separa la URL del repo de la subruta dentro del repo. El sandbox es un repo Git cuyo subdirectorio `modules/secure-bucket/` es el módulo. `?ref=v1.0.0` fija el tag.
+
+#### Paso 2: Init + apply
 
 ```bash
-cd consumer/
+cd ~/terraform-on-aws/labs/lab-26/aws/consumer
+# (o la ruta donde tengas clonado el curso)
 
 BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
-terraform init \
+
+# -upgrade fuerza a refetchear el módulo (necesario si ya hiciste init antes con la ruta local)
+terraform init -upgrade \
   -backend-config=aws.s3.tfbackend \
   -backend-config="bucket=$BUCKET"
+```
+
+En la salida de `init` verás algo como:
+
+```
+Initializing modules...
+Downloading git::file:///tmp/secure-bucket-sandbox?ref=v1.0.0 for app_bucket...
+- app_bucket in .terraform/modules/app_bucket/modules/secure-bucket
+```
+
+Esto confirma que Terraform clonó el sandbox y se posicionó en el commit del tag `v1.0.0`.
+
+```bash
 terraform apply
 
 terraform output
@@ -434,13 +592,24 @@ terraform output
 terraform destroy
 ```
 
-> **Nota:** El consumidor usa `source = "../modules/secure-bucket"` (ruta local) porque estamos en un monorepo. En producción, el source sería `"git::https://github.com/<org>/terraform-aws-secure-bucket.git?ref=v1.0.0"` y el tag garantizaría la versión.
+#### Paso 3: Restaurar el consumer al modo monorepo
+
+Tras la prueba, devuelve el `source` a la ruta local para no romper el flujo del Reto (que sigue editando los archivos del repo del curso) y para que el siguiente que abra el lab no se encuentre el `git::file://` apuntando a un sandbox que ya no existe:
+
+```bash
+cd ~/terraform-on-aws/labs/lab-26/aws/consumer
+git checkout -- main.tf
+```
+
+> **Por qué este paso es importante:** sin él, el tag `v1.0.0` creado en 3.3 sería puro ceremonial — nunca se usa. Con él, queda demostrada la cadena **publicar → versionar → consumir por `?ref=`**, que es justamente el punto del lab. En un escenario real, `git::file:///tmp/...` se sustituye por `git::https://github.com/<org>/terraform-aws-secure-bucket.git?ref=v1.0.0` y todo lo demás funciona idéntico.
 
 ---
 
 ## 4. Reto: Crear un CHANGELOG y simular un release con breaking change
 
-**Situación**: Has publicado `v1.0.0` del módulo. Ahora necesitas añadir una nueva funcionalidad (variable `expiration_days`) y luego hacer un breaking change (renombrar `bucket_name` a `name`). Quieres seguir el flujo correcto de versionado semántico.
+**Situación**: Has publicado `v1.0.0` del módulo en el sandbox (sección 3.3). Ahora, como mantenedor del módulo, necesitas añadir una nueva funcionalidad (variable `expiration_days`) y luego hacer un breaking change (renombrar `bucket_name` a `name`). Quieres seguir el flujo correcto de versionado semántico.
+
+> **Dónde se hace el reto:** **todas las modificaciones del módulo van al sandbox** (`/tmp/secure-bucket-sandbox`), no al repo del curso. El sandbox representa el repo del módulo publicable; los tags, commits y CHANGELOG viven allí. El repo del curso queda intacto como "estado inicial v1.0.0" — esto evita contaminar tags del monorepo y refleja el flujo real (un equipo de plataforma mantiene el módulo, otros equipos lo consumen). La migración del consumer (sección 6 de este reto) sí toca el repo del curso, porque el consumer vive ahí.
 
 **Tu objetivo**:
 
@@ -449,7 +618,7 @@ terraform destroy
 3. Crear el tag `v1.1.0` con el mensaje apropiado
 4. Renombrar `bucket_name` a `name` con un bloque `moved {}` en el módulo → esto es `v2.0.0` (MAJOR: cambio incompatible)
 5. Actualizar el CHANGELOG con ambas versiones
-6. Crear el tag `v2.0.0`
+6. Crear el tag `v2.0.0` y migrar el consumer del repo del curso al nuevo tag
 
 **Pistas**:
 - El CHANGELOG tiene secciones: `## [Unreleased]`, `## [1.1.0] - 2026-04-04`, etc.
@@ -464,7 +633,15 @@ La solución está en la [sección 5](#5-solución-del-reto).
 
 ## 5. Solución del Reto
 
+> Todos los pasos del 1 al 5 se ejecutan **dentro del sandbox** (`cd /tmp/secure-bucket-sandbox`). Solo el paso 6 (migración del consumer) toca el repo del curso.
+
 ### Paso 1: Crear CHANGELOG.md
+
+Asegúrate de estar en el sandbox:
+
+```bash
+cd /tmp/secure-bucket-sandbox
+```
 
 En `modules/secure-bucket/CHANGELOG.md`:
 
@@ -538,11 +715,40 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
 
 ### Paso 3: Tag v1.1.0
 
+Sigues en el sandbox. El primer `git commit` casi seguro fallará en `terraform_docs` porque la nueva variable `expiration_days` aún no aparece en el bloque auto-generado del `README.md`. Es el flujo normal "intento 1 falla → re-staging → intento 2 pasa":
+
+**Intento 1 — falla en `terraform_docs`:**
+
 ```bash
 git add modules/secure-bucket/
 git commit -m "feat: add expiration_days to secure-bucket module"
+# ...
+# Terraform docs..............................Failed
+# - hook id: terraform_docs
+# - files were modified by this hook
+```
+
+El hook ha **regenerado** `modules/secure-bucket/README.md` añadiendo `expiration_days` a la tabla. Eso es exactamente lo que queremos.
+
+**Intento 2 — añade el README modificado y vuelve a commitear:**
+
+```bash
+git add modules/secure-bucket/README.md
+git commit -m "feat: add expiration_days to secure-bucket module"
+# Terraform fmt...............................Passed
+# Terraform validate..........................Passed
+# Terraform docs..............................Passed
+# Terraform validate with trivy...............Passed
+# [main abcdef1] feat: add expiration_days to secure-bucket module
+```
+
+Una vez que el commit pasa, etiqueta:
+
+```bash
 git tag -a v1.1.0 -m "feat: add expiration_days variable (optional, default 0)"
 ```
+
+> **Nota:** este patrón "fallo → re-add → re-commit" se repite cada vez que un cambio en `.tf` impacta a la documentación generada. En el Paso 5 (rename de variable) ocurrirá lo mismo.
 
 ### Paso 4: Renombrar `bucket_name` → `name` (v2.0.0)
 
@@ -560,7 +766,7 @@ variable "name" {    # Antes: variable "bucket_name"
 }
 ```
 
-Actualizar todas las referencias en `main.tf` y `outputs.tf`:
+Actualizar las dos referencias en `main.tf` (en `outputs.tf` no hay nada que cambiar — sus outputs referencian al recurso `aws_s3_bucket.this.*`, no a `var.bucket_name`):
 
 ```hcl
 # main.tf
@@ -596,12 +802,64 @@ module "data_bucket" {
 }
 ```
 
-Actualizar también el **proyecto consumidor** (que representa al equipo cliente afectado por el breaking change):
+También los ejemplos de uso del propio README del módulo (`modules/secure-bucket/README.md`, líneas con `bucket_name = ...`) hay que actualizarlos. Cuando el hook `terraform_docs` regenere el bloque entre `<!-- BEGIN_TF_DOCS -->` / `<!-- END_TF_DOCS -->` reflejará el rename en la tabla de variables, pero los ejemplos manuales en español se actualizan a mano.
+
+Verifica dentro del sandbox que no quedan referencias a `bucket_name` antes de hacer commit:
+
+```bash
+grep -rn "bucket_name" modules/secure-bucket/ || echo "OK: ninguna referencia en el módulo"
+```
+
+> **Nota 1:** `moved {}` no aplica a variables — solo a recursos y módulos. Renombrar una variable siempre es un breaking change porque el consumidor debe actualizar su código.
+>
+> **Nota 2:** El `consumer/main.tf` del repo del curso **todavía** usa `bucket_name = ...`, y eso es correcto en este momento — su `?ref` apunta a `v1.0.0`/`v1.1.0`, donde la variable aún se llama así. La migración del consumer al nuevo tag se hace en el Paso 6.
+
+### Paso 5: Tag v2.0.0
+
+Sigues en el sandbox. Igual que en el Paso 3, el primer commit fallará en `terraform_docs` (la tabla del README aún tiene `bucket_name`, hay que regenerarla con `name`):
+
+```bash
+# Intento 1
+git add modules/secure-bucket/
+git commit -m 'feat!: rename bucket_name to name (BREAKING CHANGE)'
+# Terraform docs.......................Failed (regenera README)
+
+# Intento 2 — añade el README modificado por el hook
+git add modules/secure-bucket/README.md
+git commit -m 'feat!: rename bucket_name to name (BREAKING CHANGE)'
+# Todos los hooks pasan
+
+git tag -a v2.0.0 -m "BREAKING: rename bucket_name to name"
+```
+
+Verifica los tres tags y el historial:
+
+```bash
+git tag -l "v*"
+# v1.0.0
+# v1.1.0
+# v2.0.0
+
+git log --oneline --decorate
+```
+
+### Paso 6: Migrar el consumer al nuevo tag (repo del curso)
+
+Hasta aquí todo era trabajo del **mantenedor del módulo** en el sandbox. Ahora cambia el sombrero al **equipo consumidor**: ellos ven `v2.0.0` publicado, leen el `CHANGELOG.md` que dice "BREAKING: rename `bucket_name` → `name`" y aplican la migración en su código.
+
+En este lab el consumer vive en el repo del curso. La migración consiste en bumpear el `?ref=` y renombrar el argumento del módulo:
+
+```bash
+cd ~/github/mios/terraform-on-aws/labs/lab-26/aws/consumer
+```
+
+Edita `main.tf`:
 
 ```hcl
-# consumer/main.tf
 module "app_bucket" {
-  source = "../modules/secure-bucket"
+  # Bump del tag: v1.0.0 → v2.0.0
+  source = "git::file:///tmp/secure-bucket-sandbox//modules/secure-bucket?ref=v2.0.0"
+
   name              = "consumer-app-${data.aws_caller_identity.current.account_id}"  # Antes: bucket_name
   environment       = "production"
   enable_versioning = true
@@ -611,34 +869,21 @@ module "app_bucket" {
 }
 ```
 
-Y los ejemplos de uso del propio README del módulo (`modules/secure-bucket/README.md`, líneas con `bucket_name = ...`). Cuando el hook `terraform_docs` regenere el bloque entre `<!-- BEGIN_TF_DOCS -->` / `<!-- END_TF_DOCS -->` reflejará el rename en la tabla de variables, pero los ejemplos manuales en español hay que actualizarlos a mano.
-
-Verifica que no quedan referencias a `bucket_name` antes de hacer commit:
+Refetchea el módulo desde el nuevo tag y aplica:
 
 ```bash
-grep -rn "bucket_name" modules/secure-bucket/ consumer/ || echo "OK: ninguna referencia"
+terraform init -upgrade \
+  -backend-config=aws.s3.tfbackend \
+  -backend-config="bucket=$BUCKET"
+terraform plan
 ```
 
-> **Nota:** `moved {}` no aplica a variables — solo a recursos y módulos. Renombrar una variable siempre es un breaking change porque el consumidor debe actualizar su código.
+> **Lo que demuestra esto:** el consumidor controla **cuándo** adopta una versión MAJOR. Hasta que no bumpea el `?ref=`, su código sigue corriendo contra `v1.0.0` (con `bucket_name`) sin verse afectado por el breaking change que hizo el mantenedor. Es exactamente el contrato que el versionado semántico promete.
 
-### Paso 5: Tag v2.0.0
-
-```bash
-git add modules/secure-bucket/
-git commit -m 'feat!: rename bucket_name to name (BREAKING CHANGE)'
-git tag -a v2.0.0 -m "BREAKING: rename bucket_name to name"
-```
-
-### Paso 6: Verificar tags
+Cuando termines, restaura el consumer al estado del repo:
 
 ```bash
-git tag -l "v*"
-# v1.0.0
-# v1.1.0
-# v2.0.0
-
-# Ver el historial con tags
-git log --oneline --decorate
+git checkout -- main.tf
 ```
 
 ### Reflexión: ¿cuándo subir cada número?
@@ -660,9 +905,11 @@ Regla simple: **si el consumidor tiene que cambiar su código, es MAJOR**.
 
 **Situación**: Los ejemplos en `/examples` son documentación viva, pero nadie verifica que sigan funcionando cuando el módulo cambia. Quieres crear un test que valide automáticamente ambos ejemplos.
 
+> **Dónde se hace este reto:** igual que el Reto 1, **dentro del sandbox** (`/tmp/secure-bucket-sandbox`). Los tests son un artefacto del repo del módulo: validan su contrato y viajan con él en cada release. Mantenerlos en el sandbox conserva el "rol de mantenedor" iniciado en el Reto 1.
+
 **Tu objetivo**:
 
-1. Crear un directorio `tests/` dentro del módulo
+1. Crear un directorio `tests/` dentro del módulo (en el sandbox)
 2. Crear un test `examples_basic.tftest.hcl` que use `module { source = "./examples/basic" }` para ejecutar el ejemplo básico
 3. Crear un test `examples_advanced.tftest.hcl` que ejecute el ejemplo avanzado
 4. Verificar que ambos pasan con `terraform test`
@@ -678,6 +925,12 @@ La solución está en la [sección 7](#7-solución-del-reto-2).
 ---
 
 ## 7. Solución del Reto 2
+
+> Todos los pasos se ejecutan **dentro del sandbox**:
+>
+> ```bash
+> cd /tmp/secure-bucket-sandbox
+> ```
 
 ### Paso 1: Crear los archivos de test
 
@@ -739,7 +992,7 @@ run "advanced_example_works" {
 `terraform test` se invoca **desde la raíz del módulo** (donde están los `.tf` y la carpeta `examples/`). El `init` descarga los providers necesarios para los ejemplos:
 
 ```bash
-cd modules/secure-bucket
+cd /tmp/secure-bucket-sandbox/modules/secure-bucket
 
 terraform init
 terraform test
@@ -761,16 +1014,67 @@ tests/examples_basic.tftest.hcl... pass
 Success! 2 passed, 0 failed.
 ```
 
+### Paso 3: Integrar `terraform test` en el pipeline de pre-commit
+
+`pre-commit-terraform` no incluye un hook `terraform_test` ya hecho. Para engancharlo, se añade un **hook local** al `.pre-commit-config.yaml` del sandbox.
+
+Decisión clave — **¿en qué stage?**: `terraform test` con `command = apply` crea recursos reales, tarda ~30–60 s y cuesta dinero. Ejecutarlo en **cada `git commit`** es excesivo. Lo idiomático es `pre-push`: se dispara antes de empujar a remoto (entonces el coste sí se justifica).
+
+Edita `/tmp/secure-bucket-sandbox/.pre-commit-config.yaml` y añade al final:
+
+```yaml
+  # --- Tests de integración (lentos) ---
+  # Se ejecutan solo en `git push`, no en cada commit.
+  - repo: local
+    hooks:
+      - id: terraform-test
+        name: terraform test (examples)
+        entry: bash -c 'cd modules/secure-bucket && terraform test'
+        language: system
+        pass_filenames: false
+        files: ^modules/secure-bucket/.*\.tf$
+        stages: [pre-push]
+```
+
+Activa el stage de `pre-push` (la primera vez):
+
+```bash
+cd /tmp/secure-bucket-sandbox
+pre-commit install --hook-type pre-push
+```
+
+Pruébalo manualmente sin tener que hacer push real:
+
+```bash
+pre-commit run terraform-test --all-files --hook-stage pre-push
+# terraform test (examples)................................Passed
+```
+
+Ahora cuando hagas `git push`:
+
+```
+git push origin main
+  └─ terraform test (examples) ── ¿Ejemplos siguen funcionando? ── FAIL → push rechazado
+```
+
+> **Por qué `pre-push` y no `pre-commit`:**
+> - **`pre-commit`**: ideal para validaciones rápidas (fmt, validate, docs, trivy) que tardan <2 s. Tirar `terraform test` aquí te bloquea durante 30 s en cada commit, hace que la gente desactive los hooks (`--no-verify`) y pierdes toda la red de seguridad.
+> - **`pre-push`**: ideal para tests de integración (`terraform test`, `terratest`, etc.). Se paga el coste solo cuando hay intención real de publicar.
+> - **Alternativa `stages: [manual]`**: el hook nunca corre en automático, pero sí cuando ejecutas `pre-commit run terraform-test --all-files --hook-stage manual`. Útil si prefieres dispararlo desde CI en vez de localmente.
+
 ### Reflexión: ejemplos como contrato
 
-Al testear los ejemplos automáticamente, se convierten en un **contrato**: si el módulo cambia de forma que rompe un ejemplo, el test falla antes de publicar la nueva versión. Esto es especialmente útil con el flujo de pre-commit:
+Al testear los ejemplos automáticamente, se convierten en un **contrato**: si el módulo cambia de forma que rompe un ejemplo, el test falla antes de publicar la nueva versión. Con la integración del Paso 3 el flujo completo queda:
 
 ```
 git commit
-  ├─ terraform_fmt
-  ├─ terraform_validate
-  ├─ terraform_docs
-  └─ terraform test (valida que los ejemplos siguen funcionando)
+  ├─ terraform_fmt          (rápido)
+  ├─ terraform_validate     (rápido)
+  ├─ terraform_docs         (rápido)
+  └─ terraform_trivy        (rápido)
+
+git push
+  └─ terraform test         (lento — solo aquí)
 ```
 
 Cada ejemplo cubierto por un test es una garantía menos de que un consumidor va a encontrarse con un módulo roto.
@@ -792,13 +1096,15 @@ cd ../../consumer && terraform destroy
 
 Si solo ejecutaste `terraform test`, la limpieza es automática.
 
-Para eliminar los tags (si no quieres conservarlos):
+Para eliminar el sandbox de pre-commit y los tags creados en él:
 
 ```bash
-git tag -d v1.0.0
-git tag -d v1.1.0
-git tag -d v2.0.0
+# Borra el repositorio sandbox completo (y los tags v1.0.0, v1.1.0, v2.0.0
+# se van con él, porque son locales a ese repo)
+rm -rf /tmp/secure-bucket-sandbox
 ```
+
+> **Nota:** No es necesario borrar tags en el repo del curso, porque la sección 3.3 los crea en el sandbox aislado, no en el repo padre.
 
 ---
 

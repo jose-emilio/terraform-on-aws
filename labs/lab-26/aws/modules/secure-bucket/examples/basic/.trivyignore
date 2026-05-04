@@ -1,0 +1,9 @@
+# Replicado del .trivyignore del módulo. Trivy lee `.trivyignore` solo del
+# directorio actual de trabajo, y el hook `terraform_trivy` lanza Trivy una
+# vez por cada directorio con `.tf` — por eso necesitamos una copia aquí
+# además de la del módulo.
+#
+# AWS-0132 (HIGH): Bucket does not encrypt data with a customer managed key.
+# Suprimido conscientemente: el módulo usa SSE-S3 (AES256). Soporte para
+# SSE-KMS con clave del cliente queda como mejora futura.
+AWS-0132

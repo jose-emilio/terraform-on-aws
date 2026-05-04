@@ -1,0 +1,10 @@
+# Hallazgos de Trivy suprimidos conscientemente para este módulo.
+#
+# AWS-0132 (HIGH): Bucket does not encrypt data with a customer managed key.
+# Justificación: el módulo usa SSE-S3 (AES256) por defecto para mantener la
+# instalación sencilla y sin coste adicional de KMS. La variable
+# `enable_encryption` ya activa cifrado en reposo (suficiente para la mayoría
+# de cargas de trabajo). El soporte para SSE-KMS con clave gestionada por el
+# cliente queda como mejora futura (añadir `var.kms_key_arn` y conmutación
+# en el bloque `apply_server_side_encryption_by_default`).
+AWS-0132
