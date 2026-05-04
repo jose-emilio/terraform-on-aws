@@ -33,9 +33,9 @@ Validar la estabilidad y el comportamiento de un módulo Terraform mediante el *
 
 ## Prerrequisitos
 
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
+- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
 - AWS CLI configurado con credenciales válidas
-- **Terraform >= 1.7** (requerido para `mock_provider`)
+- **Terraform >= 1.10** (necesario para `use_lockfile` en el backend S3; `mock_provider` ya está disponible desde 1.7, así que también queda cubierto)
 - Opcional: `checkov` o `trivy` instalados para análisis estático
 
 ```bash
@@ -45,16 +45,16 @@ echo "Bucket: $BUCKET"
 
 # Verificar versión de Terraform
 terraform version
-# Terraform v1.7.0+ requerido
+# Terraform v1.10.0+ requerido (backend `use_lockfile` + `mock_provider`)
 ```
 
 ## Estructura del proyecto
 
 ```
-lab25/
+lab-25/
 ├── README.md                                  <- Esta guía
 ├── aws/
-│   ├── providers.tf                           <- Backend S3 parcial (>= 1.7)
+│   ├── providers.tf                           <- Backend S3 parcial (>= 1.10)
 │   ├── variables.tf                           <- Variables del Root Module
 │   ├── main.tf                                <- Root Module: invoca tagged-bucket
 │   ├── outputs.tf                             <- Outputs delegados al módulo
@@ -87,7 +87,7 @@ lab25/
 │  │ mock_provider ── │  │ provider "aws" ── │  │ run 1: apply ── │   │
 │  │ command = plan   │  │ command = apply   │  │ run 2: plan  ── │   │
 │  │ 0 recursos reales│  │ recursos reales   │  │ 0 cambios?      │   │
-│  └────────┬─────────┘  └────────┬──────────┘  └───────┬─────────┘   │
+│  └────────┬─────────┘  └────────┬──────────┘  └────────┬────────┘   │
 │           │                     │                      │            │
 │           └─────────────────────┼──────────────────────┘            │
 │                                 ▼                                   │
@@ -188,6 +188,8 @@ variables {
   environment   = "lab"
 }
 
+# --- Test 1: el bucket se crea correctamente (command = apply) ---
+
 run "bucket_is_created" {
   command = apply
 
@@ -201,13 +203,34 @@ run "bucket_is_created" {
     error_message = "El ARN debe ser un ARN de S3 válido"
   }
 }
+
+# --- Test 2: las tags se aplicaron correctamente (command = plan) ---
+# Aprovecha el state que dejó `bucket_is_created` y verifica los outputs
+# sin volver a tocar AWS. El patrón "apply una vez + varios plan" es el
+# habitual cuando varios runs comprueban distintas facetas del MISMO
+# despliegue: ahorras 30+ segundos por run frente a un apply nuevo.
+
+run "tags_are_applied" {
+  command = plan
+
+  assert {
+    condition     = output.effective_tags["Project"] == "lab25-inttest"
+    error_message = "El tag Project no coincide tras el apply"
+  }
+
+  assert {
+    condition     = output.effective_tags["Environment"] == "lab"
+    error_message = "El tag Environment no coincide tras el apply"
+  }
+}
 ```
 
 Diferencias con el unit test:
-- **Sin `mock_provider`**: usa el proveedor real configurado en `providers.tf`
-- **`command = apply`**: crea el bucket **de verdad** en la cuenta de AWS
-- **Limpieza automática**: `terraform test` destruye los recursos al finalizar el archivo de test
-- **`variables {}` a nivel de archivo**: se comparten entre todos los `run` del archivo
+- **Sin `mock_provider`**: usa el proveedor real configurado en `providers.tf`.
+- **`command = apply` en el primer run**: crea el bucket **de verdad** en la cuenta de AWS.
+- **`command = plan` en runs posteriores**: leen los outputs del state generado por el `apply` anterior. No tocan AWS, son rápidos. Es el patrón recomendado cuando varios `assert` verifican distintas propiedades del mismo despliegue — apply una sola vez, varios `plan` después.
+- **Limpieza automática**: `terraform test` destruye los recursos al finalizar el archivo de test (no del run).
+- **`variables {}` a nivel de archivo**: se comparten entre todos los `run` del archivo (ojo: cada `run` puede sobreescribirlas con su propio bloque `variables {}`).
 
 ### 1.5 Test de idempotencia — Apply + Plan
 
@@ -246,18 +269,50 @@ Si el módulo es idempotente, el plan no mostrará cambios y los outputs serán 
 
 **`run.initial_deploy.bucket_id`** referencia el output del run anterior. Esto permite comparar valores entre ejecuciones.
 
+### 1.6 `expect_failures` — Probar el camino fallido
+
+`assert` verifica que algo es **cierto**. Su contraparte es `expect_failures`, que verifica que **una validación o precondition falla** intencionalmente. Es la forma de testear el "camino infeliz" de un módulo: comprobar que las validaciones rechazan inputs malos.
+
+```hcl
+run "rejects_bad_input" {
+  command = plan
+
+  variables {
+    environment = "invalid"   # ← valor que la validación NO acepta
+  }
+
+  expect_failures = [var.environment]
+}
+```
+
+`expect_failures` es una **lista** de referencias a las variables (o recursos) cuya validación se espera que falle. Si la validación **sí** falla → el test pasa. Si la validación **no** falla (es decir, si la regla está rota y acepta valores que no debería) → el test falla, alertándote.
+
+Diferencias clave con `assert`:
+
+| Aspecto | `assert` | `expect_failures` |
+|---|---|---|
+| Espera... | que `condition = true` | que la validación de un input falle |
+| Comprueba... | el camino satisfactorio | el camino fallido |
+| Si la condición/validación pasa | el test pasa | el test **falla** |
+
+El Reto 1 (sección 4) lo aplica para verificar que la validación de `environment` rechaza valores inválidos.
+
 ---
 
-## 2. Ejecucion de los tests
+## 2. Ejecución de los tests
 
 ### 2.1 Inicializar (sin backend)
 
 ```bash
-cd labs/lab25/aws
+cd labs/lab-25/aws
 
 # Para tests, inicializar sin backend (el state es efímero)
 terraform init -backend=false
 ```
+
+> **El state durante un test:** `terraform test` mantiene el state de cada archivo `.tftest.hcl` **en memoria, sin persistirlo en ningún backend** ni en disco. Cuando termina la ejecución del archivo, el state desaparece junto con los recursos que se hayan creado. Por eso usamos `-backend=false` durante el `init` — no hay nada que guardar.
+>
+> **Tiempo del primer `init`:** la primera vez tarda 5–15 segundos descargando el provider AWS (`hashicorp/aws`). En ejecuciones posteriores se sirve desde la caché local (`.terraform/providers/`) y es prácticamente instantáneo.
 
 ### 2.2 Ejecutar todos los tests
 
@@ -287,7 +342,7 @@ tests/unit_naming.tftest.hcl... in progress
 tests/unit_naming.tftest.hcl... tearing down
 tests/unit_naming.tftest.hcl... pass
 
-Success! 8 passed, 0 failed.
+Success! 7 passed, 0 failed.
 ```
 
 ### 2.3 Ejecutar solo los tests unitarios (sin AWS)
@@ -309,7 +364,7 @@ Muestra los detalles del plan/apply de cada `run`, incluyendo los outputs y los 
 
 ---
 
-## 3. Analisis estatico
+## 3. Análisis estático
 
 El análisis estático complementa los tests de Terraform escaneando el código HCL en busca de vulnerabilidades **sin ejecutar nada**.
 
@@ -331,26 +386,95 @@ checkov -d modules/tagged-bucket/ --framework terraform
 Salida típica:
 
 ```
-Passed checks: 4, Failed checks: 0, Skipped checks: 0
+Passed checks: 10, Failed checks: 5, Skipped checks: 0
 
-Check: CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+Check: CKV_AWS_19: "Ensure all data stored in the S3 bucket is securely encrypted at rest"
         PASSED for resource: aws_s3_bucket.this
-Check: CKV_AWS_19: "Ensure the S3 bucket has server-side encryption"
+Check: CKV_AWS_21: "Ensure all data stored in the S3 bucket have versioning enabled"
         PASSED for resource: aws_s3_bucket.this
 Check: CKV_AWS_53: "Ensure S3 bucket has block public ACLS enabled"
         PASSED for resource: aws_s3_bucket_public_access_block.this
+Check: CKV_AWS_54: "Ensure S3 bucket has block public policy enabled"
+        PASSED for resource: aws_s3_bucket_public_access_block.this
+Check: CKV2_AWS_6:  "Ensure that S3 bucket has a Public Access block"
+        PASSED for resource: aws_s3_bucket.this
 ...
+
+Check: CKV_AWS_18:  "Ensure the S3 bucket has access logging enabled"
+        FAILED for resource: aws_s3_bucket.this
+Check: CKV_AWS_144: "Ensure that S3 bucket has cross-region replication enabled"
+        FAILED for resource: aws_s3_bucket.this
+Check: CKV_AWS_145: "Ensure that S3 buckets are encrypted with KMS by default"
+        FAILED for resource: aws_s3_bucket.this
+Check: CKV2_AWS_61: "Ensure that an S3 bucket has a lifecycle configuration"
+        FAILED for resource: aws_s3_bucket.this
+Check: CKV2_AWS_62: "Ensure S3 buckets should have event notifications enabled"
+        FAILED for resource: aws_s3_bucket.this
 ```
+
+Las cinco comprobaciones que fallan corresponden a buenas prácticas que el módulo no implementa intencionadamente para mantener la docencia (`access logging`, `cross-region replication`, cifrado con `KMS`, `lifecycle` y `event notifications`). Es un buen ejemplo de cómo `checkov` complementa a los tests funcionales: los `.tftest.hcl` verifican el contrato del módulo, mientras que el análisis estático señala buenas prácticas adicionales que el equipo decide adoptar (o suprimir explícitamente con `--skip-check`).
 
 ### 3.3 Alternativa: Trivy
 
-```bash
-# Instalación
-brew install trivy    # macOS; en Linux: descarga el binario de GitHub Releases
+Instalación oficial según el sistema operativo (ver [docs](https://trivy.dev/docs/latest/getting-started/installation/)):
 
-# Ejecución
+```bash
+# macOS (Homebrew)
+brew install trivy
+```
+
+```bash
+# Linux Debian/Ubuntu (repositorio APT)
+sudo apt-get install -y wget gnupg
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+  | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+  | sudo tee /etc/apt/sources.list.d/trivy.list
+sudo apt-get update && sudo apt-get install -y trivy
+```
+
+```bash
+# Linux RHEL/CentOS/Fedora (repositorio YUM/DNF)
+cat <<EOF | sudo tee /etc/yum.repos.d/trivy.repo
+[trivy]
+name=Trivy repository
+baseurl=https://aquasecurity.github.io/trivy-repo/rpm/releases/\$basearch/
+gpgcheck=1
+enabled=1
+gpgkey=https://aquasecurity.github.io/trivy-repo/rpm/public.key
+EOF
+sudo dnf install -y trivy
+```
+
+Si no quieres añadir un repositorio, puedes descargar el binario suelto desde [GitHub Releases](https://github.com/aquasecurity/trivy/releases) (paquete `.deb`/`.rpm` o tarball para extraer en `~/.local/bin`).
+
+Ejecución sobre el módulo:
+
+```bash
 trivy config modules/tagged-bucket/
 ```
+
+Salida típica:
+
+```
+Report Summary
+
+┌─────────┬───────────┬───────────────────┐
+│ Target  │   Type    │ Misconfigurations │
+├─────────┼───────────┼───────────────────┤
+│ main.tf │ terraform │         2         │
+└─────────┴───────────┴───────────────────┘
+
+main.tf (terraform)
+===================
+Tests: 2 (SUCCESSES: 0, FAILURES: 2)
+Failures: 2 (UNKNOWN: 0, LOW: 1, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
+
+AWS-0089 (LOW):  Bucket has logging disabled
+AWS-0132 (HIGH): Bucket does not encrypt data with a customer managed key.
+```
+
+Trivy reporta menos hallazgos que `checkov` porque aplica un catálogo de reglas más reducido y centrado en severidad. Ambos son complementarios: `checkov` da más cobertura, `trivy` clasifica por severidad (`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`), útil para fijar umbrales de fallo en CI (por ejemplo `--severity HIGH,CRITICAL`).
 
 ### 3.4 Pipeline recomendado
 
@@ -489,7 +613,7 @@ La solución está en la [sección 7](#7-solución-del-reto-2).
 
 ### Paso 1: Añadir output al módulo `tagged-bucket`
 
-En `modules/tagged-bucket/outputs.tf`:
+En `modules/tagged-bucket/outputs.tf` — añadir el bloque sin tocar los outputs existentes:
 
 ```hcl
 output "public_access_block" {
@@ -502,6 +626,8 @@ output "public_access_block" {
   }
 }
 ```
+
+> **Cambio retro-compatible:** este Paso solo **añade** un output nuevo, no modifica ni elimina los existentes (`bucket_id`, `bucket_arn`, `effective_tags`). Los consumidores del módulo que ya usan los outputs anteriores no se ven afectados, así que se puede mergear sin ciclo de migración.
 
 ### Paso 2: Propagar en el Root Module
 
@@ -581,11 +707,11 @@ En vez de usar un data source auxiliar para consultar el estado real, exponemos 
 
 ---
 
-## Verificación final
+## 8. Resumen de comandos
 
 ```bash
 # Ejecutar los tests unitarios (sin AWS)
-cd labs/lab25/aws
+cd labs/lab-25/aws
 terraform test -filter=tests/unit_naming.tftest.hcl
 # Esperado: 0 errors, X tests passed
 
@@ -593,32 +719,34 @@ terraform test -filter=tests/unit_naming.tftest.hcl
 terraform test -filter=tests/idempotency.tftest.hcl
 # Esperado: 0 changes pending tras el apply
 
-# Ejecutar todos los tests de integracion
+# Ejecutar todos los tests de integración
 terraform test
 # Esperado: All tests passed
 
-# Analisis estatico con checkov
+# Análisis estático con checkov
 checkov -d . --quiet
+
+# Análisis estático con trivy (alternativa, ordena por severidad)
+trivy config modules/tagged-bucket/
 ```
 
 ---
 
-## 8. Limpieza
+## 9. Limpieza
 
 `terraform test` destruye automáticamente los recursos que crea. **No necesitas hacer limpieza manual** de los tests.
 
 Si desplegaste el Root Module directamente (con `terraform apply`, no con `terraform test`):
 
 ```bash
-terraform destroy \
-  -var="region=us-east-1"
+terraform destroy
 ```
 
-> **Nota:** No destruyas el bucket S3 del lab02.
+> **Nota:** `terraform test` crea un bucket S3 temporal y lo destruye automáticamente al final de cada archivo de test. **No destruyas el bucket de tfstate del lab-02** (`terraform-state-labs-<ACCOUNT_ID>`), ya que es un recurso compartido entre laboratorios.
 
 ---
 
-## 9. LocalStack
+## 10. LocalStack
 
 Los tests unitarios con `mock_provider` **no necesitan LocalStack ni AWS** — funcionan en cualquier entorno.
 
@@ -632,7 +760,6 @@ Para los tests de integración, consulta [localstack/README.md](localstack/READM
 - **Tests de idempotencia**: verificar que un segundo `terraform apply` no produce cambios es la prueba definitiva de que el módulo está correctamente diseñado y no tiene side effects.
 - **Filtrado de tests por archivo**: usar `-filter` permite ejecutar solo los tests relevantes durante el desarrollo sin esperar a que corran todos los tests de integración.
 - **Análisis estático complementario**: `checkov` y `trivy` detectan problemas de seguridad que los tests funcionales no cubren (cifrado, logging, acceso público).
-- **No versionar artefactos generados**: los ZIPs de funciones Lambda y los archivos `.terraform` deben estar en `.gitignore` para mantener el repositorio limpio.
 - **Tests como documentación ejecutable**: los archivos `.tftest.hcl` documentan el comportamiento esperado del módulo de forma verificable, complementando el README.
 
 ---

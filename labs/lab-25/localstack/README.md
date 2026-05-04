@@ -8,7 +8,7 @@
 Los tests unitarios con `mock_provider` **no necesitan ningún proveedor real**. Funcionan en cualquier máquina con Terraform >= 1.7:
 
 ```bash
-cd labs/lab25/aws
+cd labs/lab-25/aws
 
 terraform init -backend=false
 terraform test -filter=tests/unit_naming.tftest.hcl

@@ -1,5 +1,5 @@
 # ===========================================================================
-# Modulo tagged-bucket — Bucket S3 con logica de etiquetado
+# Módulo tagged-bucket — Bucket S3 con lógica de etiquetado
 # ===========================================================================
 
 locals {

@@ -588,30 +588,17 @@ Plan: 0 to add, 0 to change, 0 to destroy.
 > Plan: N to add, 0 to change, N to destroy.
 > ```
 >
-> Eso significa que **Terraform no reconoció el rename como un `moved`** y va a destruir y recrear toda la infraestructura (VPC, subnets, NAT GW, RDS — todo). **NO ejecutes `apply`** o perderás la BD y todos los datos. Cancela con `Ctrl+C` o responde `no`.
+> Eso significa que **Terraform no reconoció el rename como un `moved`** y va a destruir y recrear toda la infraestructura (VPC, subnets, NAT GW, RDS — todo). **NO ejecutes `apply`**. Cancela con `Ctrl+C` o responde `no`.
 >
 > Causas posibles, en orden de probabilidad:
 >
 > 1. **Falta el bloque `moved {}`** (Paso 1 incompleto). Verifica que existe en `modules/corporate-rds/main.tf`:
->
->    ```bash
->    grep -A2 "^moved " modules/corporate-rds/main.tf
->    # moved {
->    #   from = module.vpc
->    #   to   = module.network
->    # }
->    ```
 >
 > 2. **Direcciones del `moved` mal escritas**. Las direcciones son **relativas** al módulo donde está el bloque. Como el `moved {}` vive dentro de `corporate-rds`, debe decir `from = module.vpc` y `to = module.network` — **NO** `module.corporate_rds.module.vpc`. Terraform añade el prefijo `module.corporate_rds.` automáticamente al evaluar.
 >
 > 3. **Falta `terraform init` tras el rename**. El módulo Registry se cachea bajo el nombre local; sin `init` el path nuevo no existe. Repite el `init` (ver inicio de este Paso 4).
 >
 > 4. **Quedan referencias huérfanas a `module.vpc.*`**. Aunque Terraform debería avisar con `Reference to undeclared module`, conviene verificar:
->
->    ```bash
->    grep -rnE "module\.vpc\." modules/corporate-rds/
->    # (debe estar vacío — si sale algo, esa referencia rompe el grafo)
->    ```
 >
 > Tras corregir lo que aplique, **vuelve a ejecutar `terraform plan`**. Solo cuando veas `has moved to` (no `destroyed`/`created`) está seguro continuar al apply.
 

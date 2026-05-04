@@ -9,7 +9,7 @@ variable "bucket_name" {
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9.-]*[a-z0-9]$", var.bucket_name))
-    error_message = "El nombre del bucket solo puede contener minusculas, numeros, puntos y guiones."
+    error_message = "El nombre del bucket solo puede contener minúsculas, números, puntos y guiones."
   }
 }
 
@@ -31,6 +31,6 @@ variable "environment" {
 
 variable "tags" {
   type        = map(string)
-  description = "Etiquetas adicionales que se combinan con las del modulo"
+  description = "Etiquetas adicionales que se combinan con las del módulo"
   default     = {}
 }
