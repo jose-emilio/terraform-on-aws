@@ -147,7 +147,7 @@ lab10/
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
 ### 1.1 Prerrequisito: bucket S3 del lab02
 
@@ -373,11 +373,37 @@ aws s3 ls s3://$STATE_BUCKET/lab10/ --recursive
 
 ---
 
-## 2. Reto: Segunda Subred
+## Verificación final
+
+```bash
+# Verificar que la capa de red esta desplegada
+cd labs/lab-10/aws/network
+terraform output vpc_id
+terraform output subnet_id
+
+# Verificar que la capa de computo consume el estado de red
+cd ../compute
+terraform output security_group_id
+
+# Confirmar que terraform_remote_state lee correctamente los outputs de red
+terraform console <<'EOF'
+data.terraform_remote_state.network.outputs.vpc_id
+EOF
+
+# Verificar que no hay cambios pendientes en ninguna capa
+cd ../network && terraform plan -detailed-exitcode
+cd ../compute && terraform plan -detailed-exitcode -var="network_state_bucket=$STATE_BUCKET"
+```
+
+---
+
+## Retos
+
+### Reto 1 — Segunda Subred
 
 La capa de red actual despliega una sola subred pública. Tu tarea es añadir una segunda subred con un CIDR diferente y actualizar la capa de cómputo para que cree un segundo security group asociado a esa nueva subred.
 
-### Requisitos
+**Requisitos**
 
 1. En `network/main.tf`, añade un recurso `aws_subnet.private` con `cidrsubnet(var.vpc_cidr, 8, 2)` y el tag `Name = "subnet-private-lab10"`.
 
@@ -387,22 +413,46 @@ La capa de red actual despliega una sola subred pública. Tu tarea es añadir un
 
 4. Aplica los cambios en ambas capas **en orden** (primero red, luego cómputo) y verifica que los outputs de cómputo muestran el ID del nuevo security group.
 
-### Criterios de Éxito
+**Criterios de Éxito**
 
 - La capa de red despliega dos subredes con CIDRs `10.0.1.0/24` y `10.0.2.0/24`.
 - La capa de cómputo despliega dos security groups, cada uno asociado a la misma VPC.
 - El output de red `private_subnet_id` es accesible desde la capa de cómputo vía `terraform_remote_state`.
 - Puedes destruir y redesplegar la capa de cómputo sin afectar la capa de red.
 
-[Ver solución →](#3-solución-del-reto-segunda-subred)
+### Reto 2 — Regla de Ingreso Basada en el CIDR de la VPC
+
+La capa de red ya exporta `vpc_cidr` como output, pero la capa de cómputo no lo consume: solo usa `vpc_id` y `subnet_id`. El security group actual solo tiene una regla de salida (`egress`), lo que significa que no admite tráfico entrante de ningún origen.
+
+Tu tarea es leer el CIDR de la VPC desde el estado de la capa de red y usarlo para añadir una regla de ingreso al security group que permita todo el tráfico interno de la VPC — **sin modificar ningún archivo de la capa de red**.
+
+**Requisitos**
+
+1. En `compute/main.tf`, añade `vpc_cidr` al bloque `locals` leyéndolo desde `data.terraform_remote_state.network.outputs.vpc_cidr`.
+
+2. Añade un bloque `ingress` al recurso `aws_security_group.app` que use `local.vpc_cidr` como fuente de tráfico permitido (todos los puertos y protocolos dentro de la VPC).
+
+3. En `compute/outputs.tf`, añade un output `vpc_cidr` que exponga el CIDR consumido desde la capa de red.
+
+4. Aplica el cambio **únicamente en la capa de cómputo** y verifica que los outputs `vpc_cidr` de ambas capas muestran el mismo valor.
+
+**Criterios de Éxito**
+
+- El plan de la capa de cómputo muestra `1 to change` (el security group actualizado con la regla de ingreso).
+- El plan de la capa de red muestra `No changes` — no se ha tocado ningún archivo de red.
+- El output `vpc_cidr` de la capa de cómputo coincide exactamente con el de la capa de red.
+- Destruir y redesplegar la capa de cómputo no afecta al estado de la capa de red.
 
 ---
 
-## 3. Solución del Reto: Segunda Subred
+## Soluciones
 
-> Intenta resolver el reto antes de leer esta sección.
+<details>
+<summary><strong>Solución al Reto 1 — Segunda Subred</strong></summary>
 
-### Paso 1 — Añadir la subred privada en `network/main.tf`
+### Solución al Reto 1 — Segunda Subred
+
+#### Paso 1 — Añadir la subred privada en `network/main.tf`
 
 ```hcl
 resource "aws_subnet" "private" {
@@ -417,7 +467,7 @@ resource "aws_subnet" "private" {
 }
 ```
 
-### Paso 2 — Exportar el nuevo ID en `network/outputs.tf`
+#### Paso 2 — Exportar el nuevo ID en `network/outputs.tf`
 
 ```hcl
 output "private_subnet_id" {
@@ -426,7 +476,7 @@ output "private_subnet_id" {
 }
 ```
 
-### Paso 3 — Aplicar la capa de red
+#### Paso 3 — Aplicar la capa de red
 
 ```bash
 # Desde network/
@@ -435,7 +485,7 @@ terraform apply
 
 El plan muestra `1 to add` (la nueva subred). Los recursos existentes no cambian.
 
-### Paso 4 — Añadir el segundo security group en `compute/main.tf`
+#### Paso 4 — Añadir el segundo security group en `compute/main.tf`
 
 ```hcl
 resource "aws_security_group" "internal" {
@@ -467,7 +517,7 @@ output "internal_security_group_id" {
 }
 ```
 
-### Paso 5 — Aplicar la capa de cómputo
+#### Paso 5 — Aplicar la capa de cómputo
 
 ```bash
 # Desde compute/
@@ -477,7 +527,7 @@ terraform apply -var="network_state_bucket=$STATE_BUCKET"
 
 El plan muestra `1 to add` (el nuevo security group). El security group existente no cambia y la capa de red no es tocada.
 
-### Verificación Final
+#### Verificación
 
 ```bash
 terraform output
@@ -489,40 +539,14 @@ terraform output
 
 Ambos security groups están en la misma VPC. La separación de capas permitió añadir la nueva subred y el nuevo security group sin ningún riesgo de afectar los recursos existentes de la capa de red.
 
----
+</details>
 
-## 4. Reto Adicional: Regla de Ingreso Basada en el CIDR de la VPC
+<details>
+<summary><strong>Solución al Reto 2 — Regla de Ingreso Basada en el CIDR de la VPC</strong></summary>
 
-La capa de red ya exporta `vpc_cidr` como output, pero la capa de cómputo no lo consume: solo usa `vpc_id` y `subnet_id`. El security group actual solo tiene una regla de salida (`egress`), lo que significa que no admite tráfico entrante de ningún origen.
+### Solución al Reto 2 — Regla de Ingreso Basada en el CIDR de la VPC
 
-Tu tarea es leer el CIDR de la VPC desde el estado de la capa de red y usarlo para añadir una regla de ingreso al security group que permita todo el tráfico interno de la VPC — **sin modificar ningún archivo de la capa de red**.
-
-### Requisitos
-
-1. En `compute/main.tf`, añade `vpc_cidr` al bloque `locals` leyéndolo desde `data.terraform_remote_state.network.outputs.vpc_cidr`.
-
-2. Añade un bloque `ingress` al recurso `aws_security_group.app` que use `local.vpc_cidr` como fuente de tráfico permitido (todos los puertos y protocolos dentro de la VPC).
-
-3. En `compute/outputs.tf`, añade un output `vpc_cidr` que exponga el CIDR consumido desde la capa de red.
-
-4. Aplica el cambio **únicamente en la capa de cómputo** y verifica que los outputs `vpc_cidr` de ambas capas muestran el mismo valor.
-
-### Criterios de Éxito
-
-- El plan de la capa de cómputo muestra `1 to change` (el security group actualizado con la regla de ingreso).
-- El plan de la capa de red muestra `No changes` — no se ha tocado ningún archivo de red.
-- El output `vpc_cidr` de la capa de cómputo coincide exactamente con el de la capa de red.
-- Destruir y redesplegar la capa de cómputo no afecta al estado de la capa de red.
-
-[Ver solución →](#5-solución-del-reto-adicional)
-
----
-
-## 5. Solución del Reto Adicional
-
-> Intenta resolver el reto antes de leer esta sección.
-
-### Paso 1 — Añadir `vpc_cidr` al bloque `locals` en `compute/main.tf`
+#### Paso 1 — Añadir `vpc_cidr` al bloque `locals` en `compute/main.tf`
 
 ```hcl
 locals {
@@ -534,7 +558,7 @@ locals {
 
 El output `vpc_cidr` ya existe en la capa de red desde el inicio del laboratorio. Solo hay que referenciarlo.
 
-### Paso 2 — Añadir el bloque `ingress` al security group en `compute/main.tf`
+#### Paso 2 — Añadir el bloque `ingress` al security group en `compute/main.tf`
 
 ```hcl
 resource "aws_security_group" "app" {
@@ -565,7 +589,7 @@ resource "aws_security_group" "app" {
 }
 ```
 
-### Paso 3 — Añadir el output `vpc_cidr` en `compute/outputs.tf`
+#### Paso 3 — Añadir el output `vpc_cidr` en `compute/outputs.tf`
 
 ```hcl
 output "vpc_cidr" {
@@ -574,7 +598,7 @@ output "vpc_cidr" {
 }
 ```
 
-### Paso 4 — Aplicar solo la capa de cómputo
+#### Paso 4 — Aplicar solo la capa de cómputo
 
 ```bash
 # Desde compute/
@@ -599,7 +623,7 @@ El plan debe mostrar exactamente:
 Plan: 0 to add, 1 to change, 0 to destroy.
 ```
 
-### Paso 5 — Verificar que ambas capas muestran el mismo CIDR
+#### Paso 5 — Verificar que ambas capas muestran el mismo CIDR
 
 ```bash
 # Desde compute/
@@ -613,7 +637,7 @@ terraform output vpc_cidr
 
 Los valores coinciden. La capa de cómputo leyó el CIDR directamente del estado de la capa de red mediante `terraform_remote_state`, sin duplicar ningún valor en el código. Si la capa de red cambiara el CIDR de la VPC en el futuro, la capa de cómputo lo recogería automáticamente en el siguiente `apply`, sin necesidad de modificar ningún archivo de cómputo.
 
-### Verificación del Aislamiento
+#### Verificación del Aislamiento
 
 Confirma que la capa de red no fue modificada:
 
@@ -623,33 +647,11 @@ terraform plan
 # No changes. Your infrastructure matches the configuration.
 ```
 
----
-
-## 6. Verificación del despliegue
-
-```bash
-# Verificar que la capa de red esta desplegada
-cd labs/lab-10/aws/network
-terraform output vpc_id
-terraform output subnet_id
-
-# Verificar que la capa de computo consume el estado de red
-cd ../compute
-terraform output security_group_id
-
-# Confirmar que terraform_remote_state lee correctamente los outputs de red
-terraform console <<'EOF'
-data.terraform_remote_state.network.outputs.vpc_id
-EOF
-
-# Verificar que no hay cambios pendientes en ninguna capa
-cd ../network && terraform plan -detailed-exitcode
-cd ../compute && terraform plan -detailed-exitcode -var="network_state_bucket=$STATE_BUCKET"
-```
+</details>
 
 ---
 
-## 7. Limpieza
+## Limpieza
 
 Destruye en orden inverso: primero cómputo (que depende de red), luego red.
 
@@ -667,7 +669,7 @@ terraform destroy
 
 ---
 
-## 8. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
@@ -675,7 +677,7 @@ En LocalStack se usa backend local en lugar de S3 para la capa de remote state. 
 
 ---
 
-## 9. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

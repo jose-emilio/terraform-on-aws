@@ -68,7 +68,7 @@ lab-19/
     └── localstack.s3.tfbackend  <- Backend completo para LocalStack
 ```
 
-## 1. Análisis del código
+## Análisis del código
 
 ### 1.1 Arquitectura del laboratorio
 
@@ -244,7 +244,7 @@ resource "aws_vpc_endpoint" "db_ssm" {
 
 ---
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-19/aws
@@ -277,7 +277,7 @@ terraform output
 
 ---
 
-## 3. Verificación final
+## Verificación final
 
 ### 3.1 Estado de los peerings
 
@@ -395,7 +395,9 @@ aws ssm describe-instance-information \
 
 ---
 
-## 4. Reto: Resolver la no transitividad con un peering directo
+## Retos
+
+### Reto 1 — Resolver la no transitividad con un peering directo
 
 **Situación**: El equipo necesita que vpc-c acceda a la base de datos en vpc-db. Actualmente no puede porque el peering no es transitivo.
 
@@ -413,13 +415,16 @@ aws ssm describe-instance-information \
 - **No tienes que tocar el SG de `app`**: ya admite ICMP desde `var.db_cidr` y `var.c_cidr` ([aws/main.tf:444](aws/main.tf#L444)), así que cualquier `ping` saliente desde db o vpc-c hacia app sigue funcionando sin cambios. Lo mismo para el SG de los endpoints SSM, que están limitados al CIDR de su propia VPC y no se ven afectados por este Reto.
 - La fórmula para peerings en una malla completa es N×(N-1)/2.
 
-La solución está en la [sección 5](#5-solucion-del-reto).
-
 ---
 
-## 5. Solución del Reto
+## Soluciones
 
-### Paso 1: Crear el tercer peering
+<details>
+<summary><strong>Solución al Reto 1 — Resolver la no transitividad con un peering directo</strong></summary>
+
+### Solución al Reto 1 — Resolver la no transitividad con un peering directo
+
+#### Paso 1: Crear el tercer peering
 
 Mismo patrón que los dos existentes — incluidos los bloques `requester` / `accepter` para que la resolución DNS cross-peering también funcione entre vpc-c y vpc-db:
 
@@ -442,7 +447,7 @@ resource "aws_vpc_peering_connection" "c_to_db" {
 }
 ```
 
-### Paso 2: Rutas bidireccionales
+#### Paso 2: Rutas bidireccionales
 
 ```hcl
 resource "aws_route" "c_to_db" {
@@ -458,7 +463,7 @@ resource "aws_route" "db_to_c" {
 }
 ```
 
-### Paso 3: Actualizar el Security Group de db
+#### Paso 3: Actualizar el Security Group de db
 
 El peering y las rutas permiten que los paquetes lleguen a vpc-db, pero el Security Group es la última barrera. Actualmente, el SG de db solo permite ICMP y MySQL desde `var.app_cidr`. El tráfico desde vpc-c (`10.17.0.0/16`) será descartado por el SG aunque tenga peering y rutas.
 
@@ -498,7 +503,7 @@ ingress {
 
 > **Recordatorio:** Los Security Groups son **stateful** — si vpc-c inicia un ping hacia db y el SG de db lo permite, la respuesta vuelve automáticamente sin necesidad de regla en el SG de vpc-c. Pero si db necesita **iniciar** tráfico hacia vpc-c, sí se necesita la regla explícita.
 
-### Paso 4: Verificar
+#### Paso 4: Verificar
 
 ```bash
 terraform apply
@@ -514,7 +519,7 @@ ping -c 3 10.16.10.10
 exit
 ```
 
-### Reflexión: escalabilidad del peering
+#### Reflexión: escalabilidad del peering
 
 | VPCs | Peerings necesarios para malla completa: n(n-1)/2 |
 |------|---------------------------------------------------|
@@ -526,9 +531,11 @@ exit
 
 Cada peering requiere 2 rutas + reglas de SG. Con 20 VPCs serían 190 peerings, 380 rutas y cientos de reglas de SG. Transit Gateway (lab20) resuelve esto con N attachments y propagación automática de rutas.
 
+</details>
+
 ---
 
-## 6. Limpieza
+## Limpieza
 
 > **⚠️ Importante — coste acumulado:** este lab incluye **6 VPC Interface Endpoints** (~0,01 USD/hora por endpoint y AZ ≈ **43,20 USD/mes asumiendo 3 AZ activas**, sin contar el tráfico procesado), 1 NAT Gateway (~32 USD/mes) y 3 EIPs. Si dejas el despliegue activo, la factura crece rápido. Ejecuta `terraform destroy` en cuanto termines la práctica (incluido el Reto, si lo has hecho).
 
@@ -540,7 +547,7 @@ terraform destroy
 
 ---
 
-## 7. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 

@@ -145,7 +145,7 @@ lab09/
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
 ### 1.1 Código Terraform
 
@@ -335,92 +335,7 @@ No se crea ningún recurso. Esta es la diferencia clave entre `check` y `precond
 
 ---
 
-## 2. Reto: Añadir un Tercer Entorno
-
-El laboratorio despliega dos entornos (`dev` y `prod`). Tu tarea es añadir un tercero llamado `staging` usando exactamente los mismos mecanismos que ya has visto.
-
-### Requisitos
-
-1. Añade `staging` al mapa `local.config` en `main.tf` con estos valores:
-   - `vpc_cidr`: `10.2.0.0/16`
-   - `subnet_cidr`: `10.2.1.0/24`
-   - `instance_type`: `t3.small`
-
-2. Crea el archivo `staging.tfvars` con el valor correcto para `is_prod`.
-
-3. Crea el workspace `staging`, despliega y verifica que los outputs muestran los valores esperados.
-
-4. Comprueba qué hace el bloque `check` existente cuando ejecutas `terraform plan -var-file=prod.tfvars` en el workspace `staging`. ¿Qué comportamiento observas y por qué?
-
-### Criterios de éxito
-
-- El workspace `staging` despliega una VPC con CIDR `10.2.0.0/16`.
-- Los tres workspaces tienen estados independientes.
-- Puedes explicar el comportamiento del bloque `check` en el punto 4.
-
-[Ver solución →](#3-solución-del-reto)
-
----
-
-## 3. Solución del Reto
-
-> Intenta resolver el reto antes de leer esta sección.
-
-### Paso 1 — Añadir `staging` a `local.config`
-
-En `main.tf`, añade la entrada `staging` al mapa:
-
-```hcl
-config = {
-  default = { vpc_cidr = "10.0.0.0/16", subnet_cidr = "10.0.1.0/24", instance_type = "t3.micro" }
-  dev     = { vpc_cidr = "10.0.0.0/16", subnet_cidr = "10.0.1.0/24", instance_type = "t3.micro" }
-  staging = { vpc_cidr = "10.2.0.0/16", subnet_cidr = "10.2.1.0/24", instance_type = "t3.small" }
-  prod    = { vpc_cidr = "10.1.0.0/16", subnet_cidr = "10.1.1.0/24", instance_type = "t3.small" }
-}
-```
-
-No hay que cambiar la línea de `lookup()`: el tercer argumento (`local.config["default"]`) ya actúa como fallback para cualquier workspace no listado.
-
-### Paso 2 — Crear `staging.tfvars`
-
-```hcl
-is_prod = false
-```
-
-`staging` no es producción.
-
-### Paso 3 — Despliegue
-
-```bash
-terraform workspace new staging
-terraform apply -var-file=staging.tfvars
-```
-
-Output esperado:
-
-```
-workspace     = "staging"
-vpc_cidr      = "10.2.0.0/16"
-subnet_cidr   = "10.2.1.0/24"
-instance_type = "t3.small"
-is_prod       = false
-```
-
-### Paso 4 — Comportamiento del `check` con `prod.tfvars` en workspace `staging`
-
-```bash
-terraform plan -var-file=prod.tfvars   # is_prod=true en workspace staging
-```
-
-El bloque `check` evalúa `var.is_prod == (terraform.workspace == "prod")`, es decir `true == false` → condición falla → **advertencia**, pero el plan no se aborta.
-
-El `precondition` evalúa `!(var.is_prod && terraform.workspace != "prod")`, es decir `!(true && true)` = `false` → **aborta el plan**.
-
-El resultado: el `precondition` corta la ejecución antes de que el `check` llegue a mostrarse. Esto ilustra la prioridad de evaluación: las validaciones bloqueantes (`precondition`) actúan antes que las informativas (`check`).
-
----
-
-## 4. Verificación del despliegue
+## Verificación final
 
 Ejecuta estas comprobaciones antes de la limpieza, mientras los recursos siguen desplegados.
 
@@ -446,7 +361,97 @@ terraform plan -detailed-exitcode
 
 ---
 
-## 5. Limpieza
+## Retos
+
+### Reto 1 — Añadir un Tercer Entorno
+
+El laboratorio despliega dos entornos (`dev` y `prod`). Tu tarea es añadir un tercero llamado `staging` usando exactamente los mismos mecanismos que ya has visto.
+
+**Requisitos**
+
+1. Añade `staging` al mapa `local.config` en `main.tf` con estos valores:
+   - `vpc_cidr`: `10.2.0.0/16`
+   - `subnet_cidr`: `10.2.1.0/24`
+   - `instance_type`: `t3.small`
+
+2. Crea el archivo `staging.tfvars` con el valor correcto para `is_prod`.
+
+3. Crea el workspace `staging`, despliega y verifica que los outputs muestran los valores esperados.
+
+4. Comprueba qué hace el bloque `check` existente cuando ejecutas `terraform plan -var-file=prod.tfvars` en el workspace `staging`. ¿Qué comportamiento observas y por qué?
+
+**Criterios de éxito**
+
+- El workspace `staging` despliega una VPC con CIDR `10.2.0.0/16`.
+- Los tres workspaces tienen estados independientes.
+- Puedes explicar el comportamiento del bloque `check` en el punto 4.
+
+---
+
+## Soluciones
+
+<details>
+<summary><strong>Solución al Reto 1 — Añadir un Tercer Entorno</strong></summary>
+
+### Solución al Reto 1 — Añadir un Tercer Entorno
+
+#### Paso 1 — Añadir `staging` a `local.config`
+
+En `main.tf`, añade la entrada `staging` al mapa:
+
+```hcl
+config = {
+  default = { vpc_cidr = "10.0.0.0/16", subnet_cidr = "10.0.1.0/24", instance_type = "t3.micro" }
+  dev     = { vpc_cidr = "10.0.0.0/16", subnet_cidr = "10.0.1.0/24", instance_type = "t3.micro" }
+  staging = { vpc_cidr = "10.2.0.0/16", subnet_cidr = "10.2.1.0/24", instance_type = "t3.small" }
+  prod    = { vpc_cidr = "10.1.0.0/16", subnet_cidr = "10.1.1.0/24", instance_type = "t3.small" }
+}
+```
+
+No hay que cambiar la línea de `lookup()`: el tercer argumento (`local.config["default"]`) ya actúa como fallback para cualquier workspace no listado.
+
+#### Paso 2 — Crear `staging.tfvars`
+
+```hcl
+is_prod = false
+```
+
+`staging` no es producción.
+
+#### Paso 3 — Despliegue
+
+```bash
+terraform workspace new staging
+terraform apply -var-file=staging.tfvars
+```
+
+Output esperado:
+
+```
+workspace     = "staging"
+vpc_cidr      = "10.2.0.0/16"
+subnet_cidr   = "10.2.1.0/24"
+instance_type = "t3.small"
+is_prod       = false
+```
+
+#### Paso 4 — Comportamiento del `check` con `prod.tfvars` en workspace `staging`
+
+```bash
+terraform plan -var-file=prod.tfvars   # is_prod=true en workspace staging
+```
+
+El bloque `check` evalúa `var.is_prod == (terraform.workspace == "prod")`, es decir `true == false` → condición falla → **advertencia**, pero el plan no se aborta.
+
+El `precondition` evalúa `!(var.is_prod && terraform.workspace != "prod")`, es decir `!(true && true)` = `false` → **aborta el plan**.
+
+El resultado: el `precondition` corta la ejecución antes de que el `check` llegue a mostrarse. Esto ilustra la prioridad de evaluación: las validaciones bloqueantes (`precondition`) actúan antes que las informativas (`check`).
+
+</details>
+
+---
+
+## Limpieza
 
 **AWS real:**
 
@@ -483,7 +488,7 @@ terraform workspace delete staging
 
 ---
 
-## 6. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
@@ -491,7 +496,7 @@ El comportamiento de workspaces, `check {}` y `precondition` es idéntico al de 
 
 ---
 
-## 7. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

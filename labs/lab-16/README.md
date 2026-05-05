@@ -55,7 +55,7 @@ lab-16/
     └── localstack.s3.tfbackend  ← Backend completo para LocalStack
 ```
 
-## 1. Análisis del código antes de desplegar
+## Análisis del código antes de desplegar
 
 Antes de ejecutar nada, revisemos las técnicas clave del código en `main.tf`.
 
@@ -163,7 +163,7 @@ La `postcondition` se evalúa **después** de que el recurso se crea o actualiza
 
 ---
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-16/aws
@@ -196,7 +196,7 @@ terraform output
 
 ---
 
-## 3. Verificación final
+## Verificación final
 
 ### 3.1 Verificar la VPC
 
@@ -231,7 +231,7 @@ Las subredes públicas deben tener `ELB = 1` y las privadas `InternalELB = 1`. T
 
 ---
 
-## 4. Probar la postcondición RFC 1918
+## Probar la postcondición RFC 1918
 
 Intenta desplegar con un CIDR público para verificar que la postcondición funciona:
 
@@ -253,7 +253,9 @@ Terraform rechazará el apply con este error:
 
 ---
 
-## 5. Reto: Ampliar la red con subredes de base de datos
+## Retos
+
+### Reto 1 — Ampliar la red con subredes de base de datos
 
 **Situación**: El equipo de base de datos necesita 3 subredes privadas adicionales dedicadas exclusivamente a RDS, aisladas de las subredes de aplicación existentes.
 
@@ -271,13 +273,16 @@ Terraform rechazará el apply con este error:
 - Como alternativa menos invasiva, puedes añadir una tercera rama al operador ternario (anidando otro condicional `each.value.tier == "database" ? {} : (each.value.public ? {…} : {…})`) y dejar las subredes existentes sin tocar la forma de leer los tags.
 - ¿Cómo verificas que las nuevas subredes no afectaron a las existentes? Mira el resumen de `terraform plan`: el objetivo es ver únicamente recursos en `+ create` para `database-*` y ningún `~ update` sobre `public-*` / `private-*`.
 
-La solución está en la [sección 6](#6-solución-del-reto).
-
 ---
 
-## 6. Solución del Reto
+## Soluciones
 
-### Paso 1: Ampliar el mapa de subredes
+<details>
+<summary><strong>Solución al Reto 1 — Ampliar la red con subredes de base de datos</strong></summary>
+
+### Solución al Reto 1 — Ampliar la red con subredes de base de datos
+
+#### Paso 1: Ampliar el mapa de subredes
 
 Añade las 3 subredes de base de datos a `local.subnets` en `main.tf`:
 
@@ -310,7 +315,7 @@ locals {
 }
 ```
 
-### Paso 2: Actualizar los tags de las subredes
+#### Paso 2: Actualizar los tags de las subredes
 
 Reemplaza la lógica condicional de tags por un `lookup` en el mapa. **Importante:** este cambio afecta también a las 6 subredes existentes — pasan a leer `Tier` desde `each.value.tier` y los tags EKS desde `lookup(local.eks_tags, each.value.tier, {})`. Como los valores resultantes son idénticos a los que ya tenían (`Tier = "public"`/`"private"` y los mismos tags EKS), Terraform no debería marcar cambios; pero **vigila el `plan` antes de aplicar** para detectar cualquier diferencia accidental (espacios, comillas, claves nuevas).
 
@@ -335,7 +340,7 @@ resource "aws_subnet" "this" {
 }
 ```
 
-### Paso 3: Añadir el output
+#### Paso 3: Añadir el output
 
 Añade en `outputs.tf`:
 
@@ -349,7 +354,7 @@ output "database_subnet_ids" {
 }
 ```
 
-### Paso 4: Aplicar y verificar
+#### Paso 4: Aplicar y verificar
 
 ```bash
 terraform plan
@@ -372,9 +377,11 @@ aws ec2 describe-subnets \
   --output table
 ```
 
+</details>
+
 ---
 
-## 7. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -384,7 +391,7 @@ terraform destroy
 
 ---
 
-## 8. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 

@@ -79,7 +79,7 @@ lab-18/
     └── localstack.s3.tfbackend  <- Backend completo para LocalStack
 ```
 
-## 1. Análisis del código
+## Análisis del código
 
 ### 1.1 Security Group del ALB — Puerta de entrada controlada
 
@@ -245,7 +245,7 @@ Los logs se almacenan en un CloudWatch Log Group con retención configurable (po
 
 ---
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-18/aws
@@ -269,7 +269,7 @@ terraform output
 
 ---
 
-## 3. Verificación final
+## Verificación final
 
 ### 3.1 Verificar el patrón ALB -> EC2 (referencia por SG)
 
@@ -324,7 +324,9 @@ Cada línea muestra: interfaz, IP origen, IP destino, puerto origen, puerto dest
 
 ---
 
-## 4. Reto: WAF básico con NACL dinámica
+## Retos
+
+### Reto 1 — WAF básico con NACL dinámica
 
 **Situación**: El equipo de seguridad te proporciona una lista de IPs maliciosas que cambia semanalmente. Necesitas una NACL que bloquee todas esas IPs de forma mantenible, sin copiar y pegar reglas.
 
@@ -341,13 +343,16 @@ Cada línea muestra: interfaz, IP origen, IP destino, puerto origen, puerto dest
 - Usa `50 + index(var.blocked_ips, ingress.value)` para generar números de regla consecutivos
 - La NACL completa se define en un solo recurso `aws_network_acl` con múltiples bloques `ingress`
 
-La solución está en la [sección 5](#5-solución-del-reto).
-
 ---
 
-## 5. Solución del Reto
+## Soluciones
 
-### Paso 1: Cambiar la variable
+<details>
+<summary><strong>Solución al Reto 1 — WAF básico con NACL dinámica</strong></summary>
+
+### Solución al Reto 1 — WAF básico con NACL dinámica
+
+#### Paso 1: Cambiar la variable
 
 En `variables.tf`, reemplaza `blocked_ip` por `blocked_ips`:
 
@@ -363,7 +368,7 @@ variable "blocked_ips" {
 }
 ```
 
-### Paso 2: Usar `dynamic "ingress"` en la NACL pública
+#### Paso 2: Usar `dynamic "ingress"` en la NACL pública
 
 Reemplaza la regla 50 estática por un bloque dinámico que genera una regla `deny` por cada IP de la lista:
 
@@ -433,7 +438,7 @@ resource "aws_network_acl" "public" {
 }
 ```
 
-### Paso 3: Aplicar y verificar
+#### Paso 3: Aplicar y verificar
 
 ```bash
 terraform plan
@@ -459,7 +464,7 @@ aws ec2 describe-network-acls \
   --output table
 ```
 
-### Paso 4: Probar cambios incrementales
+#### Paso 4: Probar cambios incrementales
 
 Añade una IP a la lista y verifica que solo cambia lo necesario:
 
@@ -476,9 +481,11 @@ aws ec2 describe-network-acls \
   --output table
 ```
 
+</details>
+
 ---
 
-## 6. Limpieza
+## Limpieza
 
 Cuando hayas terminado el laboratorio (incluido el Reto si lo has completado), destruye toda la infraestructura para evitar costes:
 
@@ -490,7 +497,7 @@ terraform destroy
 
 ---
 
-## 7. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta el directorio `localstack/`.
 

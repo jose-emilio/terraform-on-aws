@@ -55,7 +55,7 @@ lab11/
     └── localstack.s3.tfbackend  ← Backend completo para LocalStack
 ```
 
-## 1. Despliegue inicial
+## Despliegue inicial
 
 ```bash
 cd labs/lab11/aws
@@ -85,7 +85,7 @@ aws s3 ls s3://$BUCKET/lab11/
 
 ---
 
-## 2. Fase 1: Detección de Drift
+## Fase 1 — Detección de Drift
 
 El drift ocurre cuando alguien modifica infraestructura fuera de Terraform (consola web, CLI, otro proceso). Terraform no lo sabe hasta que ejecuta un `plan` o `apply`.
 
@@ -148,7 +148,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 
 ---
 
-## 3. Fase 2: Reconciliación
+## Fase 2 — Reconciliación
 
 Ante un drift, tienes dos estrategias posibles. La elección depende de si el cambio manual fue un error o una decisión válida que hay que incorporar al código.
 
@@ -231,7 +231,7 @@ aws ec2 revoke-security-group-ingress \
 
 ---
 
-## 4. Fase 3: Disaster Recovery — Restaurar Estado desde S3
+## Fase 3 — Disaster Recovery: Restaurar Estado desde S3
 
 Simularás la corrupción o pérdida del archivo de estado y lo recuperarás usando el versionado de S3.
 
@@ -311,7 +311,9 @@ El estado está restaurado. Terraform puede operar con normalidad.
 
 ---
 
-## 5. Reto: Drift Selectivo con `apply -refresh-only`
+## Retos
+
+### Reto 1 — Drift Selectivo con `apply -refresh-only`
 
 Ahora que conoces las dos estrategias de reconciliación, enfrenta un escenario más realista:
 
@@ -333,13 +335,16 @@ Ahora que conoces las dos estrategias de reconciliación, enfrenta un escenario 
 - ¿Qué muestra `terraform plan` antes y después del `refresh-only`?
 - ¿Cómo sabes que has terminado correctamente?
 
-La solución está en la [sección 6](#6-solución-del-reto).
-
 ---
 
-## 6. Solución del Reto
+## Soluciones
 
-### Paso 1: Introducir los dos drifts
+<details>
+<summary><strong>Solución al Reto 1 — Drift Selectivo con `apply -refresh-only`</strong></summary>
+
+### Solución al Reto 1 — Drift Selectivo con `apply -refresh-only`
+
+#### Paso 1: Introducir los dos drifts
 
 ```bash
 SG_ID=$(terraform output -raw security_group_id)
@@ -355,7 +360,7 @@ aws ec2 create-tags \
   --tags Key=Owner,Value=equipo-de-ops
 ```
 
-### Paso 2: Verificar el drift
+#### Paso 2: Verificar el drift
 
 ```bash
 terraform plan
@@ -376,7 +381,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 
 Terraform quiere revertir `Environment` a `"lab"` y eliminar `Owner` (porque ninguno de los dos está en el código).
 
-### Paso 3: Capturar el estado real con refresh-only
+#### Paso 3: Capturar el estado real con refresh-only
 
 ```bash
 terraform apply -refresh-only
@@ -384,7 +389,7 @@ terraform apply -refresh-only
 
 Confirma con `yes`. Ahora el estado refleja la realidad: `Environment = "staging"` y `Owner = "equipo-de-ops"`.
 
-### Paso 4: Actualizar el código para el cambio válido
+#### Paso 4: Actualizar el código para el cambio válido
 
 Edita `aws/main.tf`, añade `Environment = "staging"` pero **no** añadas `Owner`:
 
@@ -396,7 +401,7 @@ tags = {
 }
 ```
 
-### Paso 5: Aplicar para revertir solo el cambio accidental
+#### Paso 5: Aplicar para revertir solo el cambio accidental
 
 ```bash
 terraform plan
@@ -419,7 +424,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 terraform apply
 ```
 
-### Paso 6: Verificar el resultado final
+#### Paso 6: Verificar el resultado final
 
 ```bash
 terraform plan
@@ -428,9 +433,11 @@ terraform plan
 
 El tag `Environment = "staging"` está en el código y en la infraestructura. El tag `Owner` fue eliminado.
 
+</details>
+
 ---
 
-## 7. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy 
@@ -440,7 +447,7 @@ terraform destroy
 
 ---
 
-## 8. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 

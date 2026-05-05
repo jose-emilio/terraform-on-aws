@@ -233,7 +233,7 @@ labs/lab36/
 
 ---
 
-## 1. Despliegue en AWS
+## Despliegue en AWS
 
 ```bash
 # Obtén el ID de cuenta para el backend
@@ -393,18 +393,20 @@ aws sns subscribe \
 
 ---
 
-## 3. Reto 1: TTL en la tabla de productos
+## Retos
+
+### Reto 1 — TTL en la tabla de productos
 
 La tabla `lab36-events` tiene TTL configurado (7 días). La tabla de productos no lo tiene: los registros eliminados vía la UI desaparecen de inmediato con `DeleteItem`, pero no existe ningún mecanismo de expiración automática para productos que deberían caducar por tiempo.
 
-### Requisitos
+**Requisitos**
 
 Modifica únicamente `dynamodb.tf`:
 
 1. Añade un bloque `ttl` en `aws_dynamodb_table.products` que use el atributo `expires_at` (tipo Number, epoch en segundos)
 2. Aplica el cambio con `terraform apply` — DynamoDB activa el TTL sin interrupciones ni recreación de la tabla
 
-### Criterios de éxito
+**Criterios de éxito**
 
 ```bash
 # Debe mostrar TimeToLiveStatus: ENABLED y AttributeName: expires_at
@@ -430,13 +432,11 @@ aws dynamodb put-item \
 - `terraform plan` muestra `~ update in-place` — no hay destroy/create de la tabla
 - La tabla de eventos sigue funcionando con su TTL propio de 7 días sin cambios
 
----
-
-## 4. Reto 2: Point-in-Time Recovery en la tabla de productos
+### Reto 2 — Point-in-Time Recovery en la tabla de productos
 
 La tabla de productos almacena el catálogo activo del negocio. Actualmente no tiene ninguna protección frente a borrados accidentales masivos — un `terraform apply` erróneo o un bug en la aplicación podría eliminar todos los productos de forma irrecuperable. **Point-in-Time Recovery (PITR)** activa backups continuos y permite restaurar la tabla a cualquier segundo dentro de los últimos 35 días.
 
-### Requisitos
+**Requisitos**
 
 Modifica únicamente `dynamodb.tf`:
 
@@ -445,7 +445,7 @@ Modifica únicamente `dynamodb.tf`:
 3. Con la CLI, simula una recuperación restaurando la tabla a su estado de hace 5 minutos en una tabla nueva `lab36-products-restored`
 4. Verifica el contenido de la tabla restaurada y elimínala al terminar
 
-### Criterios de éxito
+**Criterios de éxito**
 
 ```bash
 # PITR debe aparecer como ENABLED con ventana de 35 dias
@@ -482,11 +482,12 @@ aws dynamodb delete-table --table-name lab36-products-restored
 
 ---
 
-## 5. Solución de los Retos
+## Soluciones
 
-> Intenta resolver los retos antes de leer esta sección.
+<details>
+<summary><strong>Solución al Reto 1 — TTL en la tabla de productos</strong></summary>
 
-### Solución Reto 1 — TTL en la tabla de productos
+### Solución al Reto 1 — TTL en la tabla de productos
 
 En `aws/dynamodb.tf`, añade el bloque `ttl` dentro de `aws_dynamodb_table.products`:
 
@@ -516,7 +517,12 @@ aws dynamodb describe-time-to-live \
 
 > DynamoDB activa el TTL como operación `in-place`: no hay downtime ni recreación de la tabla. Los items sin el atributo `expires_at` no se ven afectados.
 
-### Solución Reto 2 — Point-in-Time Recovery
+</details>
+
+<details>
+<summary><strong>Solución al Reto 2 — Point-in-Time Recovery en la tabla de productos</strong></summary>
+
+### Solución al Reto 2 — Point-in-Time Recovery en la tabla de productos
 
 En `aws/dynamodb.tf`, añade el bloque `point_in_time_recovery` dentro de `aws_dynamodb_table.products`:
 
@@ -559,9 +565,11 @@ aws dynamodb delete-table --table-name lab36-products-restored
 
 > PITR se activa como operación `in-place` — no hay downtime. DynamoDB mantiene backups continuos incrementales; la restauración genera una tabla nueva independiente, sin afectar a la tabla de origen.
 
+</details>
+
 ---
 
-## 6. Limpieza
+## Limpieza
 
 ```bash
 # Desde labs/lab36/aws/

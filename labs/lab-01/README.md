@@ -175,7 +175,7 @@ Resultado esperado:
 }
 ```
 
-## 7. Configuración de Visual Studio Code
+## 6. Configuración de Visual Studio Code
 
 ### Extensiones recomendadas
 
@@ -191,7 +191,7 @@ Resultado esperado:
 3. Para cambiar entre AWS real y LocalStack, selecciona el perfil correspondiente (`default` o `localstack`)
 
 
-## 8. Resumen de Perfiles Configurados
+## 7. Resumen de Perfiles Configurados
 
 | Perfil | Destino | Uso |
 |---|---|---|

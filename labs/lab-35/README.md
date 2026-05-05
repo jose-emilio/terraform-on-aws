@@ -223,7 +223,7 @@ labs/lab35/
 
 ---
 
-## 1. Despliegue en AWS
+## Despliegue en AWS
 
 ```bash
 # Obtén el ID de cuenta para el backend
@@ -403,28 +403,26 @@ Debes ver: `Multi-AZ instance failover started` → `DB instance restarted` → 
 
 ---
 
-## 3. Reto 1: Enhanced Monitoring
+## Retos
+
+### Reto 1 — Enhanced Monitoring
 
 RDS ofrece métricas estándar a nivel de hipervisor en CloudWatch. **Enhanced Monitoring** proporciona métricas del sistema operativo (CPU por proceso, memoria libre, IOPS de disco) con granularidad de hasta 1 segundo — imprescindible para diagnosticar cuellos de botella reales.
 
-### Requisitos
+**Requisitos**
 
 1. Crea un rol IAM con la política `AmazonRDSEnhancedMonitoringRole` que permita al agente de RDS enviar métricas a CloudWatch.
 2. Configura `monitoring_interval = 60` en `aws_db_instance.main` (valores válidos: 1, 5, 10, 15, 30, 60 segundos).
 3. Asocia el rol con `monitoring_role_arn`.
 4. Añade un output `monitoring_role_arn`.
 
-### Criterios de éxito
+**Criterios de éxito**
 
 - `aws rds describe-db-instances --query '..MonitoringInterval'` muestra `60`
 - La pestaña **Monitoring** de `lab35-main` en la consola RDS muestra métricas de OS: `Active Memory`, `CPU User`, `Free Memory`, etc.
 - Puedes explicar la diferencia entre métricas de hipervisor (CloudWatch estándar) y métricas de agente OS (Enhanced Monitoring)
 
-[Ver solución →](#4-solución-de-los-retos)
-
----
-
-## 3. Reto 2: Snapshot manual y restauración
+### Reto 2 — Snapshot manual y restauración
 
 `backup_retention_period = 7` habilita los backups automáticos y la restauración a cualquier punto en el tiempo dentro de esa ventana. Practicar la restauración antes de necesitarla es esencial en producción.
 
@@ -438,21 +436,20 @@ RDS ofrece métricas estándar a nivel de hipervisor en CloudWatch. **Enhanced M
 
 > Este reto se realiza completamente con la CLI — no es necesario modificar Terraform.
 
-### Criterios de éxito
+**Criterios de éxito**
 
 - `aws rds describe-db-snapshots` muestra el snapshot con `Status: available`
 - `aws rds describe-db-instances --db-instance-identifier lab35-restored` muestra estado `available`
 - La instancia restaurada contiene la tabla `customers` con los datos originales
 
-[Ver solución →](#4-solución-de-los-retos)
-
 ---
 
-## 4. Solución de los Retos
+## Soluciones
 
-> Intenta resolver los retos antes de leer esta sección.
+<details>
+<summary><strong>Solución al Reto 1 — Enhanced Monitoring</strong></summary>
 
-### Solución Reto 1 — Enhanced Monitoring
+### Solución al Reto 1 — Enhanced Monitoring
 
 Añade en `aws/main.tf`:
 
@@ -504,7 +501,12 @@ aws rds describe-db-instances \
   --query 'DBInstances[0].{Intervalo:MonitoringInterval,RolARN:MonitoringRoleArn}'
 ```
 
-### Solución Reto 2 — Snapshot manual y restauración
+</details>
+
+<details>
+<summary><strong>Solución al Reto 2 — Snapshot manual y restauración</strong></summary>
+
+### Solución al Reto 2 — Snapshot manual y restauración
 
 ```bash
 # Paso 1: Crea el snapshot manual
@@ -546,9 +548,11 @@ aws rds delete-db-instance \
   --skip-final-snapshot
 ```
 
+</details>
+
 ---
 
-## 5. Limpieza
+## Limpieza
 
 ```bash
 # Desde labs/lab35/aws/
@@ -559,7 +563,7 @@ terraform destroy
 
 ---
 
-## 6. Gestión de Secretos: configurar la rotación automática
+## Gestión de Secretos: configurar la rotación automática
 
 La rotación automática requiere una Lambda de rotación. Para desplegarla desde Serverless Application Repository:
 
