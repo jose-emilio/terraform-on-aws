@@ -11,7 +11,7 @@ En la mayoría de organizaciones, la migración a la nube no es un evento puntua
 Las razones para mantener conectividad híbrida son variadas:
 - Migración gradual donde algunos servicios aún viven on-premise
 - Cumplimiento regulatorio que obliga a mantener ciertos datos en instalaciones propias
-- Servicios legacy que no pueden moverseala nube
+- Servicios legacy que no pueden moverse a la nube
 - Conectividad de acceso remoto para empleados
 
 Dos caminos principales para conectar datacenter con AWS:

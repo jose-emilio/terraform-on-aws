@@ -65,7 +65,7 @@ El tráfico sale desde la instancia privada, pasa por el NAT Gateway (que está 
 
 ## 2.4 NAT Zonal vs. NAT Regional
 
-AWS ofrece dos modos para NAT Gateway mediante el argumento `availability_mode`, con implicaciones distintas en coste y disponibilidad:
+AWS ofrece dos modos para NAT Gateway mediante el argumento `availability_mode`, con implicaciones distintas en operación, coste y disponibilidad:
 
 **Opción A — NAT Zonal (un NAT por AZ):**
 
@@ -79,26 +79,52 @@ resource "aws_nat_gateway" "zonal" {
 }
 ```
 
-Pros: alta disponibilidad, sin coste de tráfico cross-AZ (el tráfico permanece en su AZ).
+Pros: control total sobre dónde vive cada NAT y qué EIP usa. Patrón clásico, ampliamente usado.
 
-Contras: 3 NAT Gateways = ~$32/mes × 3 = ~**$96/mes**.
+Contras: tú gestionas la HA — debes desplegar uno por AZ y cablear las route tables manualmente. 3 NAT Gateways = ~$32/mes × 3 = ~**$96/mes**.
 
-**Opción B — NAT Regional (un solo NAT para toda la región altamente disponible entre AZs):**
+**Opción B — NAT Regional (un único recurso multi-AZ, modo auto):**
+
+A partir de versiones recientes del provider, `availability_mode = "regional"` permite declarar **un único `aws_nat_gateway`** que AWS extiende automáticamente a las AZs activas. Los argumentos clave cambian: ya no se especifica `subnet_id`/`allocation_id`, sino `vpc_id`:
 
 ```hcl
-resource "aws_nat_gateway" "regional" {
-  connectivity_type = "public"
+resource "aws_nat_gateway" "regional_auto" {
+  vpc_id            = aws_vpc.main.id
   availability_mode = "regional"
-  vpc_id            = var.vpc_id
 
-  
   tags = { Name = "nat-regional" }
 }
 ```
 
-Pros:  ~**$32/mes** por cada AZ donde viva.
+En modo auto, AWS provisiona endpoints en las AZs donde haya tráfico y gestiona las EIPs internamente. Para control manual sobre qué EIPs se usan en cada AZ existe el bloque `availability_zone_address`:
 
-Contras: si alguna de las AZs donde vive el NAT falla, todas las privadas pierden salida a Internet.
+```hcl
+resource "aws_eip" "nat" {
+  count  = 3
+  domain = "vpc"
+}
+
+data "aws_availability_zones" "available" {}
+
+resource "aws_nat_gateway" "regional_manual" {
+  vpc_id            = aws_vpc.main.id
+  availability_mode = "regional"
+
+  availability_zone_address {
+    availability_zone = data.aws_availability_zones.available.names[0]
+    allocation_ids    = [aws_eip.nat[0].id]
+  }
+
+  availability_zone_address {
+    availability_zone = data.aws_availability_zones.available.names[1]
+    allocation_ids    = [aws_eip.nat[1].id, aws_eip.nat[2].id]
+  }
+}
+```
+
+Pros: **un solo recurso** para HA multi-AZ; auto-expansión transparente cuando añades subredes en nuevas AZs; menos boilerplate que el patrón zonal por `for_each`.
+
+Contras: el coste sigue siendo proporcional a las AZs activas (no es "más barato" que el zonal — es "más cómodo"); `subnet_id`, `allocation_id` y `private_ip` quedan exclusivos del modo zonal y no son válidos aquí.
 
 ---
 

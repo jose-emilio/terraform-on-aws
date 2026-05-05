@@ -209,6 +209,34 @@ variable "ami_id" {
 
 El campo `condition` es una expresión booleana que evalúa el valor. Si devuelve `false`, Terraform muestra `error_message` y para. Pueden existir múltiples bloques `validation` en una sola variable.
 
+### Validar un enum con `contains()`
+
+El patrón más frecuente en producción: forzar que un string pertenezca a un conjunto cerrado (`env`, `tier`, `region` autorizada). `contains()` lo expresa de forma directa:
+
+```hcl
+variable "env" {
+  type        = string
+  description = "Entorno de despliegue (dev, staging o prod)"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.env)
+    error_message = "var.env debe ser uno de: dev, staging, prod."
+  }
+}
+
+variable "instance_type" {
+  type        = string
+  description = "Tipo de instancia EC2 — solo familias t3 y m5 aprobadas por FinOps"
+
+  validation {
+    condition     = can(regex("^(t3|m5)\\.", var.instance_type))
+    error_message = "El instance_type debe pertenecer a la familia t3.* o m5.*"
+  }
+}
+```
+
+> El segundo bloque combina `can()` con `regex()`: si la expresión regular no compila o no matchea, `can()` devuelve `false` y la validación falla con un mensaje claro. Es el patrón estándar para validar formatos sin que la regex inválida tumbe el plan.
+
 ---
 
 ## 2.9 Variables Sensibles: `sensitive = true`

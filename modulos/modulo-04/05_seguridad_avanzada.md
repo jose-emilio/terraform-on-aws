@@ -39,22 +39,26 @@ DNS Logs       →   + Threat feeds
 
 ```hcl
 resource "aws_guardduty_detector" "main" {
-  enable = true
-
-  # Frecuencia de publicación de hallazgos
+  enable                       = true
   finding_publishing_frequency = "FIFTEEN_MINUTES"
+}
 
-  # Fuentes de datos opcionales
-  datasources {
-    s3_logs {
-      enable = true
-    }
-    kubernetes {
-      audit_logs { enable = true }
-    }
-  }
+# En aws provider ≥ 6.0 las fuentes adicionales se gestionan como recursos
+# independientes mediante aws_guardduty_detector_feature
+resource "aws_guardduty_detector_feature" "s3_data_events" {
+  detector_id = aws_guardduty_detector.main.id
+  name        = "S3_DATA_EVENTS"
+  status      = "ENABLED"
+}
+
+resource "aws_guardduty_detector_feature" "eks_audit_logs" {
+  detector_id = aws_guardduty_detector.main.id
+  name        = "EKS_AUDIT_LOGS"
+  status      = "ENABLED"
 }
 ```
+
+> ⚠️ El bloque inline `datasources { ... }` dentro de `aws_guardduty_detector` quedó deprecado en aws provider 5.x y se eliminó en 6.x. Usa siempre `aws_guardduty_detector_feature` como recurso separado.
 
 ---
 
@@ -118,6 +122,65 @@ Las Config Rules definen el estado deseado de tus recursos. Cada cambio dispara 
 - `RDS_INSTANCE_PUBLIC_ACCESS_CHECK`
 - `IAM_PASSWORD_POLICY`
 
+**Código: Bootstrap de AWS Config (recorder + delivery channel)**
+
+Antes de poder evaluar reglas, Config necesita un *Configuration Recorder* (qué grabar) y un *Delivery Channel* (a dónde entregarlo). Sin ambos, las reglas se quedan en `INSUFFICIENT_DATA`:
+
+```hcl
+data "aws_caller_identity" "current" {}
+
+# 1. Rol IAM que Config asume para grabar la configuración
+data "aws_iam_policy_document" "config_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "config" {
+  name               = "aws-config-role"
+  assume_role_policy = data.aws_iam_policy_document.config_trust.json
+}
+
+resource "aws_iam_role_policy_attachment" "config_managed" {
+  role       = aws_iam_role.config.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
+}
+
+# 2. Bucket S3 destino del delivery channel
+resource "aws_s3_bucket" "config" {
+  bucket = "config-delivery-${data.aws_caller_identity.current.account_id}"
+}
+
+# 3. Recorder: define qué recursos grabar
+resource "aws_config_configuration_recorder" "main" {
+  name     = "default"
+  role_arn = aws_iam_role.config.arn
+
+  recording_group {
+    all_supported = true
+  }
+}
+
+# 4. Delivery channel: dónde aterrizan los snapshots
+resource "aws_config_delivery_channel" "main" {
+  name           = "default"
+  s3_bucket_name = aws_s3_bucket.config.bucket
+  depends_on     = [aws_config_configuration_recorder.main]
+}
+
+# 5. Activar el recorder (apagado por defecto al crearse)
+resource "aws_config_configuration_recorder_status" "main" {
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.main]
+}
+```
+
 **Código: Regla de Config para S3 Public Access**
 
 ```hcl
@@ -134,7 +197,8 @@ resource "aws_config_config_rule" "s3_public_read" {
     compliance_resource_types = ["AWS::S3::Bucket"]
   }
 
-  depends_on = [aws_config_configuration_recorder.main]
+  # La regla solo evalúa si el recorder está activo
+  depends_on = [aws_config_configuration_recorder_status.main]
 }
 ```
 
@@ -193,16 +257,17 @@ resource "aws_cloudtrail" "org_trail" {
   name           = "org-security-trail"
   s3_bucket_name = aws_s3_bucket.trail.id
 
-  # Captura TODAS las regiones
-  is_multi_region_trail = true
-  is_organization_trail = true
+  # Captura TODAS las regiones + eventos de servicios globales (IAM, STS, CloudFront)
+  is_multi_region_trail         = true
+  is_organization_trail         = true
+  include_global_service_events = true
 
   # Seguridad del trail
   enable_log_file_validation = true    # Detecta manipulación de logs
   kms_key_id                 = aws_kms_key.trail.arn
 
   # Enviar a CloudWatch para alertas en tiempo real
-  cloud_watch_logs_group_arn = aws_cloudwatch_log_group.trail.arn
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.trail.arn}:*"
   cloud_watch_logs_role_arn  = aws_iam_role.trail_cw.arn
 }
 ```
@@ -226,22 +291,57 @@ Ejemplo: 2 123456789 eni-abc123 10.0.1.5 52.94.76.0 443 HTTPS 6 20 4000 ACCEPT
 **Código: VPC Flow Logs a CloudWatch**
 
 ```hcl
-resource "aws_flow_log" "vpc_flow" {
-  vpc_id       = aws_vpc.main.id
-  traffic_type = "ALL"   # ALL | ACCEPT | REJECT
+# Trust policy: vpc-flow-logs.amazonaws.com asume el rol
+data "aws_iam_policy_document" "flow_log_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+  }
+}
 
+resource "aws_iam_role" "flow_log" {
+  name               = "vpc-flow-log-role"
+  assume_role_policy = data.aws_iam_policy_document.flow_log_trust.json
+}
+
+# Permisos mínimos para entregar logs a CloudWatch
+resource "aws_iam_role_policy" "flow_log" {
+  role = aws_iam_role.flow_log.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "flow" {
+  name              = "/aws/vpc/flow-logs"
+  retention_in_days = 30
+}
+
+resource "aws_flow_log" "vpc_flow" {
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"   # ALL | ACCEPT | REJECT
   log_destination_type = "cloud-watch-logs"
   log_destination      = aws_cloudwatch_log_group.flow.arn
   iam_role_arn         = aws_iam_role.flow_log.arn
-
-  # Formato custom para más campos de análisis
-  log_format = join(" ", [
-    "${version} ${account-id} ${interface-id}",
-    "${srcaddr} ${dstaddr} ${srcport} ${dstport}",
-    "${protocol} ${packets} ${bytes} ${action}"
-  ])
 }
 ```
+
+> ⚠️ Si quieres un `log_format` custom (`$${srcaddr} $${dstaddr} ...`), recuerda escapar las variables del Flow Log con `$${...}` para que Terraform NO intente interpolarlas como HCL: son tokens que AWS resuelve en runtime.
 
 ---
 
@@ -303,6 +403,33 @@ Amazon Macie usa ML y pattern matching para identificar **datos sensibles** (PII
 4. Integración: envía a Security Hub
 5. Remediación: cifrar, mover, eliminar
 ```
+
+**Código: Activar Macie y lanzar un job de clasificación**
+
+```hcl
+resource "aws_macie2_account" "this" {
+  finding_publishing_frequency = "FIFTEEN_MINUTES"
+  status                       = "ENABLED"
+}
+
+# Job puntual sobre uno o varios buckets concretos
+resource "aws_macie2_classification_job" "pii_scan" {
+  name        = "pii-scan-prod"
+  job_type    = "ONE_TIME"   # ONE_TIME | SCHEDULED
+  description = "Búsqueda inicial de PII en buckets de producción"
+
+  s3_job_definition {
+    bucket_definitions {
+      account_id = data.aws_caller_identity.current.account_id
+      buckets    = [aws_s3_bucket.app.id]
+    }
+  }
+
+  depends_on = [aws_macie2_account.this]
+}
+```
+
+> Para escaneos recurrentes usa `job_type = "SCHEDULED"` y un bloque `schedule_frequency { daily_schedule {} }` (o `weekly_schedule` / `monthly_schedule`). Los hallazgos aparecen automáticamente en Security Hub si la integración está habilitada.
 
 ---
 

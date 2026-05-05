@@ -171,24 +171,29 @@ resource "aws_security_group" "app" {
   name   = "app-sg"
   vpc_id = aws_vpc.main.id
 
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = var.app_cidr_blocks
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   # Dar más tiempo para que AWS limpie las ENIs antes de fallar
   timeouts {
     delete = "10m"   # Por defecto son 5 minutos
   }
+}
+
+# Reglas como recursos independientes (consistente con la regla de § 4.2)
+resource "aws_security_group_rule" "app_ingress" {
+  type              = "ingress"
+  security_group_id = aws_security_group.app.id
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  cidr_blocks       = var.app_cidr_blocks
+}
+
+resource "aws_security_group_rule" "app_egress_all" {
+  type              = "egress"
+  security_group_id = aws_security_group.app.id
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 ```
 

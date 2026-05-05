@@ -40,20 +40,32 @@ resource "aws_iam_group" "developers" {
   name = "developers"
 }
 
-# Usuario
+# Usuarios
 resource "aws_iam_user" "alice" {
   name = "alice"
 }
 
-# Membresía: vincula usuario al grupo
+resource "aws_iam_user" "bob" {
+  name = "bob"
+}
+
+# Membresía: vincula usuarios al grupo
 resource "aws_iam_group_membership" "dev_team" {
   name  = "dev-team-membership"
   group = aws_iam_group.developers.name
-  users = [aws_iam_user.alice.name]
+  users = [aws_iam_user.alice.name, aws_iam_user.bob.name]
+}
+
+# Política gestionada de AWS aplicada al grupo (no al usuario)
+resource "aws_iam_group_policy_attachment" "dev_readonly" {
+  group      = aws_iam_group.developers.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 ```
 
 > **Best Practice:** La mejor práctica es siempre asignar políticas a grupos, nunca directamente a usuarios. Cuando el equipo crece, añadir un usuario al grupo correcto es todo lo que necesitas.
+
+> **Nota sobre membresías:** `aws_iam_group_membership` reemplaza la lista completa de usuarios en cada apply. Si prefieres gestionar la pertenencia usuario a usuario sin tocar a los demás miembros, usa `aws_iam_user_group_membership`.
 
 ---
 
@@ -129,17 +141,39 @@ Por qué existe el Instance Profile:
 ```
 
 ```hcl
+# Política gestionada para Session Manager (sin abrir SSH)
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # Instance Profile: contenedor del rol para EC2
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2-app-profile"
   role = aws_iam_role.ec2_role.name
 }
 
-# EC2 con identidad IAM
+# AMI obtenida con data source (nunca hardcodear AMI IDs)
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
+# EC2 con identidad IAM e IMDSv2 obligatorio
 resource "aws_instance" "app_server" {
-  ami                  = data.aws_ami.amazon_linux.id   # Obtener AMI con data source, nunca hardcodeado
+  ami                  = data.aws_ami.amazon_linux.id
   instance_type        = "t3.micro"
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+
+  metadata_options {
+    http_tokens   = "required"   # IMDSv2 obligatorio
+    http_endpoint = "enabled"
+  }
 
   tags = { Name = "app-server" }
 }
@@ -158,6 +192,15 @@ Son roles predefinidos por AWS que permiten a servicios como Auto Scaling, ELB o
 | `AWSServiceRoleForRDS` | Gestiona snapshots y mantenimiento |
 
 > ⚠️ No puedes modificar su Trust Policy. Se crean automáticamente al usar el servicio. En Terraform: `aws_iam_service_linked_role` (raramente necesario crearlo explícitamente).
+
+```hcl
+# Crear el SLR explícitamente solo es útil para forzar su existencia
+# antes de que el servicio lo necesite (p. ej. en stacks de bootstrap)
+resource "aws_iam_service_linked_role" "autoscaling" {
+  aws_service_name = "autoscaling.amazonaws.com"
+  description      = "SLR para Auto Scaling — gestionado por AWS"
+}
+```
 
 ---
 
@@ -184,12 +227,20 @@ data "aws_iam_policy_document" "cross_account_trust" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::111111111111:root"]   # Cuenta A
     }
+    # ExternalId mitiga el "confused deputy" cuando la Cuenta A
+    # invoca AssumeRole en nombre de un tercero
+    condition {
+      test     = "StringEquals"
+      variable = "sts:ExternalId"
+      values   = ["unique-shared-secret-2026"]
+    }
   }
 }
 
 resource "aws_iam_role" "cross_account" {
-  name               = "cross-account-deploy"
-  assume_role_policy = data.aws_iam_policy_document.cross_account_trust.json
+  name                 = "cross-account-deploy"
+  assume_role_policy   = data.aws_iam_policy_document.cross_account_trust.json
+  max_session_duration = 3600
 }
 ```
 
@@ -242,8 +293,17 @@ data "aws_iam_policy_document" "github_oidc_trust" {
       type        = "Federated"
       identifiers = [aws_iam_openid_connect_provider.github.arn]
     }
+
+    # `audience`: configure-aws-credentials@v4 lo emite como "sts.amazonaws.com"
     condition {
       test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    # `subject`: identifica repo + ref. StringLike permite patrones (p.ej. tags/v*)
+    condition {
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values   = ["repo:mi-org/mi-repo:ref:refs/heads/main"]
     }
@@ -251,7 +311,7 @@ data "aws_iam_policy_document" "github_oidc_trust" {
 }
 ```
 
-La condición `StringEquals` sobre el `sub` del JWT es la clave de seguridad: solo el repositorio `mi-org/mi-repo` en la rama `main` puede asumir el rol. Ningún otro repositorio ni branch puede usarlo.
+La condición sobre el `sub` del JWT es la clave de seguridad: solo el repositorio `mi-org/mi-repo` en la rama `main` puede asumir el rol. Sin la condición sobre `aud`, AWS STS rechaza el `AssumeRoleWithWebIdentity` aunque el sub coincida.
 
 ---
 

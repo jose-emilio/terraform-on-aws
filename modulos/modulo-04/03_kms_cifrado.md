@@ -86,30 +86,44 @@ Reglas fundamentales de Key Policies:
 **Código: Key Policy con Segregación de Roles**
 
 ```hcl
-resource "aws_kms_key" "app_key" {
-  description = "Llave con Key Policy segregada"
+data "aws_caller_identity" "current" {}
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        # Root: Administración total (obligatorio para no perder el acceso)
-        Sid       = "AllowRootAdmin"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:aws:iam::123456789:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        # Rol de app: Solo cifrar/descifrar (mínimo privilegio)
-        Sid       = "AllowAppEncrypt"
-        Effect    = "Allow"
-        Principal = { AWS = aws_iam_role.app.arn }
-        Action    = ["kms:Encrypt", "kms:Decrypt"]
-        Resource  = "*"
-      }
+data "aws_iam_policy_document" "key_policy" {
+  # Root: administración total (obligatorio para no perder el acceso a la llave)
+  statement {
+    sid       = "AllowRootAdmin"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  # Rol de app: solo cifrar/descifrar (mínimo privilegio)
+  statement {
+    sid    = "AllowAppEncryptDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
     ]
-  })
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.app.arn]
+    }
+  }
+}
+
+resource "aws_kms_key" "app_key" {
+  description         = "Llave con Key Policy segregada"
+  enable_key_rotation = true
+  policy              = data.aws_iam_policy_document.key_policy.json
 }
 ```
 
@@ -170,10 +184,16 @@ Vincular tu CMK a S3 y EBS garantiza que los datos almacenados estén cifrados c
 resource "aws_ebs_volume" "app_data" {
   availability_zone = "us-east-1a"
   size              = 100
+  type              = "gp3"
   encrypted         = true
   kms_key_id        = aws_kms_key.app_key.arn
 
   tags = { Name = "app-data-encrypted" }
+}
+
+# Bucket S3 destinatario del cifrado
+resource "aws_s3_bucket" "app" {
+  bucket = "mi-app-data-${data.aws_caller_identity.current.account_id}"
 }
 
 # Cifrado de bucket S3 con CMK
@@ -234,7 +254,12 @@ resource "aws_dynamodb_table" "app_table" {
 Las llaves multi-región comparten el mismo material criptográfico. Puedes **cifrar en `us-east-1` y descifrar en `eu-west-1`** con la misma identidad de llave:
 
 ```hcl
-# Proveedor para región de réplica
+# Providers explícitos: cada llave vive en una región concreta
+provider "aws" {
+  alias  = "us"
+  region = "us-east-1"
+}
+
 provider "aws" {
   alias  = "eu"
   region = "eu-west-1"
@@ -242,16 +267,19 @@ provider "aws" {
 
 # Llave primaria multi-región (us-east-1)
 resource "aws_kms_key" "primary" {
-  description         = "Llave primaria multi-region"
-  multi_region        = true
-  enable_key_rotation = true
+  provider                = aws.us
+  description             = "Llave primaria multi-region"
+  multi_region            = true
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
 }
 
 # Réplica en eu-west-1 para DR y baja latencia
 resource "aws_kms_replica_key" "replica_eu" {
-  provider        = aws.eu
-  primary_key_arn = aws_kms_key.primary.arn
-  description     = "Réplica DR en Europa"
+  provider                = aws.eu
+  primary_key_arn         = aws_kms_key.primary.arn
+  description             = "Réplica DR en Europa"
+  deletion_window_in_days = 30
 }
 ```
 
@@ -307,6 +335,39 @@ Cada operación criptográfica queda registrada automáticamente en CloudTrail:
 Eventos clave a monitorear:
 - `DisableKey` / `ScheduleKeyDeletion` → Posible sabotaje
 - `Decrypt` desde IP desconocida → Posible exfiltración de datos
+
+**Código: Alarma CloudWatch sobre `DisableKey` / `ScheduleKeyDeletion`**
+
+Asume que CloudTrail ya está enviando eventos al log group `aws_cloudwatch_log_group.trail` (ver Sección 5.7) y que existe un SNS topic para alertas de seguridad:
+
+```hcl
+resource "aws_cloudwatch_log_metric_filter" "kms_disable" {
+  name           = "kms-disable-or-delete"
+  log_group_name = aws_cloudwatch_log_group.trail.name
+
+  pattern = "{ ($.eventSource = kms.amazonaws.com) && (($.eventName = DisableKey) || ($.eventName = ScheduleKeyDeletion)) }"
+
+  metric_transformation {
+    name      = "KmsDisableOrDelete"
+    namespace = "Security/KMS"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "kms_disable" {
+  alarm_name          = "kms-disable-or-delete"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.kms_disable.metric_transformation[0].name
+  namespace           = aws_cloudwatch_log_metric_filter.kms_disable.metric_transformation[0].namespace
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "Alguien deshabilitó o programó el borrado de una CMK — posible sabotaje"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+  treat_missing_data  = "notBreaching"
+}
+```
 
 ---
 

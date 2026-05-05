@@ -88,9 +88,21 @@ data "terraform_remote_state" "network" {
   }
 }
 
+# AMI siempre vigente
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
 resource "aws_instance" "app" {
-  subnet_id = data.terraform_remote_state.network.outputs.subnet_id  # Subnet ID, no VPC ID
-  ami       = "ami-0abcdef1234567890"
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t3.micro"
+  subnet_id     = data.terraform_remote_state.network.outputs.subnet_id
 }
 
 # Proyecto B lee subnet_id sin acceso de escritura al State de Networking

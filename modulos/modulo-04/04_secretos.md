@@ -53,6 +53,12 @@ resource "aws_ssm_parameter" "db_password" {
   type   = "SecureString"
   value  = var.db_password
   key_id = aws_kms_key.main.arn
+
+  # Permite que un proceso externo (rotación, operador) actualice el valor
+  # sin que Terraform lo sobrescriba en el siguiente apply
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 # StringList para múltiples subnets
@@ -145,12 +151,17 @@ resource "random_password" "db_master" {
   length           = 32
   special          = true
   override_special = "!#$%&*()-_=+[]{}:?"
+  min_lower        = 4
+  min_upper        = 4
+  min_numeric      = 4
+  min_special      = 4
 }
 
 # 2. Almacenar en Secrets Manager
 resource "aws_secretsmanager_secret" "db" {
-  name       = "prod/db/master-credentials"
-  kms_key_id = aws_kms_key.main.arn
+  name                    = "prod/db/master-credentials"
+  kms_key_id              = aws_kms_key.main.arn
+  recovery_window_in_days = 30
 }
 
 resource "aws_secretsmanager_secret_version" "db" {
@@ -159,13 +170,27 @@ resource "aws_secretsmanager_secret_version" "db" {
     username = "admin"
     password = random_password.db_master.result
   })
+
+  # La rotación posterior cambia AWSCURRENT externamente; no dejes que TF la pise
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # 3. Usar en la base de datos
 resource "aws_db_instance" "main" {
-  master_username = "admin"
-  master_password = random_password.db_master.result
-  # ... otras configuraciones
+  identifier                = "prod-db"
+  engine                    = "postgres"
+  instance_class            = "db.t3.medium"
+  allocated_storage         = 50
+  storage_encrypted         = true
+  kms_key_id                = aws_kms_key.main.arn
+  username                  = "admin"
+  password                  = random_password.db_master.result
+  backup_retention_period   = 7
+  deletion_protection       = true
+  skip_final_snapshot       = false
+  final_snapshot_identifier = "prod-db-final"
 }
 ```
 
@@ -267,20 +292,55 @@ backend "s3" {
 
 ## 4.10 Integración con ECS y Lambda
 
-**ECS Task Definition:**
-```json
-"secrets": [
-  {
-    "name": "DB_PASSWORD",
-    "valueFrom": "arn:aws:secretsmanager:...:prod/db"
-  }
-]
-```
-El ECS agent descifra el secreto al iniciar el task. El valor vive **solo en memoria del container**. El task role necesita `GetSecretValue`.
+**ECS Task Definition:** el ECS agent descifra el secreto al iniciar el task. El valor vive **solo en memoria del container**. El *execution role* necesita `secretsmanager:GetSecretValue` y `kms:Decrypt`:
 
-**Lambda:**
-- Método 1: Pasar el ARN como variable de entorno. Lambda lee el valor vía SDK en runtime.
-- Método 2: SDK directo en código — `client.get_secret_value(SecretId=arn)`
+```hcl
+resource "aws_ecs_task_definition" "app" {
+  family                   = "app"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([{
+    name      = "app"
+    image     = "123456789012.dkr.ecr.eu-west-1.amazonaws.com/app:1.0"
+    essential = true
+
+    # Inyecta el campo "password" del JSON del secreto en la env var DB_PASSWORD
+    # Sintaxis: <ARN>:<json-key>:<version-stage>:<version-id>
+    secrets = [
+      {
+        name      = "DB_PASSWORD"
+        valueFrom = "${aws_secretsmanager_secret.db.arn}:password::"
+      }
+    ]
+  }])
+}
+```
+
+**Lambda:** dos enfoques equivalentes en seguridad:
+
+```hcl
+resource "aws_lambda_function" "api" {
+  function_name = "api"
+  role          = aws_iam_role.lambda.arn
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
+  filename      = "function.zip"
+
+  # Método 1: pasar el ARN — la Lambda lo resuelve con el SDK en runtime
+  environment {
+    variables = {
+      DB_SECRET_ARN = aws_secretsmanager_secret.db.arn
+    }
+  }
+}
+```
+
+> Método 2 (alternativo): no inyectar nada y resolver el secreto íntegramente en el código con `SecretsManagerClient.send(new GetSecretValueCommand({ SecretId: "prod/db" }))`. Mismo resultado de seguridad.
 
 ---
 
@@ -328,6 +388,28 @@ AWS Config evalúa continuamente tus secretos contra reglas predefinidas:
 | `secretsmanager-rotation-enabled` | Detecta secretos sin rotación automática configurada |
 | `secretsmanager-using-cmk` | Verifica que los secretos usen una CMK y no la llave por defecto |
 | `secretsmanager-scheduled-rotation` | Valida que la rotación se ejecute dentro del período definido |
+
+**Código: regla Config para forzar rotación frecuente**
+
+Reusa el bootstrap de Config (`recorder + delivery channel + status`) definido en la Sección 5.5:
+
+```hcl
+resource "aws_config_config_rule" "sm_rotation" {
+  name = "secretsmanager-rotation-enabled-check"
+
+  source {
+    owner             = "AWS"
+    source_identifier = "SECRETSMANAGER_ROTATION_ENABLED_CHECK"
+  }
+
+  # Marca como NON_COMPLIANT cualquier secreto cuya rotación supere los 90 días
+  input_parameters = jsonencode({
+    maximumAllowedRotationFrequency = "90"
+  })
+
+  depends_on = [aws_config_configuration_recorder_status.main]
+}
+```
 
 ---
 

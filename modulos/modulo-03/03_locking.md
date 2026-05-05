@@ -81,7 +81,7 @@ terraform {
     key             = "prod/networking/terraform.tfstate"
     region          = "eu-west-1"
     encrypt         = true
-    dynamodb_table  = "terraform-lock-table"   # ← Locking con DynamoDB (deprecated desde TF 1.10 — ver Sección 3.4)
+    dynamodb_table  = "terraform-lock-table"   # ← Locking con DynamoDB (deprecated desde TF 1.10 — ver Sección 3.6)
   }
 }
 

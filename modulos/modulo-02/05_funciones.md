@@ -93,8 +93,8 @@ locals {
   # → "i-abc123"
 
   # regex() — extrae datos específicos con expresiones regulares
-  # Extraer instance ID de un ARN completo
-  arn = "arn:aws:ec2:us-east-1:123456789:instance/i-abc123"
+  # Extraer instance ID de un ARN completo (Account ID = 12 dígitos)
+  arn = "arn:aws:ec2:us-east-1:123456789012:instance/i-abc123"
   id  = regex("instance/(.*)", arn)[0]
   # → "i-abc123"
 }

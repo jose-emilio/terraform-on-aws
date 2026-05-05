@@ -211,16 +211,44 @@ Síntomas habituales de infraestructura sin IaC — si reconoces más de dos de 
 ### Etapa 2 — Migración
 
 ```bash
-# Paso 1: Inventariar los recursos existentes
+# Paso 1 — Inventariar los recursos existentes
 aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags]'
 
-# Paso 2: Importar los recursos al estado de Terraform
+# Paso 2 — Importar los recursos al estado de Terraform
+# Forma legacy (CLI imperativo): el import no queda registrado en Git
 terraform import aws_instance.web i-1234567890abcdef0
 
-# Paso 3: Escribir el código HCL que representa la arquitectura actual
-# Paso 4: Crear pipelines CI/CD para el flujo de cambios
-# Paso 5: Añadir tests automatizados con checkov, tflint, terraform test
+# Paso 3 — Escribir el código HCL que representa la arquitectura actual
+# Paso 4 — Crear pipelines CI/CD para el flujo de cambios
+# Paso 5 — Añadir tests automatizados con checkov, tflint, terraform test
 ```
+
+### Forma moderna: el bloque `import {}` (Terraform ≥ 1.5)
+
+Desde Terraform 1.5, los imports se declaran como código y se commitean junto al resto del proyecto. Así el equipo entero ve qué recursos pre-existentes están bajo gestión y por qué:
+
+```hcl
+# imports.tf — declarativo, versionable, revisable en PR
+import {
+  to = aws_instance.web
+  id = "i-1234567890abcdef0"
+}
+
+resource "aws_instance" "web" {
+  # Puedes generar este bloque automáticamente con:
+  #   terraform plan -generate-config-out=generated.tf
+  ami           = "ami-0abcdef1234567890"
+  instance_type = "t3.micro"
+
+  tags = {
+    Name = "legacy-web"
+  }
+}
+```
+
+Tras `terraform plan -generate-config-out=generated.tf`, Terraform escribe en `generated.tf` el HCL inferido del recurso real — es el punto de partida que luego refinas a mano. El siguiente `terraform apply` realiza el import sin crear nada nuevo en AWS.
+
+> El bloque `import {}` se elimina del código una vez completado el import (el recurso ya queda en el state). Es un patrón "uno y fuera", como las migrations de bases de datos.
 
 ### Etapa 3 — Resultados esperados
 

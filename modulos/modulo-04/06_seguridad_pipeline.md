@@ -68,6 +68,23 @@ terraform {
 4. Credenciales  → Emite tokens temporales (15 min - 1h)
 ```
 
+**Código: Rol IAM en AWS para el deploy desde GitHub**
+
+Reusa el `aws_iam_openid_connect_provider.github` y la trust policy `github_oidc_trust` definidos en la [Sección 1.8](./01_iam_identidades.md). El rol se crea así:
+
+```hcl
+resource "aws_iam_role" "gh_deploy" {
+  name               = "gh-deploy"
+  assume_role_policy = data.aws_iam_policy_document.github_oidc_trust.json
+}
+
+# Atribuye permisos al rol — ajusta según el alcance real del pipeline
+resource "aws_iam_role_policy_attachment" "gh_deploy_power" {
+  role       = aws_iam_role.gh_deploy.name
+  policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
+}
+```
+
 **Código: Workflow de GitHub Actions con OIDC**
 
 ```yaml
@@ -293,16 +310,39 @@ jobs:
   infracost:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
       - name: Setup Infracost
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
-      - name: Generate diff
-        run: infracost diff --path . --format json --out-file /tmp/infracost.json
-      - name: Post PR comment
-        run: infracost comment github --path /tmp/infracost.json --github-token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Baseline cost (rama base)
+        run: infracost breakdown --path . --format json --out-file /tmp/baseline.json
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Diff vs baseline
+        run: |
+          infracost diff --path . \
+            --compare-to /tmp/baseline.json \
+            --format json --out-file /tmp/diff.json
+
+      - name: Post/update PR comment
+        run: |
+          infracost comment github \
+            --path /tmp/diff.json \
+            --repo $GITHUB_REPOSITORY \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --behavior update
 ```
+
+> El flujo **baseline + diff** muestra coste delta real entre la rama base y la PR. `--behavior update` evita spam: en cada push se actualiza el mismo comentario en lugar de añadir uno nuevo.
 
 ---
 

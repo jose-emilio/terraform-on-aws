@@ -68,6 +68,16 @@ backend "s3" {
 
 **SSE-KMS (nivel empresarial):** Con `kms_key_id`, usas Customer Master Keys (CMK) propias para auditoría vía CloudTrail y separación de permisos entre equipos:
 
+```hcl
+backend "s3" {
+  bucket     = "mi-empresa-tf-state"
+  key        = "prod/app.tfstate"
+  region     = "eu-west-1"
+  encrypt    = true
+  kms_key_id = "arn:aws:kms:eu-west-1:123456789012:key/abcd-1234-ef56-7890"
+}
+```
+
 | Aspecto | SSE-S3 | SSE-KMS |
 |---------|--------|---------|
 | Clave | Gestionada por AWS | CMK propia del cliente |
@@ -77,6 +87,8 @@ backend "s3" {
 | Coste | Sin coste adicional | Coste por CMK |
 
 > **Recuerda:** `sensitive = true` en variables solo oculta valores en la consola CLI. El State siempre los almacena en texto plano. El cifrado del bucket es tu primera línea de defensa real.
+
+> **Permisos KMS:** el rol que ejecuta Terraform necesita `kms:Decrypt` y `kms:GenerateDataKey` sobre la CMK. Sin ellos, `terraform init` falla con `AccessDeniedException` aunque el bucket sea accesible.
 
 ---
 

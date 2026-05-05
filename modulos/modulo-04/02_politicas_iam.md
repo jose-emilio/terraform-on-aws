@@ -31,6 +31,43 @@ Terraform soporta dos formas de adjuntar políticas a identidades:
 
 > **Regla:** Usa siempre Managed Policies. Las Inline Policies son difíciles de auditar y no se pueden reutilizar.
 
+**Código: contraste Managed vs Inline**
+
+```hcl
+# Managed: recurso independiente + attachment. Reutilizable, versionada.
+resource "aws_iam_policy" "logs_managed" {
+  name = "write-logs"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "arn:aws:logs:*:*:log-group:/app/*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "logs_attach" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.logs_managed.arn
+}
+
+# Inline: vive dentro del rol, se borra con él. Solo para casos 1:1 muy acotados.
+resource "aws_iam_role_policy" "logs_inline" {
+  name = "write-logs-inline"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "arn:aws:logs:*:*:log-group:/app/*"
+    }]
+  })
+}
+```
+
 ---
 
 ## 2.3 `aws_iam_policy_document`: El Flujo Profesional
@@ -150,9 +187,12 @@ condition {
 condition {
   test     = "StringEquals"
   variable = "aws:ResourceTag/Owner"
-  values   = ["${aws:username}"]   # Solo puede tocar recursos que le pertenecen
+  # $${...} escapa la interpolación HCL: AWS recibe ${aws:username} literal
+  values   = ["$${aws:username}"]
 }
 ```
+
+> ⚠️ **Sintaxis crítica:** dentro de strings HCL, las claves de variable IAM (`${aws:username}`, `${aws:PrincipalTag/...}`) deben escaparse con `$${...}`. Si no lo haces, Terraform intenta interpolarlas como variables HCL, falla en `terraform validate` y la política nunca llega a AWS.
 
 **Código: ABAC — Solo Terminar Instancias Propias**
 
@@ -167,7 +207,7 @@ data "aws_iam_policy_document" "abac_owner" {
     condition {
       test     = "StringEquals"
       variable = "aws:ResourceTag/Owner"
-      values   = ["${aws:username}"]
+      values   = ["$${aws:username}"]   # Escape HCL → llega a IAM como ${aws:username}
     }
   }
 }
@@ -240,19 +280,30 @@ resource "aws_organizations_policy" "deny_regions" {
   content = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid       = "DenyNonEURegions"
-      Effect    = "Deny"
-      Action    = "*"
-      Resource  = "*"
+      Sid    = "DenyNonEURegions"
+      Effect = "Deny"
+      # NotAction excluye servicios GLOBALES (no regionales) que se romperían
+      # si cayeran bajo el StringNotEquals — IAM, Organizations, Route53, etc.
+      NotAction = [
+        "iam:*",
+        "organizations:*",
+        "route53:*",
+        "cloudfront:*",
+        "support:*",
+        "sts:*"
+      ]
+      Resource = "*"
       Condition = {
         StringNotEquals = {
-          "aws:RequestedRegion" = ["eu-west-1"]
+          "aws:RequestedRegion" = ["eu-west-1", "eu-central-1"]
         }
       }
     }]
   })
 }
 ```
+
+> ⚠️ **Foot-gun clásico:** una SCP con `Action = "*"` + `aws:RequestedRegion` bloquea servicios globales (IAM, Route53, CloudFront, STS) porque éstos no son regionales. El resultado es una cuenta inutilizable. Usa siempre `NotAction` con la lista de servicios globales.
 
 ---
 
@@ -330,6 +381,17 @@ AWS proporciona herramientas nativas para verificar que tus políticas cumplan c
 | **Access Analyzer** | Detecta recursos con acceso externo. Valida políticas antes de aplicar. Genera políticas basadas en uso real |
 | **Policy Simulator** | Prueba políticas sin aplicarlas. Verifica acceso antes del deploy. Simula llamadas API |
 | **CloudTrail + Athena** | Log de todas las llamadas API. Queries SQL sobre logs. Detecta permisos no usados |
+
+**Código: Access Analyzer a nivel de cuenta**
+
+```hcl
+resource "aws_accessanalyzer_analyzer" "account" {
+  analyzer_name = "account-analyzer"
+  type          = "ACCOUNT"   # Usa "ORGANIZATION" si lo delegas en Organizations
+}
+```
+
+> Una vez activo, Access Analyzer detecta automáticamente recursos (S3, IAM Roles, KMS, Lambda, SQS, Secrets…) accesibles desde fuera del *zone of trust* (cuenta u organización). Los hallazgos se publican en el panel del propio servicio y, si está integrado, en Security Hub.
 
 ---
 
