@@ -228,7 +228,40 @@ jobs:
 - **HCP Terraform:** Health Assessments automáticos con dashboard.
 - **driftctl:** Detecta recursos no gestionados por Terraform.
 - **Spacelift / Scalr / env0:** Plataformas IaC con drift detection integrado.
-- **Check blocks:** Validaciones personalizadas en Terraform (TF 1.5+).
+- **Check blocks:** Validaciones personalizadas en Terraform (TF 1.5+) — ver snippet abajo.
+
+### Bloque `check` — drift detection no bloqueante (TF 1.5+)
+
+A diferencia de `precondition`/`postcondition` (que abortan el plan), los `check` blocks emiten **warnings** sin detener la ejecución. Pueden contener data sources "scoped" que solo viven dentro del check — útiles para consultar el estado real de un recurso en cada `plan`:
+
+```hcl
+# Verifica que el endpoint público responda 200 en cada plan
+check "endpoint_health" {
+  # Data source scoped: solo se evalúa dentro del check
+  data "http" "app_health" {
+    url = "https://${aws_lb.main.dns_name}/health"
+  }
+
+  assert {
+    condition     = data.http.app_health.status_code == 200
+    error_message = "El ALB respondió ${data.http.app_health.status_code} en /health"
+  }
+}
+
+# Verifica que el ASG tenga al menos las réplicas mínimas declaradas
+check "min_replicas" {
+  data "aws_autoscaling_group" "current" {
+    name = aws_autoscaling_group.app.name
+  }
+
+  assert {
+    condition     = data.aws_autoscaling_group.current.desired_capacity >= var.min_replicas
+    error_message = "ASG tiene ${data.aws_autoscaling_group.current.desired_capacity} réplicas; se esperaban al menos ${var.min_replicas}."
+  }
+}
+```
+
+> **Cuándo usar `check` vs `postcondition`:** `postcondition` aborta el apply si falla — útil para invariantes que rompen la infraestructura. `check` solo emite un warning — perfecto para drift detection continuo donde quieres saber del problema sin bloquear despliegues legítimos del resto de la infraestructura.
 
 ---
 

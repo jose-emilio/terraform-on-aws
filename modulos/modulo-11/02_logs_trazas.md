@@ -414,6 +414,75 @@ ADOT Collector (sidecar)
 | Amazon Managed Prometheus | Métricas | Grafana dashboards |
 | Datadog / Splunk | Todos | Herramientas corporativas externas |
 
+**Código: ADOT Collector como sidecar en ECS Fargate**
+
+```hcl
+resource "aws_ecs_task_definition" "app_with_adot" {
+  family                   = "${var.project}-api"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn   # Necesita xray:PutTraceSegments + cloudwatch:PutMetricData
+
+  container_definitions = jsonencode([
+    # Container principal: la aplicación instrumentada con OTel SDK
+    {
+      name      = "api"
+      image     = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
+      essential = true
+
+      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+
+      environment = [
+        # El SDK envía OTLP al sidecar local (gRPC en 4317)
+        { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://localhost:4317" },
+        { name = "OTEL_SERVICE_NAME",            value = "api" },
+        { name = "OTEL_RESOURCE_ATTRIBUTES",     value = "deployment.environment=${var.environment}" }
+      ]
+
+      dependsOn = [{ containerName = "adot", condition = "START" }]
+    },
+
+    # Sidecar ADOT Collector: imagen oficial de AWS, con configuración por defecto
+    {
+      name      = "adot"
+      image     = "public.ecr.aws/aws-observability/aws-otel-collector:latest"
+      essential = true
+      cpu       = 256
+      memory    = 512
+
+      # OTLP gRPC (4317) y HTTP (4318) expuestos al container principal
+      portMappings = [
+        { containerPort = 4317, protocol = "tcp" },
+        { containerPort = 4318, protocol = "tcp" }
+      ]
+
+      # Config built-in que enruta trazas → X-Ray y métricas → CloudWatch EMF
+      command = ["--config=/etc/ecs/ecs-default-config.yaml"]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.adot.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "adot"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_cloudwatch_log_group" "adot" {
+  name              = "/ecs/${var.project}/adot"
+  retention_in_days = 14
+  kms_key_id        = aws_kms_key.observability.arn
+}
+```
+
+> El task role (`aws_iam_role.ecs_task`) necesita `xray:PutTraceSegments`, `xray:PutTelemetryRecords`, `cloudwatch:PutMetricData` y `logs:Put*` para que el collector exporte a X-Ray, CloudWatch y los logs respectivamente. Para Prometheus Managed añadir `aps:RemoteWrite`.
+
 ---
 
 ## 11. Gobernanza de Almacenamiento: S3 Lifecycle para Logs

@@ -197,6 +197,78 @@ jobs:
             --message "⚠️ DRIFT DETECTADO en producción. Revisar cambios manuales."
 ```
 
+**Alternativa AWS-nativa: EventBridge Scheduler + CodeBuild**
+
+Coherente con el resto del módulo (basado en AWS Developer Tools), aquí va el equivalente sin GitHub Actions — un `aws_scheduler_schedule` que dispara un proyecto CodeBuild dedicado a drift detection:
+
+```hcl
+# Trust policy: EventBridge Scheduler asume el rol para invocar CodeBuild
+data "aws_iam_policy_document" "scheduler_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["scheduler.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "scheduler" {
+  name               = "${var.project}-drift-scheduler"
+  assume_role_policy = data.aws_iam_policy_document.scheduler_trust.json
+}
+
+resource "aws_iam_role_policy" "scheduler" {
+  role = aws_iam_role.scheduler.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "codebuild:StartBuild"
+      Resource = aws_codebuild_project.drift_detection.arn
+    }]
+  })
+}
+
+# Programación: Lun-Vie a las 08:00 UTC
+resource "aws_scheduler_schedule" "drift" {
+  name       = "${var.project}-drift-detection"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(0 8 ? * MON-FRI *)"
+  schedule_expression_timezone = "UTC"
+
+  target {
+    arn      = aws_codebuild_project.drift_detection.arn
+    role_arn = aws_iam_role.scheduler.arn
+  }
+}
+```
+
+El `aws_codebuild_project.drift_detection` ejecuta un `buildspec` minimal que falla con exit-code 2 si detecta drift y publica a SNS:
+
+```yaml
+# buildspec-drift.yml
+version: 0.2
+phases:
+  build:
+    commands:
+      - terraform init -backend-config=backend.hcl
+      - |
+        terraform plan -detailed-exitcode -refresh-only -no-color
+        EXITCODE=$?
+        if [ "$EXITCODE" = "2" ]; then
+          aws sns publish --topic-arn "${SNS_TOPIC}" \
+            --message "⚠️ Drift detectado en ${ENVIRONMENT}. Revisa el log de este build."
+          exit 2   # CodeBuild lo marca como FAILED → dispara alarma
+        fi
+```
+
 **Política de respuesta al drift:**
 
 ```

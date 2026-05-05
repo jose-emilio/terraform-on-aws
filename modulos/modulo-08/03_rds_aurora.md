@@ -337,7 +337,25 @@ resource "aws_rds_cluster" "aurora" {
   skip_final_snapshot = false
   deletion_protection = true
 }
+
+# Sin instancias el cluster es solo storage. Para Aurora provisioned hay que
+# materializar al menos un nodo writer (count.index == 0) y opcionalmente readers.
+resource "aws_rds_cluster_instance" "aurora" {
+  count              = 2   # 1 writer + 1 reader (Aurora elige internamente)
+  identifier         = "${aws_rds_cluster.aurora.cluster_identifier}-${count.index}"
+  cluster_identifier = aws_rds_cluster.aurora.id
+  instance_class     = "db.r6g.large"
+  engine             = aws_rds_cluster.aurora.engine
+  engine_version     = aws_rds_cluster.aurora.engine_version
+
+  # Observabilidad mínima en producción
+  performance_insights_enabled = true
+  monitoring_interval          = 60
+  monitoring_role_arn          = aws_iam_role.rds_monitoring.arn
+}
 ```
+
+> Para Aurora Serverless v2, en lugar de `aws_rds_cluster_instance` se define `serverlessv2_scaling_configuration { min_capacity = 0.5, max_capacity = 16 }` directamente en el `aws_rds_cluster`, y AWS gestiona los nodos como ACUs (Aurora Capacity Units).
 
 **Aurora vs RDS estándar:**
 

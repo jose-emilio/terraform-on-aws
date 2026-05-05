@@ -207,19 +207,23 @@ Si el segundo plan muestra cambios, el recurso está mal diseñado — Terraform
 ```hcl
 # Test de idempotencia en .tftest.hcl
 run "create" {
-  command = apply   # Crea la infraestructura
+  command = apply   # Crea la infraestructura por primera vez
 }
 
 run "idempotent_check" {
-  command = plan    # Segundo plan: debe mostrar 0 changes
+  command = plan    # Segundo plan inmediato: debe reportar 0 changes
+
+  # terraform test no expone aún un assert nativo "el plan no tiene cambios".
+  # Aproximación útil: comparar outputs críticos del segundo run con los del
+  # primero — si alguno cambia, el módulo no es idempotente.
   assert {
-    condition     = true
-    error_message = "El módulo no es idempotente: el segundo plan muestra cambios"
+    condition     = output.bucket_arn == run.create.bucket_arn
+    error_message = "El bucket ARN cambia entre ejecuciones: el módulo no es idempotente."
   }
 }
 ```
 
-Si `idempotent_check` falla, significa que hay un recurso que siempre parece "diferente" entre plan y apply — un bug de diseño que hay que resolver antes del release.
+> **Limitación honesta:** `terraform test` muestra el resumen `Plan: X to add, Y to change, Z to destroy` en la salida del run. Hoy no hay forma de aseverar `X+Y+Z == 0` desde un bloque `assert`. La práctica habitual es: (1) comparar outputs entre runs como ejemplo, y (2) inspeccionar la salida textual del test en CI con un grep contra `Plan: 0 to add, 0 to change, 0 to destroy`. Si el segundo plan reporta cambios, hay un recurso que "siempre parece diferente" — un bug de diseño que hay que resolver antes del release.
 
 ---
 

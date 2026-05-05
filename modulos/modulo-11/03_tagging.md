@@ -232,8 +232,9 @@ data "aws_iam_policy_document" "abac_ec2" {
     condition {
       test     = "StringEquals"
       variable = "aws:ResourceTag/Environment"
-      # El valor del tag del recurso debe coincidir con el tag del usuario
-      values = ["${aws:PrincipalTag/Environment}"]
+      # El valor del tag del recurso debe coincidir con el tag del usuario.
+      # $${...} escapa la interpolación HCL: AWS recibe ${aws:PrincipalTag/Environment} literal.
+      values = ["$${aws:PrincipalTag/Environment}"]
     }
   }
 

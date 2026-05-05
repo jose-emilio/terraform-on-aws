@@ -318,6 +318,48 @@ Cuando terminas una instancia, el comportamiento de los volúmenes EBS depende d
 
 **Regla**: en desarrollo usa `= true`. En producción, si el volumen tiene datos importantes, usa `= false` **junto con** `lifecycle { prevent_destroy = true }` para que Terraform no borre el recurso por accidente.
 
+```hcl
+# Volumen de datos persistente con doble salvaguarda
+resource "aws_ebs_volume" "db_data" {
+  availability_zone = "us-east-1a"
+  size              = 200
+  type              = "gp3"
+  encrypted         = true
+  kms_key_id        = aws_kms_key.ebs.arn
+
+  tags = { Name = "db-data-prod" }
+
+  lifecycle {
+    prevent_destroy = true   # Aborta cualquier `terraform destroy` sobre este volumen
+  }
+}
+
+# Adjuntarlo a la instancia SIN borrarlo al terminar EC2
+resource "aws_volume_attachment" "db_data" {
+  device_name = "/dev/xvdf"
+  volume_id   = aws_ebs_volume.db_data.id
+  instance_id = aws_instance.db.id
+
+  # delete_on_termination NO existe en aws_volume_attachment; el ciclo de vida
+  # es del aws_ebs_volume (que persiste por defecto al destruir la EC2).
+}
+
+# Para el root_block_device, el control sí es inline en aws_instance:
+resource "aws_instance" "db" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "m5.large"
+
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 50
+    encrypted             = true
+    delete_on_termination = false   # Conserva el disco si la instancia se termina
+  }
+}
+```
+
+> Cuando `delete_on_termination = false` en `root_block_device`, el volumen queda huérfano al terminar la EC2 — sigue facturando hasta que lo borres explícitamente. Combínalo con tags de "owner" y "expira" para que un job de FinOps los detecte semanalmente.
+
 ---
 
 ## 1.11 Launch Template: Plantilla Reutilizable de EC2

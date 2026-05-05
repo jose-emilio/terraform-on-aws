@@ -561,6 +561,41 @@ Para ejecutar código en los edge locations de CloudFront — cerca del usuario 
 **CloudFront Functions**: JavaScript puro sub-milisegundo, máximo 10 KB, solo viewer request/response. Ideal para headers, redirects y URL rewrites.
 
 ```hcl
+# ── CloudFront Function: JavaScript sub-milisegundo en el edge ──
+resource "aws_cloudfront_function" "url_rewrite" {
+  name    = "${var.project}-url-rewrite"
+  runtime = "cloudfront-js-2.0"
+  comment = "Reescribe URLs sin extensión añadiendo /index.html (SPA routing)"
+  publish = true
+
+  code = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+
+      if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+      } else if (!uri.includes('.')) {
+        request.uri += '/index.html';
+      }
+
+      return request;
+    }
+  EOT
+}
+
+# Asociarla a un cache behavior:
+#   default_cache_behavior {
+#     function_association {
+#       event_type   = "viewer-request"
+#       function_arn = aws_cloudfront_function.url_rewrite.arn
+#     }
+#   }
+```
+
+> CloudFront Functions se ejecutan en un runtime restringido sin acceso a red, archivos ni librerías externas. Si necesitas hacer una llamada HTTP, leer headers de DynamoDB o usar criptografía pesada → Lambda@Edge. Si solo manipulas la URL o headers HTTP → CloudFront Functions (100× más barato y rápido).
+
+```hcl
 # ── Lambda@Edge (SIEMPRE en us-east-1) ──
 resource "aws_lambda_function" "edge" {
   provider      = aws.us_east_1   # Provider alias obligatorio

@@ -304,7 +304,9 @@ resource "aws_iam_policy" "dynamodb_user_scoped" {
       Action   = ["dynamodb:GetItem", "dynamodb:Query"]
       Resource = aws_dynamodb_table.orders.arn
       Condition = {
-        ForAllValues:StringEquals = {
+        # Las claves HCL con ":" deben ir entre comillas — el operador IAM completo
+        # llega íntegro a AWS al pasar por jsonencode().
+        "ForAllValues:StringEquals" = {
           "dynamodb:LeadingKeys" = ["$${cognito-identity.amazonaws.com:sub}"]
         }
       }
