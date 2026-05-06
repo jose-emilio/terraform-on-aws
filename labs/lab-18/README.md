@@ -22,26 +22,18 @@ Implementar un modelo de **seguridad por capas** (Capa 7 y Capa 4) utilizando Se
 | **VPC Flow Logs** | Registro del tráfico IP que entra y sale de las interfaces de red de la VPC. Puede capturar todo, solo ACCEPT, o solo REJECT. Se almacena en CloudWatch Logs o S3 |
 | **ALB (Application Load Balancer)** | Balanceador de carga en Capa 7 (HTTP/HTTPS) que distribuye tráfico entre instancias en múltiples AZs |
 
-## Modelo de seguridad por capas
+## Arquitectura — Modelo de seguridad por capas
 
-```
-Internet
-   |
-   v
-[ NACL subred publica ]  <-- Capa 4: bloquea IPs maliciosas antes de llegar al SG
-   |
-   v
-[ SG del ALB ]            <-- Permite HTTP/HTTPS desde Internet
-   |
-   v
-[ NACL subred privada ]   <-- Capa 4: segunda barrera, permite efimeros
-   |
-   v
-[ SG de las EC2 ]         <-- Solo acepta trafico desde el SG del ALB (source_security_group_id)
-   |
-   v
-[ Aplicacion ]
-```
+![Defensa en profundidad: NACL pública → SG ALB → NACL privada → SG EC2 + Flow Logs](arch/diagrama.svg)
+
+El tráfico atraviesa **cuatro capas independientes** antes de llegar a la aplicación:
+
+1. **NACL pública** (Capa 4 stateless) — bloquea IPs maliciosas en regla 50, permite HTTP/HTTPS y puertos efímeros en reglas 100/110/120.
+2. **SG del ALB** (Capa 4 stateful) — admite `tcp/80` y `tcp/443` desde Internet.
+3. **NACL privada** — segunda barrera defensiva en la subred del backend.
+4. **SG de las EC2** — clave del patrón: `referenced_security_group_id = SG_ALB` (no CIDR), de modo que solo instancias asociadas al SG del ALB pueden conectar al puerto 80, sin acoplarse a IPs.
+
+**VPC Flow Logs** en modo `REJECT` graba en CloudWatch todo el tráfico denegado, lo que permite diagnosticar bloqueos sin SSH a las instancias.
 
 > **Defensa en profundidad:** Las NACLs actúan como primera línea (bloqueo de IPs conocidas, rango de puertos). Los Security Groups actúan como segunda línea (referencia por identidad, no por IP). Ambas capas se complementan.
 

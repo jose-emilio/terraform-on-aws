@@ -55,6 +55,12 @@ lab-16/
     └── localstack.s3.tfbackend  ← Backend completo para LocalStack
 ```
 
+## Arquitectura
+
+![VPC multi-AZ con 6 subredes generadas dinámicamente con for_each y cidrsubnet()](arch/diagrama.svg)
+
+Una única VPC `10.12.0.0/16` con 6 subredes distribuidas en 3 AZs (3 públicas + 3 privadas), todas generadas con un único recurso `aws_subnet.this` iterando sobre `local.subnets` con `for_each`. Los CIDRs se calculan con `cidrsubnet()` para evitar errores manuales y los tags incluyen los marcadores `kubernetes.io/role/{elb,internal-elb}` que EKS usa para descubrir subredes. Una `postcondition` rechaza el apply si el CIDR no es RFC 1918. **Aún no hay IGW ni NAT Gateway** — el routing real a Internet llega en el [lab-17](../lab-17/README.md).
+
 ## Análisis del código antes de desplegar
 
 Antes de ejecutar nada, revisemos las técnicas clave del código en `main.tf`.

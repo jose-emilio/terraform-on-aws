@@ -44,10 +44,6 @@ export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
 
 ![Arquitectura del pipeline DevSecOps con federación OIDC GitHub Actions ↔ AWS](arch/diagrama.svg)
 
-> Fuente editable: [`diagrama.drawio`](diagrama.drawio) — abrir con la extensión
-> [Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio)
-> de VS Code o en [app.diagrams.net](https://app.diagrams.net).
-
 **Flujo en cinco pasos:**
 
 1. El job `terraform-apply` envía a STS la acción `AssumeRoleWithWebIdentity` con el JWT firmado por GitHub.

@@ -72,26 +72,14 @@ lab-19/
 
 ### 1.1 Arquitectura del laboratorio
 
-```
-┌──────────────┐         VPC Peering          ┌──────────────┐
-│   VPC app    │◄────────────────────────────►│   VPC db     │
-│ 10.15.0.0/16 │      (bidireccional)         │ 10.16.0.0/16 │
-│              │                              │ SG: 3306     │
-└──────┬───────┘                              └──────────────┘
-       │
-       │  VPC Peering
-       │  (bidireccional)
-       │
-┌──────▼───────┐
-│   VPC C      │ ─ ─ ─ ✗ ─ ─ ─►  VPC db
-│ 10.17.0.0/16 │   NO transitivo
-└──────────────┘
-```
+![3 VPCs con 2 VPC Peerings (app↔db, app↔c) demostrando la NO transitividad hacia c↔db](arch/diagrama.svg)
 
 Tres VPCs con dos peerings:
 - **app ↔ db**: comunicación directa (ej. aplicación accede a base de datos)
 - **app ↔ vpc-c**: comunicación directa
 - **vpc-c ↔ db**: **sin peering** — vpc-c no puede alcanzar db a través de app (no transitividad)
+
+Solo `vpc-app` tiene IGW + NAT Gateway. `vpc-db` y `vpc-c` acceden a SSM Session Manager mediante 3 VPC Interface Endpoints (`ssm`, `ssmmessages`, `ec2messages`) cada una, sin necesidad de salida a Internet.
 
 ### 1.2 VPC Peering — Solicitud y aceptación
 

@@ -70,24 +70,11 @@ lab-20/
 
 ### 1.1 Arquitectura con inspección y egress centralizados
 
-```
-                         ┌─────────────────┐
-                         │ Transit Gateway │
-                         │   (Hub/TGW)     │
-                         └──┬──┬──┬──┬─────┘
-                            │  │  │  │
-              ┌─────────────┘  │  │  └───────────────┐
-              │                │  │                  │
-              v                v  v                  v
-      ┌──────────────┐ ┌────────────────┐   ┌───────────────┐
-      │ VPC client-a │ │ VPC inspection │   │  VPC egress   │
-      │ 10.16.0.0/16 │ │ 10.17.0.0/16   │   │ 10.18.0.0/16  │
-      └──────────────┘ │ (Appliance     │   │ IGW + NAT×2AZ │
-      ┌──────────────┐ │  Mode)         │   └───────┬───────┘
-      │ VPC client-b │ └────────────────┘           │
-      │ 10.19.0.0/16 │                           Internet
-      └──────────────┘
-```
+![Hub-and-Spoke con TGW: 4 VPCs (clients, inspection, egress) + 3 route tables + RAM share](arch/diagrama.svg)
+
+> Fuente editable: [`diagrama.drawio`](diagrama.drawio) — abrir con la extensión
+> [Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio)
+> de VS Code o en [app.diagrams.net](https://app.diagrams.net).
 
 Cuatro VPCs conectadas al TGW. El tráfico se segmenta mediante **tres tablas de rutas del TGW** que fuerzan todo el tráfico a pasar por inspection antes de llegar a su destino o a Internet.
 

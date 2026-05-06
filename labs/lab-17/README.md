@@ -67,6 +67,12 @@ lab-17/
     └── localstack.s3.tfbackend  ← Backend completo para LocalStack
 ```
 
+## Arquitectura
+
+![Salida a Internet por AZ con NAT Gateway o NAT Instance + VPC Endpoint S3](arch/diagrama.svg)
+
+Una VPC `10.13.0.0/16` con 3 AZs. Cada AZ tiene su propio NAT (Gateway en producción, Instance ARM `t4g.small` en desarrollo, controlado por `var.use_nat_instance`) y su propia tabla de rutas privada — así el tráfico de salida nunca cruza AZs. El **VPC Gateway Endpoint S3** se asocia a las cuatro tablas de rutas (1 pública + 3 privadas) y desvía el tráfico hacia S3 por la red interna de AWS, evitando el cargo de $0.045/GB del NAT ("NAT Tax"). Una instancia de test en `private-1` permite verificar la conectividad por SSM Session Manager.
+
 ## 1. Análisis del código
 
 ### 1.1 Internet Gateway — La puerta de entrada
