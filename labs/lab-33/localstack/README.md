@@ -1,20 +1,20 @@
-# Laboratorio 29 — LocalStack: El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
+# Laboratorio 33 — LocalStack: El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
 
-Este documento describe cómo ejecutar el laboratorio 29 contra LocalStack. Los recursos S3 (bucket, public access block, versionado, lifecycle configuration) funcionan plenamente en Community. KMS y la condición de VPC endpoint tienen soporte parcial.
+Este documento describe cómo ejecutar el laboratorio 33 contra LocalStack. Los recursos S3 (bucket, public access block, versionado, lifecycle configuration) funcionan plenamente en Community. KMS y la condición de VPC endpoint tienen soporte parcial.
 
 ## Requisitos Previos
 
 - LocalStack en ejecución: `localstack start -d`
-- Terraform >= 1.5
+- Terraform >= 1.10
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Limitaciones conocidas
+### Limitaciones conocidas
 
 | Recurso | Soporte en Community |
 |---|---|
@@ -29,7 +29,7 @@ Este documento describe cómo ejecutar el laboratorio 29 contra LocalStack. Los 
 | `aws_s3_bucket_policy` (condición `aws:sourceVpce`) | Parcial — política aceptada; condición no evaluada en Community |
 | Módulo `secure-bucket` | Completo — todos los recursos creados sin error |
 
-### 1.2 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 localstack status
@@ -41,7 +41,7 @@ terraform plan
 terraform apply
 ```
 
-### 1.3 Verificación de S3
+### Verificación de S3
 
 ```bash
 BUCKET=$(terraform output -raw bucket_name)
@@ -62,7 +62,7 @@ awslocal s3api get-bucket-versioning --bucket "$BUCKET"
 awslocal s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"
 ```
 
-### 1.4 Verificación de versionado
+### Verificación de versionado
 
 ```bash
 BUCKET=$(terraform output -raw bucket_name)
@@ -79,7 +79,7 @@ awslocal s3api list-object-versions \
   --query 'Versions[*].{Key:Key,VersionId:VersionId,LastModified:LastModified}'
 ```
 
-### 1.5 Verificación de KMS y VPC Endpoint
+### Verificación de KMS y VPC Endpoint
 
 ```bash
 # CMK creada
@@ -93,7 +93,7 @@ awslocal ec2 describe-vpc-endpoints \
   --query 'VpcEndpoints[0].{ID:VpcEndpointId,Estado:State,Tipo:VpcEndpointType}'
 ```
 
-### 1.6 Verificación de la bucket policy
+### Verificación de la bucket policy
 
 ```bash
 awslocal s3api get-bucket-policy \
@@ -105,7 +105,7 @@ La política mostrará la condición `aws:sourceVpce`, aunque en LocalStack Comm
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 # Vaciar el bucket antes de destruir
@@ -117,7 +117,7 @@ terraform destroy
 
 ---
 
-## 3. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -130,7 +130,7 @@ terraform destroy
 
 ---
 
-## 4. Recursos Adicionales
+## Recursos Adicionales
 
 - [LocalStack — S3](https://docs.localstack.cloud/aws/services/s3/)
 - [LocalStack — KMS](https://docs.localstack.cloud/aws/services/kms/)

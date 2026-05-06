@@ -48,11 +48,10 @@ el mismo binario, verificable por hash SHA-256.
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3).
 - AWS CLI v2 configurado con perfil `default` y permisos de administrador.
 - `jq` instalado (usado en los scripts de credenciales).
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado
-  habilitado (necesario para el backend S3 del estado).
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -234,7 +233,7 @@ explícito) puede hacerlo. Esto refuerza la auditoría.
 ## Estructura del proyecto
 
 ```
-labs/lab42/
+labs/lab-42/
 ├── aws/              ── Infraestructura CodeArtifact + IAM (Terraform)
 │   ├── providers.tf
 │   ├── variables.tf
@@ -261,7 +260,7 @@ labs/lab42/
 ## Paso 1 — Desplegar la infraestructura de CodeArtifact
 
 ```bash
-cd labs/lab42/aws
+cd labs/lab-42/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -325,7 +324,7 @@ terraform output verify_commands
 
 ## Paso 2 — Empaquetar el módulo VPC
 
-El módulo VPC está en `labs/lab42/module/vpc/`. Hay que comprimirlo en un
+El módulo VPC está en `labs/lab-42/module/vpc/`. Hay que comprimirlo en un
 archivo tar.gz que CodeArtifact almacenará como asset del paquete.
 
 ```bash
@@ -368,7 +367,7 @@ Este paso simula el pipeline de CI/CD que publica módulos. Se usa el usuario
 ### Preparar las credenciales de ci-publisher
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab42/aws
+# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab-42/aws
 
 KEY_JSON=$(aws iam create-access-key --user-name ci-publisher)
 echo "Access Key ID:     $(echo $KEY_JSON | jq -r '.AccessKey.AccessKeyId')"
@@ -393,7 +392,7 @@ export DOMAIN="<DOMAIN del Paso 1>"
 export REPO="<REPO del Paso 1>"
 export ACCOUNT_ID="<ACCOUNT_ID del Paso 1>"
 
-# Calcular SHA-256 del archivo (en labs/lab42/)
+# Calcular SHA-256 del archivo (en labs/lab-42/)
 cd labs/lab42
 SHA256=$(sha256sum vpc-module-1.0.0.tar.gz | cut -d' ' -f1)
 # macOS: SHA256=$(shasum -a 256 vpc-module-1.0.0.tar.gz | cut -d' ' -f1)
@@ -506,7 +505,7 @@ pipelines de despliegue y los desarrolladores para consumir módulos.
 ### Preparar las credenciales de ci-consumer
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab42/aws
+# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab-42/aws
 
 KEY_JSON=$(aws iam create-access-key --user-name ci-consumer)
 echo "Access Key ID:     $(echo $KEY_JSON | jq -r '.AccessKey.AccessKeyId')"
@@ -562,7 +561,7 @@ Terraform como ruta local usando el prefijo `file://`.
 ### 5a — Descargar y extraer el módulo
 
 ```bash
-# ⚠️  TERMINAL DE ci-consumer — desde labs/lab42/
+# ⚠️  TERMINAL DE ci-consumer — desde labs/lab-42/
 
 # Descargar el asset con las credenciales AWS de ci-consumer
 aws codeartifact get-package-version-asset \
@@ -589,7 +588,7 @@ ls /tmp/vpc-module/
 ### 5b — Actualizar consumer/main.tf con la ruta local
 
 ```bash
-# ⚠️  TERMINAL DE ci-consumer — desde labs/lab42/
+# ⚠️  TERMINAL DE ci-consumer — desde labs/lab-42/
 
 # Linux
 sed -i 's|CODEARTIFACT_MODULE_URL|/tmp/vpc-module|g' consumer/main.tf
@@ -612,10 +611,10 @@ infraestructura corresponde al rol de administrador — `ci-consumer` solo
 tiene permisos sobre CodeArtifact, no sobre EC2.
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/consumer/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/consumer/
 # (con las credenciales de administrador, no de ci-consumer)
 
-cd labs/lab42/consumer
+cd labs/lab-42/consumer
 terraform init
 ```
 
@@ -647,7 +646,7 @@ que si estuvieran en un repositorio git o en el Terraform Registry.
 ### 5e — Planificar y aplicar
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/consumer/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/consumer/
 
 terraform plan
 terraform apply
@@ -874,7 +873,7 @@ output "private_route_table_ids" {
 **Publicar v1.1.0**:
 
 ```bash
-# ⚠️  TERMINAL DE ci-publisher — labs/lab42/
+# ⚠️  TERMINAL DE ci-publisher — labs/lab-42/
 tar -czf vpc-module-1.1.0.tar.gz -C module/vpc .
 SHA256=$(sha256sum vpc-module-1.1.0.tar.gz | cut -d' ' -f1)
 
@@ -907,7 +906,7 @@ mkdir -p /tmp/vpc-module-v110 && tar -xzf /tmp/vpc-module-1.1.0.tar.gz -C /tmp/v
 ```
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/consumer/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/consumer/
 
 # Sin cambiar consumer/main.tf (apunta a /tmp/vpc-module = v1.0.0)
 terraform init
@@ -984,7 +983,7 @@ resource "aws_codeartifact_repository" "npm_internal" {
 **Aplicar**:
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/aws/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/aws/
 terraform apply
 ```
 
@@ -1000,7 +999,7 @@ Plan: 2 to add, 0 to change, 0 to destroy.
 **Obtener el endpoint y el token de autorización**:
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/aws/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/aws/
 
 DOMAIN=$(terraform output -raw domain_name)
 ACCOUNT_ID=$(terraform output -raw domain_owner)
@@ -1069,7 +1068,7 @@ npm config get registry
 **Destruir los repositorios npm al terminar**:
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/aws/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/aws/
 terraform destroy -target=aws_codeartifact_repository.npm_internal \
                   -target=aws_codeartifact_repository.npm_upstream
 ```
@@ -1206,7 +1205,7 @@ statement {
 **Aplicar**:
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab42/consumer/
+# ⚠️  TERMINAL DE ADMINISTRADOR — labs/lab-42/consumer/
 
 # Obtener el VPC ID y las subredes privadas de los outputs del Reto 1
 VPC_ID=$(terraform output -raw vpc_id)
@@ -1235,7 +1234,7 @@ Plan: 3 to add, 1 to change, 0 to destroy.
 ```bash
 # ⚠️  TERMINAL LOCAL (fuera del VPC del Reto 1) — debe fallar
 
-DOMAIN=$(cd labs/lab42/aws && terraform output -raw domain_name)
+DOMAIN=$(cd labs/lab-42/aws && terraform output -raw domain_name)
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 aws codeartifact list-packages \
@@ -1263,7 +1262,7 @@ with an explicit deny in a resource-based policy
 # del VPC del Reto 1, con un Instance Profile que tenga permisos
 # de administrador. Acceder via SSM Session Manager.
 
-SUBNET_ID=$(cd labs/lab42/consumer && terraform output -json private_subnet_ids | jq -r '.[0]')
+SUBNET_ID=$(cd labs/lab-42/consumer && terraform output -json private_subnet_ids | jq -r '.[0]')
 
 # Crear la instancia (Amazon Linux 2023, t3.micro)
 INSTANCE_ID=$(aws ec2 run-instances \
@@ -1327,7 +1326,7 @@ fi
 ```
 
 ```bash
-cd labs/lab42/aws
+cd labs/lab-42/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"

@@ -1,20 +1,20 @@
-# Laboratorio 30 — LocalStack: Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
+# Laboratorio 34 — LocalStack: Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
 
-Este documento describe cómo ejecutar el laboratorio 30 contra LocalStack. Los recursos EFS (file system, mount targets, access points) y EC2/EBS funcionan en Community con las limitaciones indicadas. DLM no está disponible en Community.
+Este documento describe cómo ejecutar el laboratorio 34 contra LocalStack. Los recursos EFS (file system, mount targets, access points) y EC2/EBS funcionan en Community con las limitaciones indicadas. DLM no está disponible en Community.
 
 ## Requisitos Previos
 
 - LocalStack en ejecución: `localstack start -d`
-- Terraform >= 1.5
+- Terraform >= 1.10
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Limitaciones conocidas
+### Limitaciones conocidas
 
 | Recurso | Soporte en Community |
 |---|---|
@@ -29,7 +29,7 @@ Este documento describe cómo ejecutar el laboratorio 30 contra LocalStack. Los 
 | `aws_efs_access_point` | **No disponible** — depende de EFS |
 | Módulo `efs-share` | **Omitido** — EFS no incluido en LocalStack Community |
 
-### 1.2 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 localstack status
@@ -41,7 +41,7 @@ terraform plan
 terraform apply
 ```
 
-### 1.3 Verificación de EBS
+### Verificación de EBS
 
 ```bash
 EBS_ID=$(terraform output -raw ebs_volume_id)
@@ -52,13 +52,13 @@ awslocal ec2 describe-volumes \
   --query 'Volumes[0].{Tipo:VolumeType,Tamanyo:Size,IOPS:Iops,Throughput:Throughput,Cifrado:Encrypted}'
 ```
 
-### 1.4 Verificación de EFS
+### Verificación de EFS
 
-EFS no está disponible en LocalStack Community. Consulta la sección de [AWS real](#25-montaje-del-efs-desde-la-instancia-ssm) del README principal para las verificaciones de EFS.
+EFS no está disponible en LocalStack Community. Consulta la sección [Montaje del EFS desde la instancia (SSM)](../README.md#montaje-del-efs-desde-la-instancia-ssm) del README principal para las verificaciones de EFS.
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -66,7 +66,7 @@ terraform destroy
 
 ---
 
-## 3. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -76,7 +76,7 @@ terraform destroy
 
 ---
 
-## 4. Recursos Adicionales
+## Recursos Adicionales
 
 - [LocalStack — EFS](https://docs.localstack.cloud/aws/services/efs/)
 - [LocalStack — EC2](https://docs.localstack.cloud/aws/services/ec2/)

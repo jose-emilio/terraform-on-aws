@@ -24,7 +24,7 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 1 completado (entorno configurado)
+- Laboratorio 01 completado (entorno configurado)
 ---
 
 ## Conceptos Clave
@@ -94,7 +94,7 @@ Cuando ejecutas `terraform apply`, Terraform genera un archivo `terraform.tfstat
 ## Estructura del proyecto
 
 ```
-lab02/
+lab-02/
 ├── aws/
 │   └── main.tf       # Bucket S3 + versionado + cifrado + acceso público bloqueado
 └── localstack/
@@ -118,9 +118,9 @@ Cada lab posterior usa un prefijo distinto dentro del bucket (`lab07/...`, `lab1
 
 ---
 
-## 1. Creación del Bucket en AWS Real
+## Creación del Bucket en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`**
 
@@ -169,7 +169,7 @@ Puntos a destacar de esta configuración:
 - `aws_s3_bucket_public_access_block`: el estado de Terraform puede contener secretos (contraseñas, claves privadas) y nunca debe ser accesible públicamente. Este recurso bloquea todos los mecanismos de acceso público de S3.
 - `aws_s3_bucket_server_side_encryption_configuration`: cifra todos los objetos del bucket con AES-256 en reposo.
 
-### 1.2 Despliegue
+### Despliegue
 
 Obtén tu ID de cuenta y guárdalo en una variable de entorno:
 
@@ -210,7 +210,7 @@ terraform apply
 
 Terraform mostrará el plan de nuevo y pedirá confirmación. Escribe `yes` para continuar.
 
-### 1.3 Verificación
+### Verificación
 
 Al finalizar `terraform apply`, Terraform mostrará los outputs definidos:
 
@@ -252,7 +252,7 @@ Confirma que el cifrado está activo:
 aws s3api get-bucket-encryption --bucket terraform-state-labs-$ACCOUNT_ID
 ```
 
-### 1.4 Nota: Este Bucket NO Se Destruye
+### Nota: Este Bucket NO Se Destruye
 
 > ⚠️ **No ejecutes `terraform destroy` en este laboratorio.** El bucket `terraform-state-labs-<ACCOUNT_ID>` se usará como backend remoto de Terraform en posteriores laboratorios:
 > Si lo destruyes accidentalmente, vuelve a ejecutar `terraform apply` para recrearlo antes de continuar con los laboratorios siguientes.
@@ -287,7 +287,7 @@ aws s3api get-bucket-encryption \
 
 ---
 
-## 2. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -302,7 +302,7 @@ aws s3api get-bucket-encryption \
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Este laboratorio puede ejecutarse íntegramente en LocalStack. Consulta [localstack/README.md](localstack/README.md) para las instrucciones de despliegue local.
 

@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-16/localstack
@@ -38,9 +38,9 @@ terraform output
 # subnet_cidrs       = { "private-1" = "10.12.10.0/24", ... }
 ```
 
-## 2. Verificación
+## Verificación
 
-### 2.1 VPC
+### VPC
 
 ```bash
 awslocal ec2 describe-vpcs \
@@ -49,7 +49,7 @@ awslocal ec2 describe-vpcs \
   --output table
 ```
 
-### 2.2 Subredes
+### Subredes
 
 ```bash
 awslocal ec2 describe-subnets \
@@ -58,7 +58,7 @@ awslocal ec2 describe-subnets \
   --output table
 ```
 
-### 2.3 Tags EKS
+### Tags EKS
 
 ```bash
 awslocal ec2 describe-subnets \
@@ -67,7 +67,7 @@ awslocal ec2 describe-subnets \
   --output table
 ```
 
-## 3. Probar la postcondición
+## Probar la postcondición
 
 Intenta desplegar con un CIDR no RFC 1918:
 
@@ -79,7 +79,7 @@ Terraform rechazará el plan con el error de la postcondición.
 
 > **Nota:** En LocalStack la postcondición se evalúa igual que en AWS real, ya que es una validación del lado de Terraform, no del proveedor.
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

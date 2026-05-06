@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-22/localstack
@@ -36,9 +36,9 @@ terraform output
 # data_bucket_id  = "lab22-data-000000000000"
 ```
 
-## 2. Verificacion
+## Verificacion
 
-### 2.1 Listar buckets
+### Listar buckets
 
 ```bash
 awslocal s3 ls | grep lab22
@@ -46,7 +46,7 @@ awslocal s3 ls | grep lab22
 # lab22-data-000000000000
 ```
 
-### 2.2 Verificar etiquetas
+### Verificar etiquetas
 
 ```bash
 LOGS_BUCKET=$(terraform output -raw logs_bucket_id)
@@ -59,7 +59,7 @@ awslocal s3api get-bucket-tagging --bucket $DATA_BUCKET \
   --query 'TagSet[].{Key: Key, Value: Value}' --output table
 ```
 
-### 2.3 Verificar versionado
+### Verificar versionado
 
 ```bash
 awslocal s3api get-bucket-versioning --bucket $LOGS_BUCKET
@@ -69,7 +69,7 @@ awslocal s3api get-bucket-versioning --bucket $DATA_BUCKET
 # { "Status": "Enabled" }
 ```
 
-## 3. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Caracteristica | AWS Real | LocalStack Community |
 |---|---|---|
@@ -79,7 +79,7 @@ awslocal s3api get-bucket-versioning --bucket $DATA_BUCKET
 | `prevent_destroy` | Funciona | Desactivado en esta version |
 | SSE-KMS (Reto 2) | Completo | Parcial (sin cifrado real) |
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

@@ -17,7 +17,7 @@ En este laboratorio preliminar lanzarás manualmente una instancia EC2 con **Ama
 
 ---
 
-## 1. Crear un Par de Claves SSH
+## Crear un Par de Claves SSH
 
 1. En la consola de AWS, ve a **EC2 → Network & Security → Key Pairs**
 2. Haz clic en **Create key pair**
@@ -36,7 +36,7 @@ chmod 400 ~/.ssh/vscode-ide-key.pem
 
 ---
 
-## 2. Crear un Rol IAM para la Instancia
+## Crear un Rol IAM para la Instancia
 
 La instancia necesita permisos para desplegar infraestructura con Terraform. En lugar de configurar credenciales estáticas, se asigna un **Instance Profile** con un rol IAM — las credenciales se rotan automáticamente y nunca se almacenan en disco.
 
@@ -52,7 +52,7 @@ La instancia necesita permisos para desplegar infraestructura con Terraform. En 
 
 ---
 
-## 3. Crear un Security Group
+## Crear un Security Group
 
 1. Ve a **EC2 → Network & Security → Security Groups**
 2. Haz clic en **Create security group**
@@ -71,7 +71,7 @@ La instancia necesita permisos para desplegar infraestructura con Terraform. En 
 
 ---
 
-## 4. Lanzar la Instancia EC2
+## Lanzar la Instancia EC2
 
 1. Ve a **EC2 → Instances → Launch instances**
 2. Configura los siguientes campos:
@@ -106,7 +106,7 @@ La instancia necesita permisos para desplegar infraestructura con Terraform. En 
 
 ---
 
-## 5. Asignar una IP Elástica
+## Asignar una IP Elástica
 
 Una IP elástica es una IP pública fija asociada a tu cuenta. Al detener y volver a arrancar la instancia, la IP no cambia, por lo que no tendrás que actualizar tu comando SSH ni la URL del IDE.
 
@@ -125,7 +125,7 @@ A partir de ahora usa siempre esta IP para conectarte, tanto por SSH como en el 
 
 ---
 
-## 6. Conectarse a la Instancia por SSH
+## Conectarse a la Instancia por SSH
 
 Espera a que el estado de la instancia sea **Running** y las comprobaciones de estado muestren **2/2 checks passed**.
 
@@ -137,7 +137,7 @@ ssh -i ~/.ssh/vscode-ide-key.pem ec2-user@<IP_PUBLICA>
 
 ---
 
-## 7. Instalar code-server
+## Instalar code-server
 
 Una vez dentro de la instancia, ejecuta:
 
@@ -165,7 +165,7 @@ sudo systemctl status code-server@ec2-user
 
 ---
 
-## 8. Acceder a VSCode mediante Túnel SSH
+## Acceder a VSCode mediante Túnel SSH
 
 El túnel SSH redirige el puerto 8080 de la instancia a tu máquina local a través de la conexión SSH cifrada. El puerto nunca queda expuesto en internet.
 
@@ -190,7 +190,7 @@ Verás la interfaz completa de VSCode. Todo el tráfico viaja cifrado por SSH.
 
 ---
 
-## 9. Instalar el Plugin de Terraform
+## Instalar el Plugin de Terraform
 
 1. En la barra lateral de VSCode, haz clic en el icono de **Extensiones** (o `Ctrl+Shift+X`)
 2. Busca `HashiCorp Terraform`
@@ -204,7 +204,7 @@ La extensión proporciona:
 
 ---
 
-## 10. Instalar Terraform en la Instancia
+## Instalar Terraform en la Instancia
 
 Desde la terminal integrada de VSCode (`Ctrl+ñ` o **Terminal → New Terminal**):
 
@@ -222,7 +222,7 @@ terraform -version
 
 ---
 
-## 11. Destruir los Recursos al Terminar
+## Destruir los Recursos al Terminar
 
 > La instancia `t4g.large` genera costos mientras esté en ejecución. Libera también la IP elástica: si queda sin asociar se cobra igualmente.
 

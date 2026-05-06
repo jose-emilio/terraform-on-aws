@@ -35,7 +35,7 @@ Transformar un recurso S3 "hardcoded" en un componente flexible y profesional me
 
 ## Prerrequisitos
 
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
 - Terraform >= 1.10 (necesario para `use_lockfile` en el backend S3)
 

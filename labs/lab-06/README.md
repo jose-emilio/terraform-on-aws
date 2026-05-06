@@ -1,4 +1,4 @@
-# Laboratorio 6: Auditoría Dinámica y Conectividad Externa
+# Laboratorio 6 — Auditoría Dinámica y Conectividad Externa
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -25,7 +25,7 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 1 completado (entorno configurado)
+- Laboratorio 01 completado (entorno configurado)
 ---
 
 ## Conceptos Clave
@@ -187,7 +187,7 @@ Cuando se ejecuta `terraform destroy`, Terraform elimina el archivo. Es el únic
 ## Estructura del proyecto
 
 ```
-lab06/
+lab-06/
 ├── audit_report.tftpl   # Plantilla del reporte de auditoría compartida
 ├── aws/
 │   ├── providers.tf     # Bloque terraform{} y provider{}
@@ -203,9 +203,9 @@ lab06/
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`audit_report.tftpl`**
 
@@ -397,7 +397,7 @@ output "audit_report_path" {
 }
 ```
 
-### 1.2 Preparar la VPC de Producción
+### Preparar la VPC de Producción
 
 Este laboratorio consulta infraestructura existente, por lo que necesitas una VPC con el tag `Env = "production"` en tu cuenta. Si no la tienes, créala desde AWS CLI:
 
@@ -412,7 +412,7 @@ Verifica que el tag se aplicó correctamente:
 aws ec2 describe-vpcs --filters "Name=tag:Env,Values=production"
 ```
 
-### 1.3 Despliegue
+### Despliegue
 
 Desde el directorio `lab05/aws/`:
 
@@ -425,7 +425,7 @@ terraform apply
 
 El `plan` mostrará `Plan: 1 to add` por el `local_file` del reporte. Los data sources de AWS no cuentan como recursos a crear.
 
-### 1.4 Verificación de Outputs
+### Verificación de Outputs
 
 Al finalizar `terraform apply`:
 
@@ -486,7 +486,7 @@ terraform plan | grep "No changes\|0 to add"
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 El único recurso creado es el `local_file`. Para eliminarlo:
 
@@ -502,13 +502,13 @@ aws ec2 delete-vpc --vpc-id <VPC_ID>
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Este laboratorio puede ejecutarse en LocalStack con adaptaciones (VPC y política IAM de prueba). Consulta [localstack/README.md](localstack/README.md) para las instrucciones de despliegue local.
 
 ---
 
-## 4. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

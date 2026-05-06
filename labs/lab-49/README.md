@@ -52,9 +52,9 @@ La arquitectura tiene cuatro pilares:
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.9 instalado
+- **Terraform >= 1.10** instalado
 - `conftest` >= 0.46 instalado (instrucciones en el Paso 4)
 
 ```bash
@@ -551,7 +551,7 @@ hallazgos personalizados.
 ## Estructura
 
 ```
-lab49/
+lab-49/
 ├── aws/                             Infraestructura del laboratorio
 │   ├── providers.tf                 Provider AWS ~6.0, archive ~2.7, backend S3
 │   ├── variables.tf                 Variables: región, entorno, proyecto
@@ -576,7 +576,7 @@ lab49/
 ## Paso 1 — Desplegar la infraestructura base
 
 ```bash
-cd labs/lab49/aws
+cd labs/lab-49/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -1143,7 +1143,7 @@ OPA:      1.15.1
 Examina la política OPA ya incluida en el laboratorio:
 
 ```bash
-cat labs/lab49/policies/alb_https_only.rego
+cat labs/lab-49/policies/alb_https_only.rego
 ```
 
 El contenido:
@@ -1293,7 +1293,7 @@ input.resource_changes = [
 ### Probar la política con el archivo de datos de prueba (listener HTTP — debe FALLAR)
 
 ```bash
-cd labs/lab49
+cd labs/lab-49
 
 conftest test policies/testdata/plan_http_denied.json \
   --policy policies/ \
@@ -1931,7 +1931,7 @@ habilitado. Actualmente la política OPA solo cubre los listeners de ALB.
 **Objetivo**: escribir una nueva política Rego que deniegue la creación de buckets S3
 sin `aws_s3_bucket_versioning` asociado con `status = "Enabled"`.
 
-1. Crea el archivo `labs/lab49/policies/s3_versioning_required.rego`:
+1. Crea el archivo `labs/lab-49/policies/s3_versioning_required.rego`:
 
 ```rego
 package terraform.aws.s3
@@ -1966,7 +1966,7 @@ el plan debe generar un mensaje de error.
 4. Verifica:
 
 ```bash
-cd labs/lab49
+cd labs/lab-49
 conftest test policies/testdata/plan_s3_no_versioning.json --policy policies/ --all-namespaces
 conftest verify --policy policies/ --output table
 ```
@@ -2940,7 +2940,7 @@ aws lambda get-policy \
 ## Limpieza
 
 ```bash
-cd labs/lab49/aws
+cd labs/lab-49/aws
 
 terraform destroy
 ```
@@ -3057,12 +3057,12 @@ ruta correcta.
 
 ```bash
 # Verifica que los archivos están en el lugar correcto
-ls -la labs/lab49/policies/
+ls -la labs/lab-49/policies/
 # Debe mostrar: alb_https_only.rego, alb_https_only_test.rego, testdata/
 
 # Ejecuta desde el directorio raíz del repositorio con ruta relativa
-conftest test labs/lab49/policies/testdata/plan_http_denied.json \
-  --policy labs/lab49/policies/ \
+conftest test labs/lab-49/policies/testdata/plan_http_denied.json \
+  --policy labs/lab-49/policies/ \
   --all-namespaces
 ```
 

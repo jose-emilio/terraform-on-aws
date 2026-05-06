@@ -17,7 +17,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Código Terraform
+## Código Terraform
 
 **`localstack/main.tf`**
 
@@ -52,7 +52,7 @@ Las diferencias clave respecto a la configuración de AWS real son:
 | `endpoints.s3` | URL de LocalStack | Redirige las llamadas de S3 a LocalStack |
 | Nombre del bucket | `terraform-state-labs` (sin `<ACCOUNT_ID>`) | En LocalStack el nombre no necesita ser globalmente único |
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab02/localstack
@@ -64,7 +64,7 @@ terraform apply
 
 > Aunque el código Terraform es casi idéntico al de AWS real, este directorio tiene su propio estado independiente en `terraform.tfstate`. Terraform no sabe nada del bucket creado en el otro directorio.
 
-## 3. Verificación
+## Verificación
 
 Al finalizar `terraform apply`, Terraform mostrará los outputs:
 
@@ -85,11 +85,11 @@ aws --profile localstack s3 ls
 aws --profile localstack s3api get-bucket-versioning --bucket terraform-state-labs
 ```
 
-## 4. Nota sobre Persistencia
+## Nota sobre Persistencia
 
 > Los recursos de LocalStack **no persisten** entre reinicios del contenedor Docker. El lab07 recrea el bucket en LocalStack desde su propia configuración, por lo que no es necesario mantenerlo activo. El bucket de AWS real sí persiste y es el que se comparte entre laboratorios.
 
-## 5. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

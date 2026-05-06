@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-18/localstack
@@ -38,9 +38,9 @@ terraform output
 # flow_log_group  = "/vpc/lab18/flow-logs"
 ```
 
-## 2. Verificacion
+## Verificacion
 
-### 2.1 Security Group del ALB (dynamic ingress)
+### Security Group del ALB (dynamic ingress)
 
 ```bash
 ALB_SG=$(terraform output -raw alb_sg_id)
@@ -53,7 +53,7 @@ awslocal ec2 describe-security-groups \
 
 Deberias ver una regla por cada puerto en `var.alb_ingress_ports` (80 y 443 por defecto).
 
-### 2.2 Security Group de las EC2 (referencia por SG)
+### Security Group de las EC2 (referencia por SG)
 
 ```bash
 APP_SG=$(terraform output -raw app_sg_id)
@@ -66,7 +66,7 @@ awslocal ec2 describe-security-groups \
 
 El unico origen permitido debe ser el SG del ALB (no un CIDR).
 
-### 2.3 NACL publica (regla deny)
+### NACL publica (regla deny)
 
 ```bash
 awslocal ec2 describe-network-acls \
@@ -77,7 +77,7 @@ awslocal ec2 describe-network-acls \
 
 Deberias ver la regla 50 con `deny` para la IP bloqueada (`203.0.113.0/32`).
 
-### 2.4 VPC Flow Logs
+### VPC Flow Logs
 
 ```bash
 awslocal logs describe-log-groups \
@@ -86,7 +86,7 @@ awslocal logs describe-log-groups \
   --output table
 ```
 
-## 3. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Caracteristica | AWS Real | LocalStack Community |
 |---|---|---|
@@ -98,7 +98,7 @@ awslocal logs describe-log-groups \
 
 Para probar el ALB, el bloqueo efectivo de la NACL y consultar Flow Logs con datos reales, usa la version `aws/`.
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

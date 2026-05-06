@@ -1,4 +1,4 @@
-# Laboratorio 9: Gestión de Entornos con Workspaces
+# Laboratorio 9 — Gestión de Entornos con Workspaces
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,8 +23,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
+- **Terraform >= 1.10** instalado
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - LocalStack en ejecución (para la sección de LocalStack)
 
 ---
@@ -124,9 +124,9 @@ resource "aws_vpc" "main" {
 ## Estructura del proyecto
 
 ```
-lab09/
+lab-09/
 ├── aws/
-│   ├── providers.tf      # Requiere Terraform >= 1.5, backend "s3" {}
+│   ├── providers.tf      # Requiere Terraform >= 1.10, backend "s3" {}
 │   ├── variables.tf      # region, is_prod
 │   ├── main.tf           # locals, check {}, aws_vpc con precondition, aws_subnet
 │   ├── outputs.tf        # workspace, vpc_id, cidr, instance_type, is_prod
@@ -157,7 +157,7 @@ Una sola base de código que cambia su comportamiento según `terraform.workspac
 
 ## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`** — Muestra el código completo:
 
@@ -212,7 +212,7 @@ resource "aws_subnet" "main" {
 }
 ```
 
-### 1.2 Inicialización
+### Inicialización
 
 ```bash
 # Desde lab09/aws/
@@ -230,7 +230,7 @@ terraform workspace list
 # * default
 ```
 
-### 1.3 Despliegue en Dev
+### Despliegue en Dev
 
 ```bash
 terraform workspace new dev
@@ -250,7 +250,7 @@ instance_type = "t3.micro"
 is_prod       = false
 ```
 
-### 1.4 Despliegue en Prod
+### Despliegue en Prod
 
 ```bash
 terraform workspace new prod
@@ -278,7 +278,7 @@ aws ec2 describe-vpcs --filters "Name=tag:ManagedBy,Values=terraform" \
   --output table
 ```
 
-### 1.5 Listado y navegación de workspaces
+### Listado y navegación de workspaces
 
 ```bash
 terraform workspace list
@@ -293,7 +293,7 @@ terraform workspace select dev
 # Switched to workspace "dev".
 ```
 
-### 1.6 Demostración del bloque `check` (advertencia)
+### Demostración del bloque `check` (advertencia)
 
 El bloque `check` detecta inconsistencias informativas. Pruébalo pasando `is_prod=false` en el workspace `prod`:
 
@@ -318,7 +318,7 @@ Terraform muestra el plan completo **y al final la advertencia**:
 
 El plan **continúa y puede aplicarse**. El `check` es informativo, no bloqueante.
 
-### 1.7 Demostración del `precondition` (aborta el plan)
+### Demostración del `precondition` (aborta el plan)
 
 El `precondition` protege el caso peligroso: `is_prod=true` fuera del workspace `prod`. Pruébalo en el workspace `dev`:
 

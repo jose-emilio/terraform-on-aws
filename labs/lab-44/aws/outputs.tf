@@ -70,7 +70,7 @@ output "deploy_commands" {
   value       = <<-EOT
 
     # ── Paso 1: Desplegar v1 (despliegue inicial) ────────────────────────────
-    cd Labs/Lab44/app/v1
+    cd labs/lab-44/app/v1
     zip -r /tmp/app-v1.zip .
     aws s3 cp /tmp/app-v1.zip \
       s3://${aws_s3_bucket.artifacts.bucket}/releases/v1.zip \
@@ -88,7 +88,7 @@ output "deploy_commands" {
     curl http://${aws_lb.main.dns_name}/
 
     # ── Paso 3: Desplegar v2 (rolling IN_PLACE) ──────────────────────────────
-    cd Labs/Lab44/app/v2
+    cd labs/lab-44/app/v2
     zip -r /tmp/app-v2.zip .
     aws s3 cp /tmp/app-v2.zip \
       s3://${aws_s3_bucket.artifacts.bucket}/releases/v2.zip \

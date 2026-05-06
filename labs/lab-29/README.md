@@ -183,7 +183,7 @@ Sin el Circuit Breaker, un despliegue con un contenedor defectuoso (imagen incor
 ## Estructura del proyecto
 
 ```
-lab29/
+lab-29/
 ├── aws/
 │   ├── aws.s3.tfbackend   # Parámetros del backend S3 (sin bucket)
 │   ├── providers.tf       # Backend S3, Terraform >= 1.10, provider AWS

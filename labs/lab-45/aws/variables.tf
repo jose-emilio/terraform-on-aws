@@ -23,13 +23,13 @@ variable "approval_email" {
 variable "terraform_version" {
   type        = string
   description = "Version de Terraform que los proyectos CodeBuild descargan e instalan."
-  default     = "1.14.8"
+  default     = "1.15.2"
 }
 
 variable "tflint_version" {
   type        = string
   description = "Version de TFLint que los proyectos CodeBuild descargan e instalan."
-  default     = "0.61.0"
+  default     = "0.62.0"
 }
 
 variable "checkov_version" {

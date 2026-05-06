@@ -1,4 +1,4 @@
-# Laboratorio 8: Refactorización Declarativa y Adopción de Infraestructura
+# Laboratorio 8 — Refactorización Declarativa y Adopción de Infraestructura
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -22,8 +22,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.7 instalado
-- Laboratorio 1 completado (entorno configurado)
+- **Terraform >= 1.10** instalado
+- Laboratorio 01 completado (entorno configurado)
 - LocalStack en ejecución (para la sección de LocalStack)
 
 ---
@@ -113,10 +113,10 @@ El comando clásico `terraform state rm <addr>` elimina el recurso del estado si
 ## Estructura del proyecto
 
 ```
-lab08/
+lab-08/
 ├── aws/
 │   ├── aws.s3.tfbackend  # Parametros del backend S3 (sin bucket)
-│   ├── providers.tf      # Requiere Terraform >= 1.7, backend S3
+│   ├── providers.tf      # Requiere Terraform >= 1.10, backend S3
 │   ├── variables.tf      # Nombre del bucket a importar
 │   ├── main.tf           # Evoluciona en cada fase del laboratorio
 │   └── outputs.tf
@@ -129,9 +129,9 @@ lab08/
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`aws/providers.tf`**
 
@@ -187,7 +187,7 @@ import {
 
 El archivo `main.tf` entregado contiene únicamente el bloque `import {}` como punto de partida. En cada fase del laboratorio el alumno edita este archivo según las instrucciones. El archivo `outputs.tf` se entrega con los outputs comentados; se activan en la Fase 1.
 
-### 1.2 Fase 1 — Adopción con `import {}`
+### Fase 1 — Adopción con `import {}`
 
 **Paso 1** — Inicializa el directorio de trabajo:
 
@@ -278,7 +278,7 @@ aws s3 ls | grep $TF_VAR_bucket_name
 
 **Paso 7** — Tras el apply, elimina el bloque `import {}` de `main.tf`. Ya cumplió su función: el recurso está en el estado y el bloque es de un solo uso, equivalente a `moved {}` y `removed {}`. Un nuevo `terraform plan` debe seguir mostrando `No changes`.
 
-### 1.3 Fase 2 — Refactorización con `moved {}`
+### Fase 2 — Refactorización con `moved {}`
 
 El nombre `app` es demasiado genérico. Lo renombraremos a `application` para seguir la convención de nomenclatura del equipo. Si simplemente cambiáramos el nombre en el código sin el bloque `moved {}`, Terraform interpretaría que el recurso `aws_s3_bucket.app` fue eliminado y que hay que crear `aws_s3_bucket.application`: destruiría el bucket existente y crearía uno nuevo.
 
@@ -343,7 +343,7 @@ terraform state list                          # muestra aws_s3_bucket.applicatio
 aws s3 ls | grep $TF_VAR_bucket_name          # el bucket sigue existiendo
 ```
 
-### 1.4 Fase 3 — Remoción con `removed {}`
+### Fase 3 — Remoción con `removed {}`
 
 El equipo de plataforma tomará el control del bucket desde otro proyecto Terraform. Queremos que este proyecto deje de gestionarlo sin eliminarlo de AWS.
 
@@ -416,7 +416,7 @@ aws s3 ls | grep $TF_VAR_bucket_name
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 Como el bucket fue retirado del estado de Terraform con `removed {}`, `terraform destroy` no puede eliminarlo. Hay que borrarlo manualmente:
 
@@ -426,7 +426,7 @@ aws s3 rb s3://$TF_VAR_bucket_name --force
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 
@@ -434,7 +434,7 @@ Los bloques `import {}`, `moved {}` y `removed {}` operan sobre el estado local 
 
 ---
 
-## 4. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

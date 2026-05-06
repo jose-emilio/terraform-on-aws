@@ -33,7 +33,7 @@ usar SSE-KMS").
 - Terraform ≥ 1.10 instalado (requerido para lock nativo de S3).
 - AWS CLI configurado con perfil `default`.
 - Repositorio GitHub propio donde puedas crear workflows.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (el lock nativo de S3 usa un fichero `.tflock` en el mismo bucket, sin necesidad de DynamoDB).
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -141,7 +141,7 @@ detecta cada tipo de incumplimiento de forma aislada.
 ## Estructura del proyecto
 
 ```
-lab15/
+lab-15/
 ├── aws/
 │   ├── providers.tf          # Terraform + provider AWS
 │   ├── variables.tf          # region, project, github_org, github_repo, allowed_ref

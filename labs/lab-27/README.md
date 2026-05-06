@@ -23,7 +23,7 @@ Al finalizar este laboratorio serás capaz de:
 ## Requisitos Previos
 
 - Laboratorio 01 completado (entorno configurado)
-- Laboratorio 02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` (usado como backend de tfstate)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - **Terraform >= 1.10** (necesario para `use_lockfile` en el backend S3)
 ---
 
@@ -124,7 +124,7 @@ El resultado (`data.aws_iam_policy_document.ec2_assume_role.json`) se pasa direc
 ## Estructura del proyecto
 
 ```
-lab27/
+lab-27/
 ├── user_data.tftpl      # Plantilla de bash compartida por ambos entornos
 ├── aws/
 │   ├── aws.s3.tfbackend # Parámetros del backend S3 (sin bucket)

@@ -39,10 +39,10 @@ y controlar exactamente *cuando* se vuelven a ejecutar mediante `triggers_replac
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado (`terraform_data`: 1.4, `postcondition`/`check`: 1.5).
+- **Terraform >= 1.10** instalado (`terraform_data`: 1.4, `postcondition`/`check`: 1.5, `use_lockfile` en backend S3: 1.10).
 - AWS CLI configurado con perfil `default`.
 - Par de claves SSH generado localmente (ver Paso 0 del despliegue).
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado.
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -222,9 +222,9 @@ pero el servidor fallo mas tarde, Terraform no lo detecta. Por eso:
 ## Estructura del proyecto
 
 ```
-lab37/
+lab-37/
 ├── aws/
-│   ├── providers.tf          # Terraform >= 1.4 + provider AWS ~> 6.0
+│   ├── providers.tf          # Terraform >= 1.10 + provider AWS ~> 6.0
 │   ├── variables.tf          # region, project, app_version, ssh_*, instance_type
 │   ├── main.tf               # AMI, key pair, SG, IAM, EC2, terraform_data
 │   ├── outputs.tf            # IPs, URLs, version desplegada, comando SSH
@@ -263,7 +263,7 @@ IP elimina la exposicion a scanners automaticos de Internet.
 ### Paso 2 — Inicializar y desplegar
 
 ```bash
-cd labs/lab37/aws
+cd labs/lab-37/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -519,7 +519,7 @@ Añade `.last_version` al `.gitignore` del repositorio para no versionar el
 fichero de estado local:
 
 ```bash
-echo "labs/lab37/aws/.last_version" >> .gitignore
+echo "labs/lab-37/aws/.last_version" >> .gitignore
 ```
 
 **Por que funciona — flujo entre ejecuciones**:
@@ -580,7 +580,7 @@ en el siguiente plan.
 
 ```hcl
 terraform {
-  required_version = ">= 1.4"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -679,7 +679,7 @@ terraform apply -var="ssh_allowed_cidr=${MY_IP}/32" -var="app_version=2.0.0"
 ## Limpieza
 
 ```bash
-cd labs/lab37/aws
+cd labs/lab-37/aws
 
 terraform destroy \
   -var="ssh_allowed_cidr=${MY_IP}/32"

@@ -34,9 +34,9 @@ automáticamente el pipeline si el número de destrucciones supera un umbral con
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.9 instalado
+- **Terraform >= 1.10** instalado
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -237,7 +237,7 @@ la autorización granular se delega en IAM.
 ## Estructura
 
 ```
-lab45/
+lab-45/
 ├── aws/                         Infraestructura del pipeline
 │   ├── providers.tf             Provider AWS + archive, backend S3
 │   ├── variables.tf             Variables del módulo
@@ -271,7 +271,7 @@ lab45/
 ## Paso 1 — Desplegar la infraestructura del pipeline
 
 ```bash
-cd labs/lab45/aws
+cd labs/lab-45/aws
 ```
 
 Inicializa y despliega:
@@ -319,7 +319,7 @@ git config --global credential.helper '!aws codecommit credential-helper $@'
 git config --global credential.UseHttpPath true
 ```
 
-Desde el directorio `labs/lab45/aws/`, obtén la URL y clona el repositorio en `/tmp`:
+Desde el directorio `labs/lab-45/aws/`, obtén la URL y clona el repositorio en `/tmp`:
 
 ```bash
 REPO_URL=$(terraform output -raw repository_clone_url_https)
@@ -462,7 +462,7 @@ que el aprobador debe revisar antes de dar luz verde. Este enlace es la `Externa
 configurada en la acción de aprobación de CodePipeline.
 
 **Antes de aprobar**, descarga y revisa `tfplan.txt` del bucket de artefactos.
-Ejecuta desde `labs/lab45/aws/`:
+Ejecuta desde `labs/lab-45/aws/`:
 
 ```bash
 cd $REPO_SRC/../aws
@@ -523,7 +523,7 @@ Los smoke tests verifican:
 
 Comprueba que todos los recursos del target han sido desplegados correctamente:
 
-Ejecuta desde `labs/lab45/aws/`:
+Ejecuta desde `labs/lab-45/aws/`:
 
 ```bash
 cd $REPO_SRC/../aws
@@ -987,7 +987,7 @@ resource "aws_sns_topic_policy" "pipeline_alerts" {
 Una vez creadas las piezas 1–5 en [aws/eventbridge.tf](aws/eventbridge.tf), aplica los cambios:
 
 ```bash
-cd labs/lab45/aws
+cd labs/lab-45/aws
 terraform apply -var="approval_email=tu@email.com"
 ```
 

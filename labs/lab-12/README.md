@@ -95,7 +95,7 @@ El resultado incluye `AccessKeyId`, `SecretAccessKey`, `Token` y `Expiration`. E
 ## Estructura del proyecto
 
 ```
-lab12/
+lab-12/
 ├── README.md
 ├── user_data.sh           # Script de verificación (ejecutado al arrancar EC2)
 ├── aws/

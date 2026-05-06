@@ -1,5 +1,5 @@
 """
-Procesador de órdenes premium — Lab31.
+Procesador de órdenes premium — Lab30.
 
 Flujos soportados:
   1. SQS Event Source Mapping — event["Records"] presente.

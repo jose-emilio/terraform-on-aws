@@ -1,4 +1,4 @@
-# Laboratorio 9: LocalStack: Gestión de Entornos con Workspaces
+# Laboratorio 9 — LocalStack: Gestión de Entornos con Workspaces
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
@@ -18,8 +18,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 1 completado (entorno configurado)
+- **Terraform >= 1.10** instalado
+- Laboratorio 01 completado (entorno configurado)
 - LocalStack en ejecución (para la sección de LocalStack)
 
 ---
@@ -113,7 +113,7 @@ resource "aws_vpc" "main" {
 ```
 lab09/
 ├── aws/
-│   ├── providers.tf      # Requiere Terraform >= 1.5
+│   ├── providers.tf      # Requiere Terraform >= 1.10
 │   ├── variables.tf      # region, is_prod
 │   ├── main.tf           # locals, check {}, aws_vpc con precondition, aws_subnet
 │   ├── outputs.tf        # workspace, vpc_id, cidr, instance_type, is_prod
@@ -130,9 +130,9 @@ lab09/
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Diferencias en `localstack/providers.tf`
+### Diferencias en `localstack/providers.tf`
 
 El provider apunta al endpoint EC2 de LocalStack. El comportamiento de workspaces, `check {}` y `precondition` es idéntico al de AWS real ya que operan sobre el estado local y la lógica de Terraform, no sobre la API de AWS.
 
@@ -151,7 +151,7 @@ provider "aws" {
 }
 ```
 
-### 1.2 Despliegue
+### Despliegue
 
 Asegúrate de que LocalStack esté en ejecución:
 
@@ -173,18 +173,18 @@ terraform workspace new prod
 terraform apply -var-file=prod.tfvars
 ```
 
-### 1.3 Verificación
+### Verificación
 
 ```bash
 aws --endpoint-url=http://localhost.localstack.cloud:4566 ec2 describe-vpcs \
   --query 'Vpcs[].{ID:VpcId,CIDR:CidrBlock}' --output table
 ```
 
-### 1.4 Demostración del `check` y `precondition` en LocalStack
+### Demostración del `check` y `precondition` en LocalStack
 
 Los comportamientos son idénticos a AWS real — las validaciones de `check` y `precondition` no realizan llamadas a la API. Repite los mismos comandos de las secciones 1.6 y 1.7 desde el directorio `localstack/`.
 
-### 1.5 Destruir los Recursos
+### Destruir los Recursos
 
 ```bash
 terraform workspace select prod
@@ -200,7 +200,7 @@ terraform workspace delete prod
 
 ---
 
-## 2. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -212,7 +212,7 @@ terraform workspace delete prod
 
 ---
 
-## 3. Buenas Prácticas
+## Buenas Prácticas
 
 - **Usa workspaces para entornos del mismo proyecto, no como sustituto de repositorios separados.** Los workspaces comparten el mismo código; si los entornos divergen significativamente en infraestructura, considera directorios separados o módulos.
 - **Usa archivos `.tfvars` por workspace.** `dev.tfvars` y `prod.tfvars` en el repositorio hacen explícita la configuración de cada entorno y evitan pasar flags en la línea de comandos.
@@ -223,7 +223,7 @@ terraform workspace delete prod
 
 ---
 
-## 4. Reto: Añadir un Tercer Entorno
+## Reto: Añadir un Tercer Entorno
 
 El laboratorio despliega dos entornos (`dev` y `prod`). Tu tarea es añadir un tercero llamado `staging` usando exactamente los mismos mecanismos que ya has visto.
 
@@ -250,7 +250,7 @@ El laboratorio despliega dos entornos (`dev` y `prod`). Tu tarea es añadir un t
 
 ---
 
-## 5. Solución del Reto
+## Solución del Reto
 
 > Intenta resolver el reto antes de leer esta sección.
 
@@ -318,7 +318,7 @@ terraform workspace delete staging
 
 ---
 
-## 6. Recursos Adicionales
+## Recursos Adicionales
 
 - [Workspaces - Documentación de Terraform](https://developer.hashicorp.com/terraform/language/state/workspaces)
 - [Bloque `check` - Documentación de Terraform](https://developer.hashicorp.com/terraform/language/validate)

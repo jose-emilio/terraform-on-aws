@@ -26,9 +26,9 @@ localstack status   # LocalStack debe estar en ejecución
 
 ---
 
-## 1. Capa de Red
+## Capa de Red
 
-### 1.1 Código (`localstack/network/`)
+### Código (`localstack/network/`)
 
 **`providers.tf`** — backend local, provider apuntando a LocalStack EC2:
 
@@ -58,7 +58,7 @@ provider "aws" {
 
 **`outputs.tf`** — idéntico al de `aws/network/`: exporta `vpc_id`, `subnet_id` y `vpc_cidr`.
 
-### 1.2 Despliegue
+### Despliegue
 
 ```bash
 # Desde lab10/localstack/network/
@@ -91,9 +91,9 @@ aws --endpoint-url=http://localhost.localstack.cloud:4566 ec2 describe-vpcs \
 
 ---
 
-## 2. Capa de Cómputo
+## Capa de Cómputo
 
-### 2.1 Diferencia clave: `terraform_remote_state` con backend local
+### Diferencia clave: `terraform_remote_state` con backend local
 
 En la versión LocalStack, el data source usa `backend = "local"` en lugar de `backend = "s3"`:
 
@@ -109,7 +109,7 @@ data "terraform_remote_state" "network" {
 
 La variable `network_state_path` apunta al archivo de estado de la capa de red usando una ruta relativa. No se necesita ninguna variable de bucket.
 
-### 2.2 Despliegue
+### Despliegue
 
 ```bash
 # Desde lab10/localstack/compute/
@@ -136,9 +136,9 @@ Nota que `vpc_id` y `subnet_id` coinciden exactamente con los outputs de la capa
 
 ---
 
-## 3. Verificación del Aislamiento (Blast Radius)
+## Verificación del Aislamiento (Blast Radius)
 
-### 3.1 Destruir la capa de cómputo
+### Destruir la capa de cómputo
 
 ```bash
 # Desde lab10/localstack/compute/
@@ -147,7 +147,7 @@ terraform destroy
 
 Terraform destruye únicamente el security group. La VPC sigue intacta en LocalStack.
 
-### 3.2 Confirmar que la red no fue afectada
+### Confirmar que la red no fue afectada
 
 ```bash
 # Desde lab10/localstack/network/
@@ -158,7 +158,7 @@ terraform state list
 
 El estado de la capa de red permanece intacto. La VPC nunca fue tocada por la destrucción de la capa de cómputo.
 
-### 3.3 Verificar en LocalStack
+### Verificar en LocalStack
 
 ```bash
 aws --endpoint-url=http://localhost.localstack.cloud:4566 ec2 describe-vpcs \
@@ -168,7 +168,7 @@ aws --endpoint-url=http://localhost.localstack.cloud:4566 ec2 describe-vpcs \
 
 La VPC sigue apareciendo. El blast radius de la destrucción de cómputo quedó contenido.
 
-### 3.4 Redesplegar la capa de cómputo
+### Redesplegar la capa de cómputo
 
 ```bash
 # Desde lab10/localstack/compute/
@@ -179,7 +179,7 @@ El security group se crea de nuevo usando el mismo `vpc_id` que ya estaba en el 
 
 ---
 
-## 4. Destruir Todos los Recursos
+## Destruir Todos los Recursos
 
 Destruye en orden inverso: primero cómputo (que depende de red), luego red.
 

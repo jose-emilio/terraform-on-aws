@@ -1,4 +1,4 @@
-# Laboratorio 30: Procesamiento Asíncrono y Resiliencia de Eventos
+# Laboratorio 30 — Procesamiento Asíncrono y Resiliencia de Eventos
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,8 +23,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre Lambda, SQS, IAM y CloudWatch Logs
 - LocalStack en ejecución (para la sección de LocalStack)
 
@@ -154,10 +154,10 @@ resource "aws_iam_role_policy" "sqs" {
 ## Estructura del proyecto
 
 ```
-lab30/
+lab-30/
 ├── aws/
 │   ├── aws.s3.tfbackend      # Parámetros del backend S3 (sin bucket)
-│   ├── providers.tf          # Backend S3, Terraform >= 1.5, providers AWS y archive
+│   ├── providers.tf          # Backend S3, Terraform >= 1.10, providers AWS y archive
 │   ├── variables.tf          # region, project, runtime, app_env
 │   ├── main.tf               # archive_file, SQS (x4), IAM, CloudWatch, Lambda,
 │   │                         # Lambda Destinations, Event Source Mapping
@@ -181,7 +181,7 @@ lab30/
 
 ## Despliegue en AWS Real
 
-### 1.1 Arquitectura
+### Arquitectura
 
 ```
 Producer (aws sqs send-message)
@@ -224,7 +224,7 @@ Terraform local:
   source_code_hash               → hash del ZIP  → detecta cambios → redeploy
 ```
 
-### 1.2 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`** — Fragmentos clave:
 
@@ -279,7 +279,7 @@ resource "aws_lambda_function_event_invoke_config" "processor" {
 }
 ```
 
-### 1.3 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 export BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
@@ -311,7 +311,7 @@ send_standard_example         = "aws sqs send-message --queue-url ... --message-
 success_queue_url             = "https://sqs.us-east-1.amazonaws.com/123456789/lab30-success"
 ```
 
-### 1.4 Verificar el sistema
+### Verificar el sistema
 
 **Paso 1** — Envía una orden premium y observa cómo Lambda la procesa:
 
@@ -333,7 +333,7 @@ aws logs tail "$LOG_GROUP" --follow --format short
 Deberías ver algo como:
 ```
 Procesando orden order_id=ORD-001 order_type=premium amount=299.99
-[SQS] Batch completado: 1 órdenes procesadas — env=production project=lab26
+[SQS] Batch completado: 1 órdenes procesadas — env=production project=lab30
 ```
 
 **Paso 2** — Verifica que filter_criteria descarta órdenes estándar:
@@ -415,7 +415,7 @@ El mensaje en `success_queue` tendrá la forma:
 }
 ```
 
-### 1.5 Forzar redeploy con source_code_hash
+### Forzar redeploy con source_code_hash
 
 Modifica el handler y verifica que Terraform detecta el cambio:
 
@@ -443,21 +443,20 @@ aws logs tail "$LOG_GROUP" --format short
 ## Verificación final
 
 ```bash
-# Verificar las 4 colas SQS creadas (main, premium, dlq, destinations)
+# Verificar las 4 colas SQS creadas (orders, dlq, success, failure)
 aws sqs list-queues \
   --query 'QueueUrls[?contains(@,`lab30`)]' --output table
 
-# Enviar un mensaje de prueba a la cola principal
-QUEUE_URL=$(terraform output -raw main_queue_url)
+# Enviar un mensaje de prueba a la cola de órdenes
+ORDERS_URL=$(terraform output -raw orders_queue_url)
 aws sqs send-message \
-  --queue-url "$QUEUE_URL" \
-  --message-body '{"order_type":"premium","order_id":"test-001"}'
+  --queue-url "$ORDERS_URL" \
+  --message-body '{"order_type":"premium","order_id":"test-001","amount":99.99}'
 
 # Verificar que Lambda procesó el mensaje (ver logs)
-aws logs tail "/aws/lambda/$(terraform output -raw lambda_function_name)" \
-  --since 5m
+aws logs tail "$(terraform output -raw log_group)" --since 5m
 
-# Comprobar que la DLQ está vacia (no hay mensajes fallidos)
+# Comprobar que la DLQ está vacía (no hay mensajes fallidos)
 DLQ_URL=$(terraform output -raw dlq_url)
 aws sqs get-queue-attributes \
   --queue-url "$DLQ_URL" \
@@ -689,7 +688,7 @@ Salida esperada:
 [SQS] Procesado: {"order_id": "ORD-OK-3", "status": "processed", ...}
 [SQS] Procesado: {"order_id": "ORD-OK-4", "status": "processed", ...}
 [SQS] Fallo en messageId=msg-bad-1: order_id=ORD-BAD-1: amount 99999.99 supera el límite 9999.99
-[SQS] Lote finalizado: 4 ok, 1 fallidos — env=production project=lab26
+[SQS] Lote finalizado: 4 ok, 1 fallidos — env=production project=lab30
 ```
 
 **Paso 5** — Para contrastar, prueba cómo se comportaría el handler **sin** `report_batch_item_failures` — es decir, el handler original que lanza la excepción directamente en lugar de acumular fallos:
@@ -709,7 +708,7 @@ aws lambda invoke \
   /tmp/response_old.json && cat /tmp/response_old.json | python3 -m json.tool
 ```
 
-Con el handler del Reto 2, la respuesta sigue siendo `{"batchItemFailures": ["msg-bad-1"]}` — `msg-ok-1` ya se procesó antes del fallo y `msg-ok-2` no llega a procesarse pero tampoco se reporta como fallido, por lo que SQS lo eliminará junto con `msg-ok-1`. Solo `msg-bad-1` se reencola.
+Con el handler del Reto 2, la respuesta es `{"batchItemFailures":[{"itemIdentifier":"msg-bad-1"}]}` — el `try/except` dentro del bucle hace que `msg-ok-1` y `msg-ok-2` se procesen correctamente (se ven en los logs como "[SQS] Procesado: …") y solo `msg-bad-1` queda registrado como fallo. SQS eliminará los dos mensajes válidos y reencolará únicamente el inválido.
 
 </details>
 

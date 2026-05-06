@@ -66,10 +66,9 @@ permiten gestionar esa complejidad de forma declarativa y robusta:
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3).
 - AWS CLI configurado con perfil `default`.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado
-  habilitado.
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -390,9 +389,9 @@ completo) porque ocultaria cualquier cambio en las tags que si gestionas.
 ## Estructura del proyecto
 
 ```
-lab38/
+lab-38/
 ├── aws/
-│   ├── providers.tf        # Terraform >= 1.5 + default_tags corporativas
+│   ├── providers.tf        # Terraform >= 1.10 + default_tags corporativas
 │   ├── variables.tf        # vpc_config (mapa anidado), monitoring_config (optional)
 │   ├── locals.tf           # Flatten Pattern + merge() + try() + can()
 │   ├── main.tf             # VPCs, subredes, route tables, instancia, check {}
@@ -408,7 +407,7 @@ lab38/
 ### Paso 1 — Inicializar y desplegar
 
 ```bash
-cd labs/lab38/aws
+cd labs/lab-38/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -431,7 +430,7 @@ El apply crea **9 recursos**:
 
 ---
 
-## Paso 2 — Inspeccionar el resultado del Flatten Pattern
+### Paso 2 — Inspeccionar el resultado del Flatten Pattern
 
 ```bash
 # Ver las claves compuestas generadas por el flatten
@@ -455,7 +454,7 @@ terraform output subnets_by_vpc
 
 ---
 
-## Paso 3 — Inspeccionar las etiquetas fusionadas con `merge()`
+### Paso 3 — Inspeccionar las etiquetas fusionadas con `merge()`
 
 ```bash
 # Ver las etiquetas de una subred de muestra
@@ -481,7 +480,7 @@ aws ec2 describe-subnets \
 
 ---
 
-## Paso 4 — Verificar la postcondition: IP publica asignada
+### Paso 4 — Verificar la postcondition: IP publica asignada
 
 ```bash
 # Ver la IP publica verificada por la postcondition
@@ -498,7 +497,7 @@ aws ec2 describe-instances \
 
 ---
 
-## Paso 5 — Disparar la precondition con una AZ no autorizada
+### Paso 5 — Disparar la precondition con una AZ no autorizada
 
 Pasa un valor de `monitoring_config` con una AZ fuera de la lista autorizada
 directamente en la linea de comandos, sin modificar `variables.tf`:
@@ -528,7 +527,7 @@ continuar.
 
 ---
 
-## Paso 6 — Activar la alarma de CPU con `optional()` y verificar `can()`
+### Paso 6 — Activar la alarma de CPU con `optional()` y verificar `can()`
 
 Demuestra el atributo `optional(string, null)`: añade un email para activar
 el SNS topic y la alarma de CloudWatch sin modificar ninguna otra parte del
@@ -562,7 +561,7 @@ terraform output monitoring_alarm_enabled
 
 ---
 
-## Paso 7 — Verificar `try()` con los codigos de facturacion
+### Paso 7 — Verificar `try()` con los codigos de facturacion
 
 `try()` extrae el `billing_code` de cada subred de forma defensiva. Inspecciona
 el output para confirmar que todos tienen valor (en este lab siempre lo tienen,
@@ -609,7 +608,7 @@ can("valor-real")
 
 ---
 
-## Paso 8 — Observar el bloque `check {}` en accion
+### Paso 8 — Observar el bloque `check {}` en accion
 
 El bloque `check "public_subnet_has_internet_route"` se evalua al final de
 cada apply. En condiciones normales debería pasar:
@@ -680,7 +679,7 @@ terraform apply --auto-approve
 
 ---
 
-## Paso 9 — Simular drift de tags con `ignore_changes`
+### Paso 9 — Simular drift de tags con `ignore_changes`
 
 `ignore_changes` protege los tags que herramientas externas puedan añadir.
 Simula que AWS Organizations añade un tag `CreatedBy` a uno de los VPCs:
@@ -1191,7 +1190,7 @@ terraform output monitoring_alarm_enabled
 ## Verificación final
 
 ```bash
-cd labs/lab38/aws
+cd labs/lab-38/aws
 
 # Verificar que la instancia EC2 está running
 aws ec2 describe-instances \
@@ -1217,7 +1216,7 @@ echo "Exit code: $? (0=no changes, 1=error, 2=changes pending)"
 ## Limpieza
 
 ```bash
-cd labs/lab38/aws
+cd labs/lab-38/aws
 
 terraform destroy
 ```

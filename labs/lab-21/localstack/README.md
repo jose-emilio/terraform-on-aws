@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-21/localstack
@@ -38,9 +38,9 @@ terraform output
 # db_fqdn         = "db.app.internal"
 ```
 
-## 2. Verificacion
+## Verificacion
 
-### 2.1 Zona Hospedada Privada
+### Zona Hospedada Privada
 
 ```bash
 ZONE_ID=$(terraform output -raw zone_id)
@@ -51,7 +51,7 @@ awslocal route53 get-hosted-zone \
   --output json
 ```
 
-### 2.2 Registros DNS
+### Registros DNS
 
 ```bash
 awslocal route53 list-resource-record-sets \
@@ -60,7 +60,7 @@ awslocal route53 list-resource-record-sets \
   --output table
 ```
 
-## 3. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Caracteristica | AWS Real | LocalStack Community |
 |---|---|---|
@@ -71,7 +71,7 @@ awslocal route53 list-resource-record-sets \
 
 Para verificar la resolución DNS real con `nslookup`/`dig`, usa la versión `aws/`.
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

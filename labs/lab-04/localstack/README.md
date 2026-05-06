@@ -17,7 +17,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Diferencias con AWS
+## Diferencias con AWS
 
 LocalStack soporta IAM y EC2 (incluyendo launch templates), pero el data source `aws_ami` no devuelve resultados reales ya que no hay un catálogo de AMIs. Por eso, en el entorno local se sustituye por una AMI ficticia hardcodeada y se omite el output correspondiente.
 
@@ -59,7 +59,7 @@ resource "aws_launch_template" "app" {
 }
 ```
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab04/localstack
@@ -70,7 +70,7 @@ terraform plan
 terraform apply
 ```
 
-## 3. Verificación
+## Verificación
 
 ```bash
 aws --profile localstack iam list-users
@@ -78,7 +78,7 @@ aws --profile localstack ec2 describe-launch-templates
 aws --profile localstack sts get-caller-identity
 ```
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

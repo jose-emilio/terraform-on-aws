@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-17/localstack
@@ -41,9 +41,9 @@ terraform output
 # private_route_table_ids = { "private-1" = "rtb-xxx", ... }
 ```
 
-## 2. Verificación
+## Verificación
 
-### 2.1 Internet Gateway
+### Internet Gateway
 
 ```bash
 awslocal ec2 describe-internet-gateways \
@@ -52,7 +52,7 @@ awslocal ec2 describe-internet-gateways \
   --output table
 ```
 
-### 2.2 NAT Gateway
+### NAT Gateway
 
 ```bash
 awslocal ec2 describe-nat-gateways \
@@ -61,7 +61,7 @@ awslocal ec2 describe-nat-gateways \
   --output table
 ```
 
-### 2.3 Tablas de rutas
+### Tablas de rutas
 
 ```bash
 # Tabla pública: 0.0.0.0/0 → IGW
@@ -77,7 +77,7 @@ awslocal ec2 describe-route-tables \
   --output json
 ```
 
-### 2.4 VPC Endpoint para S3
+### VPC Endpoint para S3
 
 ```bash
 awslocal ec2 describe-vpc-endpoints \
@@ -86,7 +86,7 @@ awslocal ec2 describe-vpc-endpoints \
   --output table
 ```
 
-## 3. Instancia de test
+## Instancia de test
 
 Igual que en la versión aws/, este lab despliega una `aws_instance.test` en
 `private-1` con un Security Group que solo permite tráfico saliente (`ingress = []`
@@ -101,7 +101,7 @@ awslocal ec2 describe-instances \
   --output table
 ```
 
-## 4. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Característica | AWS Real | LocalStack |
 |---|---|---|
@@ -113,7 +113,7 @@ awslocal ec2 describe-instances \
 
 Para probar la Instancia NAT, usa la versión `aws/` con `-var="use_nat_instance=true"`.
 
-## 5. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

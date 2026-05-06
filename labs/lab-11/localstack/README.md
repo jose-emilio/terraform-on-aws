@@ -18,10 +18,10 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue inicial
+## Despliegue inicial
 
 ```bash
-cd labs/lab11/localstack
+cd labs/lab-11/localstack
 
 terraform init -backend-config=localstack.s3.tfbackend
 
@@ -36,11 +36,11 @@ terraform output
 # security_group_id = "sg-xxxxxxxxx"
 ```
 
-## 2. Fase 1 — Simulación de Drift con awslocal
+## Fase 1 — Simulación de Drift con awslocal
 
 En LocalStack no hay consola web, por lo que el drift se simula directamente con la CLI.
 
-### 2.1 Modificar un tag (cambio legítimo)
+### Modificar un tag (cambio legítimo)
 
 ```bash
 SG_ID=$(terraform output -raw security_group_id)
@@ -50,7 +50,7 @@ awslocal ec2 create-tags \
   --tags Key=Environment,Value=production
 ```
 
-### 2.2 Abrir un puerto (cambio accidental)
+### Abrir un puerto (cambio accidental)
 
 ```bash
 awslocal ec2 authorize-security-group-ingress \
@@ -60,7 +60,7 @@ awslocal ec2 authorize-security-group-ingress \
   --cidr 0.0.0.0/0
 ```
 
-### 2.3 Detectar el drift
+### Detectar el drift
 
 ```bash
 terraform plan
@@ -68,7 +68,7 @@ terraform plan
 
 El plan muestra **únicamente el cambio del tag**. La regla de ingreso del puerto 22 no aparece porque `aws_security_group` sin bloques `ingress` en el código no gestiona las reglas de ingreso.
 
-## 3. Fase 2 — Reconciliación
+## Fase 2 — Reconciliación
 
 ### Opción A: Terraform gana (revertir el tag al estado deseado)
 
@@ -110,9 +110,9 @@ terraform apply
 
 La regla del puerto 22 sigue en AWS. Para eliminarla usa CLI (ver Opción A).
 
-## 4. Fase 3 — Disaster Recovery desde S3
+## Fase 3 — Disaster Recovery desde S3
 
-### 4.1 Listar versiones del estado
+### Listar versiones del estado
 
 ```bash
 awslocal s3api list-object-versions \
@@ -122,7 +122,7 @@ awslocal s3api list-object-versions \
   --output table
 ```
 
-### 4.2 Simular corrupción del estado
+### Simular corrupción del estado
 
 ```bash
 # Guardar VersionId de la versión sana
@@ -148,7 +148,7 @@ terraform plan
 # ╵
 ```
 
-### 4.3 Restaurar el estado sano
+### Restaurar el estado sano
 
 ```bash
 awslocal s3api copy-object \
@@ -164,7 +164,7 @@ terraform plan
 # No changes. Infrastructure matches configuration.
 ```
 
-## 5. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

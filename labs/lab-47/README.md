@@ -39,9 +39,9 @@ La arquitectura tiene cuatro capas:
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.5 instalado
+- **Terraform >= 1.10** instalado
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -273,7 +273,7 @@ Para 1 TB de logs de auditoría retenidos 2 años:
 ## Estructura
 
 ```
-lab47/
+lab-47/
 └── aws/                          Infraestructura del laboratorio
     ├── providers.tf              Provider AWS ~6.0, backend S3
     ├── variables.tf              Variables: región, proyecto, VPC CIDR, instancia, retención, Firehose
@@ -292,7 +292,7 @@ lab47/
 ## Paso 1 — Desplegar la infraestructura
 
 ```bash
-cd labs/lab47/aws
+cd labs/lab-47/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -1657,7 +1657,7 @@ s3://<bucket>/cloudtrail/AWSLogs/<account-id>/CloudTrail-Insight/<region>/
 ## Limpieza
 
 ```bash
-cd labs/lab47/aws
+cd labs/lab-47/aws
 
 terraform destroy
 ```

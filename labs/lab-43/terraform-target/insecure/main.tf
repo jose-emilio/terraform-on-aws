@@ -1,22 +1,21 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# Codigo Terraform INSEGURO — Demostracion del patron Fail Fast
+# Codigo Terraform INSEGURO — Demostracion del patron Collect and Fail
 # ──────────────────────────────────────────────────────────────────────────────
 #
 # Este fichero contiene misconfiguraciones deliberadas para demostrar como
-# el pipeline de validacion las detecta y aborta el build.
+# las herramientas de seguridad del pipeline las detectan en post_build.
 #
 # Problemas que detectaran las herramientas:
 #
-# tfsec (pre_build, paso 4):
-#   aws-s3-block-public-acls       El bucket no tiene public access block
-#   aws-s3-block-public-policy     El bucket no tiene bloqueo de politica publica
-#   aws-s3-ignore-public-acls      El bucket no ignora ACLs publicas
-#   aws-s3-no-public-buckets       El bucket no restringe buckets publicos
-#   aws-s3-enable-bucket-encryption No hay cifrado SSE habilitado
-#   aws-s3-enable-versioning       No hay versionado habilitado
-#   aws-s3-no-public-acl           La ACL del bucket es public-read
+# Trivy (post_build, paso 4):
+#   AVD-AWS-0086  El bucket no tiene public access block (block_public_acls)
+#   AVD-AWS-0087  El bucket no tiene bloqueo de politica publica
+#   AVD-AWS-0088  El bucket no ignora ACLs publicas
+#   AVD-AWS-0089  El bucket no restringe buckets publicos
+#   AVD-AWS-0090  No hay cifrado SSE habilitado
+#   AVD-AWS-0094  La ACL del bucket es public-read (acceso publico explicito)
 #
-# Checkov (pre_build, paso 5):
+# Checkov (post_build, paso 5):
 #   CKV_AWS_18   S3 Bucket sin access logging
 #   CKV_AWS_19   S3 Bucket sin cifrado SSE
 #   CKV_AWS_20   S3 Bucket con ACL publica (public-read)
@@ -25,13 +24,14 @@
 #   CKV2_AWS_62  S3 Bucket sin event notifications
 #
 # Resultado esperado:
-#   La fase pre_build falla en el paso 4 (tfsec) con exit code 1.
-#   CodeBuild registra on-failure: ABORT y el build queda en estado FAILED.
-#   El paso 5 (Checkov) y la fase build NUNCA se ejecutan — Fail Fast.
+#   pre_build (formato + sintaxis + tflint) y build (terraform plan) pasan.
+#   En post_build, Trivy y Checkov detectan hallazgos y registran SECURITY_FAILED=1.
+#   Ambas herramientas se ejecutan completas (patron Collect and Fail) y suben
+#   sus informes JUnit a CodeBuild Reports antes de que el build termine en FAILED.
 # ──────────────────────────────────────────────────────────────────────────────
 
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"

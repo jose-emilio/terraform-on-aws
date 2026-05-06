@@ -59,10 +59,9 @@ cambio a producción tiene al menos dos pares de ojos sobre él.
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3).
 - AWS CLI v2 configurado con perfil `default` y permisos de administrador.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado
-  habilitado (necesario para el backend S3 del estado).
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -73,7 +72,7 @@ export REGION="us-east-1"
 ## Arquitectura
 
 ```
-labs/lab41/aws/
+labs/lab-41/aws/
 ├── providers.tf        ── Backend S3, proveedor AWS
 ├── variables.tf        ── Parámetros: repo, usuarios, ramas protegidas, webhooks
 ├── main.tf             ── CodeCommit repo, bootstrap, SNS Topic, Approval Rule Template
@@ -275,9 +274,9 @@ Ventajas de este patrón sobre usar ARNs de usuario directamente:
 ## Estructura del proyecto
 
 ```
-lab41/
+lab-41/
 ├── aws/
-│   ├── providers.tf        Terraform >= 1.5, AWS ~> 6.0, backend S3
+│   ├── providers.tf        Terraform >= 1.10, AWS ~> 6.0, backend S3
 │   ├── variables.tf        Parámetros: repo_name, developer_usernames,
 │   │                       tech_lead_usernames, protected_branches,
 │   │                       slack_webhook_url, notification_email,
@@ -305,7 +304,7 @@ lab41/
 ## Paso 1 — Desplegar la infraestructura de gobernanza
 
 ```bash
-cd labs/lab41/aws
+cd labs/lab-41/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -408,7 +407,7 @@ resultado exitoso confirma el Allow.
 ### Preparar las credenciales de alice (en tu terminal de administrador)
 
 ```bash
-# Desde el directorio labs/lab41/aws — con tus credenciales de administrador
+# Desde el directorio labs/lab-41/aws — con tus credenciales de administrador
 REPO_NAME=$(terraform output -raw repository_name)
 
 # Crear access key para alice-dev
@@ -718,7 +717,7 @@ lead puede hacer push directo a `main` (algo que el Deny bloquea a alice).
 ### Preparar las credenciales de carlos-lead (en tu terminal de administrador)
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab41/aws
+# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab-41/aws
 
 PR_ID=$(aws codecommit list-pull-requests \
   --repository-name platform-backend \
@@ -898,7 +897,7 @@ Aquí se configura el email, que es el más sencillo de probar.
 
 ### 5a — Configurar los destinos de notificación
 
-Crea o edita el archivo `terraform.tfvars` en `labs/lab41/aws/` con los
+Crea o edita el archivo `terraform.tfvars` en `labs/lab-41/aws/` con los
 destinos que quieras activar. Puedes usar uno o ambos:
 
 ```hcl
@@ -914,7 +913,7 @@ Aplica el cambio — solo se añaden suscripciones SNS, el resto de la
 infraestructura no cambia:
 
 ```bash
-# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab41/aws
+# ⚠️  TERMINAL DE ADMINISTRADOR — directorio labs/lab-41/aws
 terraform apply
 ```
 
@@ -1105,7 +1104,7 @@ aws codecommit list-associated-approval-rule-templates-for-repository \
 
 # Verificar la suscripción SNS activa
 aws sns list-subscriptions-by-topic \
-  --topic-arn $(terraform output -raw notification_topic_arn) \
+  --topic-arn $(terraform output -raw sns_topic_arn) \
   --query 'Subscriptions[*].{Protocol:Protocol,Endpoint:Endpoint}' \
   --output table
 
@@ -1544,7 +1543,7 @@ Terraform no puede eliminar usuarios IAM que tengan access keys activas.
 Hay que borrarlas antes de ejecutar `destroy`.
 
 ```bash
-cd labs/lab41/aws
+cd labs/lab-41/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"

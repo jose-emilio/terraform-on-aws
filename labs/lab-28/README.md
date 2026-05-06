@@ -115,7 +115,7 @@ El campo `triggers = ["launch_template"]` le indica a Terraform que debe iniciar
 ## Estructura del proyecto
 
 ```
-lab28/
+lab-28/
 ├── aws/
 │   ├── aws.s3.tfbackend  # Parámetros del backend S3 (sin bucket)
 │   ├── providers.tf      # Backend S3, Terraform >= 1.10, provider AWS

@@ -1,4 +1,4 @@
-# Laboratorio 7: Backend Remoto Profesional en AWS
+# Laboratorio 7 — Backend Remoto Profesional en AWS
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,7 +23,7 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ---
 
@@ -105,9 +105,9 @@ El bloque `backend "s3"` apunta al bucket compartido del lab-02 (`encrypt = true
 
 ---
 
-## 1. Despliegue
+## Despliegue
 
-### 1.1 Prerrequisito: bucket del lab-02
+### Prerrequisito: bucket del lab-02
 
 Verifica que el bucket creado en el lab-02 existe y tiene versionado activo:
 
@@ -119,7 +119,7 @@ aws s3api get-bucket-versioning --bucket $BUCKET
 
 Si el bucket no existe, vuelve al lab02 y ejecuta `terraform apply` antes de continuar.
 
-### 1.2 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`** — Solo la tabla DynamoDB (el bucket ya existe del lab02):
 
@@ -159,7 +159,7 @@ output "backend_config" {
 }
 ```
 
-### 1.3 Despliegue de la Tabla DynamoDB
+### Despliegue de la Tabla DynamoDB
 
 ```bash
 export TF_VAR_bucket_name=$BUCKET
@@ -186,7 +186,7 @@ backend_config = <<EOT
 EOT
 ```
 
-### 1.4 Migrar un Estado Local al Backend Remoto
+### Migrar un Estado Local al Backend Remoto
 
 El directorio `workload/` contiene un proyecto de aplicación que primero se despliega con estado local y luego se migra al backend remoto.
 
@@ -229,7 +229,7 @@ Do you want to copy existing state to the new backend?
 Successfully configured the backend "s3"!
 ```
 
-### 1.5 Verificación
+### Verificación
 
 Confirma que el estado se ha subido al bucket:
 
@@ -243,7 +243,7 @@ Verifica que la tabla DynamoDB existe y está vacía (no hay locks activos):
 aws dynamodb scan --table-name terraform-state-lock
 ```
 
-### 1.6 Observar el State Locking en Acción
+### Observar el State Locking en Acción
 
 Abre dos terminales en `lab-07/workload/` y ejecuta `terraform apply` en ambas simultáneamente:
 
@@ -296,7 +296,7 @@ aws dynamodb scan \
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 > **Importante:** Destruye primero el workload y migra el estado de vuelta al backend local antes de destruir la tabla DynamoDB. **No destruyas el bucket**: se reutiliza en el lab10.
 

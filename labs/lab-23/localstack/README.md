@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-23/localstack
@@ -41,9 +41,9 @@ terraform output
 # ssm_prefix        = "/lab23/db/"
 ```
 
-## 2. Verificación
+## Verificación
 
-### 2.1 Probar validaciones (funcionan igual que en AWS)
+### Probar validaciones (funcionan igual que en AWS)
 
 ```bash
 # Nombre sin prefijo → debe fallar
@@ -62,7 +62,7 @@ terraform plan \
 # Error: El motor de base de datos debe ser uno de: mysql, postgres, mariadb.
 ```
 
-### 2.2 Verificar recursos creados
+### Verificar recursos creados
 
 ```bash
 # Bucket
@@ -75,7 +75,7 @@ awslocal ssm get-parameters-by-path \
   --output table
 ```
 
-## 3. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Característica | AWS Real | LocalStack Community |
 |---|---|---|
@@ -87,7 +87,7 @@ awslocal ssm get-parameters-by-path \
 | SSM SecureString | Cifrado con KMS | Sin cifrado real |
 | VPC | Completa | Emulada |
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy \

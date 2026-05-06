@@ -48,18 +48,18 @@ variable "codebuild_project_name" {
 variable "terraform_version" {
   type        = string
   description = "Version de Terraform incluida en la imagen del runner. Usar version semántica exacta."
-  default     = "1.9.5"
+  default     = "1.15.2"
 
   validation {
     condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.terraform_version))
-    error_message = "La version de Terraform debe seguir el patron MAJOR.MINOR.PATCH (p. ej. 1.9.5)."
+    error_message = "La version de Terraform debe seguir el patron MAJOR.MINOR.PATCH (p. ej. 1.15.2)."
   }
 }
 
 variable "tflint_version" {
   type        = string
   description = "Version de TFLint incluida en la imagen del runner."
-  default     = "0.52.0"
+  default     = "0.62.0"
 
   validation {
     condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.tflint_version))
@@ -67,14 +67,14 @@ variable "tflint_version" {
   }
 }
 
-variable "tfsec_version" {
+variable "trivy_version" {
   type        = string
-  description = "Version de tfsec incluida en la imagen del runner."
-  default     = "1.28.6"
+  description = "Version de Trivy incluida en la imagen del runner."
+  default     = "0.70.0"
 
   validation {
-    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.tfsec_version))
-    error_message = "La version de tfsec debe seguir el patron MAJOR.MINOR.PATCH."
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.trivy_version))
+    error_message = "La version de Trivy debe seguir el patron MAJOR.MINOR.PATCH."
   }
 }
 

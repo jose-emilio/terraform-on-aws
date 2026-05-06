@@ -1,20 +1,20 @@
-# Laboratorio 27 — LocalStack: API Serverless: Lambda, API Gateway v2 y Layers
+# Laboratorio 31 — LocalStack: API Serverless: Lambda, API Gateway v2 y Layers
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
 
-Este documento describe cómo ejecutar el laboratorio 27 contra LocalStack. El código Terraform de `localstack/` es una versión reducida respecto a `aws/`: **API Gateway v2 no está disponible en LocalStack Community** (requiere licencia Pro) y se ha eliminado del `main.tf`. Los recursos disponibles — Lambda Layer, Lambda Function, IAM y CloudWatch Logs — funcionan completamente y permiten verificar los mecanismos clave del laboratorio (`archive_file`, `source_code_hash`, Layer).
+Este documento describe cómo ejecutar el laboratorio 31 contra LocalStack. El código Terraform de `localstack/` es una versión reducida respecto a `aws/`: **API Gateway v2 no está disponible en LocalStack Community** (requiere licencia Pro) y se ha eliminado del `main.tf`. Los recursos disponibles — Lambda Layer, Lambda Function, IAM y CloudWatch Logs — funcionan completamente y permiten verificar los mecanismos clave del laboratorio (`archive_file`, `source_code_hash`, Layer).
 
 ## Requisitos Previos
 
 - LocalStack en ejecución: `localstack start -d`
-- Terraform >= 1.5
+- Terraform >= 1.10
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Limitaciones conocidas
+### Limitaciones conocidas
 
 | Servicio | Soporte en Community |
 |---|---|
@@ -27,7 +27,7 @@ Este documento describe cómo ejecutar el laboratorio 27 contra LocalStack. El c
 | **API Gateway v2** (`aws_apigatewayv2_*`) | **No disponible** — requiere LocalStack Pro |
 | **`aws_lambda_permission`** | Eliminado (dependía de APIGW) |
 
-### 1.2 Inicialización y despliegue
+### Inicialización y despliegue
 
 Asegúrate de que LocalStack está en ejecución:
 
@@ -46,7 +46,7 @@ terraform apply
 
 El `apply` despliega Lambda Layer + Lambda Function + IAM + CloudWatch. No fallará porque los recursos de API Gateway v2 se han eliminado de `localstack/main.tf`.
 
-### 1.3 Verificación
+### Verificación
 
 ```bash
 # Lambda Function
@@ -69,7 +69,7 @@ awslocal logs describe-log-groups \
   --log-group-name-prefix /aws/lambda/lab31-local
 ```
 
-### 1.4 Invocar Lambda directamente
+### Invocar Lambda directamente
 
 Sin API Gateway, la función se invoca con `awslocal lambda invoke`. El output `invoke_example` ya contiene el comando listo para ejecutar:
 
@@ -111,7 +111,7 @@ awslocal lambda invoke \
   /tmp/response.json && cat /tmp/response.json | python3 -m json.tool
 ```
 
-### 1.5 Demostración de source_code_hash
+### Demostración de source_code_hash
 
 El mecanismo de detección de cambios funciona exactamente igual que en AWS real, ya que es una operación puramente local de Terraform:
 
@@ -134,7 +134,7 @@ awslocal lambda invoke \
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 # Desde lab31/localstack/
@@ -146,7 +146,7 @@ rm -f layer.zip function.zip
 
 ---
 
-## 3. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -162,7 +162,7 @@ rm -f layer.zip function.zip
 
 ---
 
-## 4. Buenas Prácticas
+## Buenas Prácticas
 
 - Usa LocalStack para validar que el código Python (`handler.py` + `utils.py`) se ejecuta correctamente antes de desplegar en AWS real, invocando la función directamente con `awslocal lambda invoke`.
 - El mecanismo de `source_code_hash` funciona igual en LocalStack: practica el ciclo completo de editar código → `terraform apply` → verificar cambio aquí antes de afectar AWS real.
@@ -171,7 +171,7 @@ rm -f layer.zip function.zip
 
 ---
 
-## 5. Recursos Adicionales
+## Recursos Adicionales
 
 - [LocalStack — Lambda](https://docs.localstack.cloud/aws/services/lambda/)
 - [LocalStack coverage — API Gateway v2](https://docs.localstack.cloud/aws/services/apigateway/)

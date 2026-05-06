@@ -17,7 +17,7 @@ Guía de instalación y configuración de las herramientas necesarias para traba
 - Conexión a internet
 - Cuenta de AWS (para los laboratorios con nube real)
 
-## 1. Instalación de Terraform
+## Instalación de Terraform
 
 Terraform se instala desde los repositorios oficiales de HashiCorp para garantizar versiones actualizadas y firmadas.
 
@@ -46,7 +46,7 @@ terraform -version
 
 ---
 
-## 2. Instalación de AWS CLI
+## Instalación de AWS CLI
 
 ```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -62,7 +62,7 @@ aws --version
 
 ---
 
-## 3. Configuración de AWS CLI
+## Configuración de AWS CLI
 
 Ejecuta el asistente de configuración:
 
@@ -83,13 +83,13 @@ Se solicitarán los siguientes valores:
 
 ---
 
-## 4. Instalación y Configuración de LocalStack
+## Instalación y Configuración de LocalStack
 
 LocalStack emula los servicios de AWS localmente, permitiendo desarrollar y probar infraestructura sin costos ni conexión a AWS.
 
 > **Asegúrate que tu máquina tiene Docker instalado.**
 
-### 4.1 Instalación
+### Instalación
 
 ```bash
 curl --output localstack-cli-4.14.0-linux-amd64-onefile.tar.gz \
@@ -98,7 +98,7 @@ curl --output localstack-cli-4.14.0-linux-amd64-onefile.tar.gz \
 sudo tar xvzf localstack-cli-4.14.0-linux-*-onefile.tar.gz -C /usr/local/bin
 ```
 
-### 4.2 Autenticación
+### Autenticación
 
 1. Inicia sesión en [LocalStack Cloud](https://app.localstack.cloud/sign-in)
 2. Genera un token en [Settings → Auth Tokens](https://app.localstack.cloud/settings/auth-tokens)
@@ -108,7 +108,7 @@ sudo tar xvzf localstack-cli-4.14.0-linux-*-onefile.tar.gz -C /usr/local/bin
 localstack auth set-token <TOKEN_AUTENTICACION>
 ```
 
-### 4.3 Iniciar LocalStack
+### Iniciar LocalStack
 
 ```bash
 localstack start
@@ -116,7 +116,7 @@ localstack start
 
 > LocalStack quedará escuchando en `http://localhost.localstack.cloud:4566` por loque deberás abrir otra sesión de consola para poder interactuar. Si deseas que localstack te devuelva el control puedes usar la orden `localstack start -d`
 
-## 5. Configuración de AWS CLI para LocalStack
+## Configuración de AWS CLI para LocalStack
 
 Agrega el perfil `localstack` a los archivos de configuración de AWS CLI.
 
@@ -175,7 +175,7 @@ Resultado esperado:
 }
 ```
 
-## 6. Configuración de Visual Studio Code
+## Configuración de Visual Studio Code
 
 ### Extensiones recomendadas
 
@@ -191,7 +191,7 @@ Resultado esperado:
 3. Para cambiar entre AWS real y LocalStack, selecciona el perfil correspondiente (`default` o `localstack`)
 
 
-## 7. Resumen de Perfiles Configurados
+## Resumen de Perfiles Configurados
 
 | Perfil | Destino | Uso |
 |---|---|---|

@@ -1,5 +1,5 @@
 """
-Handler principal de la API de Items — Lab30.
+Handler principal de la API de Items — Lab31.
 
 Importa 'utils' desde la Lambda Layer adjunta al desplegar; en tests locales
 sin la capa, asegúrate de tener src/layer/python/ en PYTHONPATH.

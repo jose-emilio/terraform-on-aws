@@ -1,4 +1,4 @@
-# Laboratorio 34: Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
+# Laboratorio 34 — Almacenamiento Híbrido: EBS de Alto Rendimiento y EFS Compartido
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -27,8 +27,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre EC2, EBS, EFS, IAM y DLM
 - LocalStack en ejecución (para la sección de LocalStack)
 
@@ -156,27 +156,37 @@ Esto permite que múltiples aplicaciones compartan el mismo EFS con aislamiento 
 ## Estructura del proyecto
 
 ```
-labs/lab34/
+labs/lab-34/
 ├── README.md
-└── aws/
-    ├── providers.tf
+├── aws/
+│   ├── providers.tf
+│   ├── variables.tf
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── aws.s3.tfbackend
+│   └── modules/
+│       ├── vpc/
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       ├── ec2-client/
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       └── efs-share/
+│           ├── main.tf
+│           ├── variables.tf
+│           └── outputs.tf
+└── localstack/
+    ├── README.md            # Limitaciones + comandos awslocal
+    ├── providers.tf         # Endpoints LocalStack (ec2, iam, sts)
     ├── variables.tf
-    ├── main.tf
+    ├── main.tf              # vpc + ec2-client (efs-share omitido en Community)
     ├── outputs.tf
-    ├── aws.s3.tfbackend
     └── modules/
         ├── vpc/
-        │   ├── main.tf
-        │   ├── variables.tf
-        │   └── outputs.tf
         ├── ec2-client/
-        │   ├── main.tf
-        │   ├── variables.tf
-        │   └── outputs.tf
-        └── efs-share/
-            ├── main.tf
-            ├── variables.tf
-            └── outputs.tf
+        └── efs-share/       # Presente para paridad estructural; sin recursos EFS reales
 ```
 
 ---
@@ -187,7 +197,7 @@ labs/lab34/
 # Obtén el ID de cuenta para el nombre del bucket de estado
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# Desde labs/lab34/aws/
+# Desde labs/lab-34/aws/
 terraform fmt
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -200,7 +210,7 @@ terraform apply
 
 ## Verificación final
 
-### 2.1 Volumen EBS gp3
+### Volumen EBS gp3
 
 ```bash
 EBS_ID=$(terraform output -raw ebs_volume_id)
@@ -217,7 +227,7 @@ aws ec2 describe-volumes \
   --query 'Volumes[0].Attachments[0].{Instancia:InstanceId,Dispositivo:Device,Estado:State}'
 ```
 
-### 2.2 Política DLM
+### Política DLM
 
 ```bash
 DLM_ID=$(terraform output -raw dlm_policy_id)
@@ -266,7 +276,7 @@ aws ec2 describe-snapshots \
   --output table
 ```
 
-### 2.3 EFS File System
+### EFS File System
 
 ```bash
 EFS_ID=$(terraform output -raw efs_file_system_id)
@@ -282,7 +292,7 @@ aws efs describe-mount-targets \
   --query 'MountTargets[*].{ID:MountTargetId,AZ:AvailabilityZoneName,Subnet:SubnetId,IP:IpAddress,Estado:LifeCycleState}'
 ```
 
-### 2.4 EFS Access Point
+### EFS Access Point
 
 ```bash
 AP_ID=$(terraform output -raw efs_access_point_id)
@@ -293,7 +303,7 @@ aws efs describe-access-points \
 # Debe mostrar path=/app/data, UID=1001, GID=1001
 ```
 
-### 2.5 Montaje del EFS desde la instancia (SSM)
+### Montaje del EFS desde la instancia (SSM)
 
 ```bash
 # Los comandos terraform output se ejecutan en tu terminal local (donde corre
@@ -516,7 +526,7 @@ El aislamiento entre Access Points es real a nivel de sistema de archivos POSIX:
 ## Limpieza
 
 ```bash
-# Desde labs/lab34/aws/
+# Desde labs/lab-34/aws/
 terraform destroy
 ```
 
@@ -530,7 +540,7 @@ terraform destroy
 ```bash
 localstack start -d
 
-# Desde labs/lab34/localstack/
+# Desde labs/lab-34/localstack/
 terraform fmt
 terraform init
 terraform apply

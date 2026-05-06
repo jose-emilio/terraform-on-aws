@@ -34,7 +34,7 @@ Configurar la conectividad de salida a Internet priorizando la **alta disponibil
 
 ## Prerrequisitos
 
-- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
 - Terraform >= 1.10 (necesario para `use_lockfile` en el backend S3)
 
@@ -73,9 +73,9 @@ lab-17/
 
 Una VPC `10.13.0.0/16` con 3 AZs. Cada AZ tiene su propio NAT (Gateway en producción, Instance ARM `t4g.small` en desarrollo, controlado por `var.use_nat_instance`) y su propia tabla de rutas privada — así el tráfico de salida nunca cruza AZs. El **VPC Gateway Endpoint S3** se asocia a las cuatro tablas de rutas (1 pública + 3 privadas) y desvía el tráfico hacia S3 por la red interna de AWS, evitando el cargo de $0.045/GB del NAT ("NAT Tax"). Una instancia de test en `private-1` permite verificar la conectividad por SSM Session Manager.
 
-## 1. Análisis del código
+## Análisis del código
 
-### 1.1 Internet Gateway — La puerta de entrada
+### Internet Gateway — La puerta de entrada
 
 ```hcl
 resource "aws_internet_gateway" "main" {
@@ -95,7 +95,7 @@ resource "aws_route" "public_internet" {
 }
 ```
 
-### 1.2 NAT Gateway × 3 — Uno por AZ (buena práctica)
+### NAT Gateway × 3 — Uno por AZ (buena práctica)
 
 ```hcl
 resource "aws_nat_gateway" "this" {
@@ -127,7 +127,7 @@ Puntos clave:
 
 A escala, el coste de tráfico cross-AZ puede superar la diferencia de $64/mes. La resiliencia adicional suele justificar el coste en producción.
 
-### 1.3 Tablas de rutas privadas — Una por AZ
+### Tablas de rutas privadas — Una por AZ
 
 ```hcl
 resource "aws_route_table" "private" {
@@ -144,7 +144,7 @@ resource "aws_route_table_association" "private" {
 
 Cada subred privada se asocia a la tabla de rutas de **su propia AZ**, que apunta al NAT local. Esto garantiza que el tráfico nunca cruza AZs para salir a Internet.
 
-### 1.4 Instancia NAT × 3 — La alternativa económica para desarrollo
+### Instancia NAT × 3 — La alternativa económica para desarrollo
 
 ```hcl
 resource "aws_instance" "nat" {
@@ -204,7 +204,7 @@ Por defecto, EC2 descarta cualquier paquete de red cuyo origen o destino no sea 
 
 Sin `source_dest_check = false`, el tráfico de las subredes privadas llega a la instancia NAT pero es descartado silenciosamente — uno de los errores más difíciles de diagnosticar en redes AWS.
 
-### 1.5 VPC Gateway Endpoint para S3 — Eliminar el "NAT Tax"
+### VPC Gateway Endpoint para S3 — Eliminar el "NAT Tax"
 
 ```hcl
 resource "aws_vpc_endpoint" "s3" {
@@ -227,7 +227,7 @@ El Gateway Endpoint añade automáticamente una ruta en las tablas especificadas
 
 A escala (TB de datos, backups, logs), este ahorro puede ser de cientos de dólares mensuales.
 
-### 1.6 Rutas privadas mutuamente excluyentes — Una por AZ
+### Rutas privadas mutuamente excluyentes — Una por AZ
 
 ```hcl
 resource "aws_route" "private_nat_gateway" {
@@ -251,7 +251,7 @@ Solo uno de los dos conjuntos existe en cada despliegue. En ambos casos se crean
 
 ---
 
-## 2. Despliegue — Modo producción (NAT Gateway)
+## Despliegue — Modo producción (NAT Gateway)
 
 ```bash
 cd labs/lab-17/aws
@@ -274,9 +274,9 @@ terraform output
 
 ---
 
-## 3. Verificación final
+## Verificación final
 
-### 3.1 Tabla de rutas pública
+### Tabla de rutas pública
 
 ```bash
 aws ec2 describe-route-tables \
@@ -290,7 +290,7 @@ Deberías ver tres rutas:
 - `0.0.0.0/0 → igw-xxx` (ruta al IGW)
 - `Dest=None, Prefix=pl-xxx → vpce-xxx` (ruta al VPC Endpoint S3 — usa `DestinationPrefixListId` en lugar de CIDR, por eso `Dest` aparece vacío)
 
-### 3.2 Tablas de rutas privadas (una por AZ)
+### Tablas de rutas privadas (una por AZ)
 
 ```bash
 aws ec2 describe-route-tables \
@@ -306,7 +306,7 @@ Cada tabla debe tener:
 
 Verifica que cada tabla privada apunta a un NAT Gateway **diferente** (uno por AZ).
 
-### 3.3 VPC Endpoint
+### VPC Endpoint
 
 ```bash
 aws ec2 describe-vpc-endpoints \
@@ -315,7 +315,7 @@ aws ec2 describe-vpc-endpoints \
   --output table
 ```
 
-### 3.4 Verificar el prefix list de S3
+### Verificar el prefix list de S3
 
 ```bash
 REGION=$(aws configure get region || echo us-east-1)
@@ -334,7 +334,7 @@ Estos son los rangos de IPs públicas de S3 que el Gateway Endpoint intercepta a
 
 ---
 
-## 4. Despliegue — Modo desarrollo (Instancia NAT)
+## Despliegue — Modo desarrollo (Instancia NAT)
 
 Modifica el despliegue anterior y vuelve a aplicar con la variable activada — Terraform destruirá los NAT Gateways y creará las instancias NAT en su lugar:
 
@@ -350,7 +350,7 @@ terraform output
 # nat_public_ips = { "us-east-1a" = "54.xx.xx.xx", "us-east-1b" = "3.xx.xx.xx", "us-east-1c" = "18.xx.xx.xx" }
 ```
 
-### 4.1 Verificar source_dest_check en las 3 instancias
+### Verificar source_dest_check en las 3 instancias
 
 ```bash
 aws ec2 describe-instances \
@@ -361,7 +361,7 @@ aws ec2 describe-instances \
 
 Las 3 instancias deben mostrar `SourceDestCheck = false`.
 
-### 4.2 Verificar las tablas de rutas privadas
+### Verificar las tablas de rutas privadas
 
 ```bash
 aws ec2 describe-route-tables \
@@ -374,7 +374,7 @@ Ahora cada ruta `0.0.0.0/0` apunta a `eni-xxx` (la interfaz de red de la instanc
 
 ---
 
-## 5. Verificación end-to-end con instancia de test
+## Verificación end-to-end con instancia de test
 
 La instancia de test se despliega automáticamente en la subred `private-1` con cada `terraform apply`. Es una `t4g.micro` con SSM Agent, que permite verificar la conectividad NAT sin SSH.
 
@@ -383,7 +383,7 @@ terraform output test_instance_id
 # "i-0abc123..."
 ```
 
-### 5.1 Conectarse via SSM Session Manager
+### Conectarse via SSM Session Manager
 
 > **Requisito:** Instalar el [plugin de Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) para la AWS CLI.
 
@@ -416,7 +416,7 @@ terraform output nat_public_ips
 # Debe coincidir con la IP del Test 1
 ```
 
-### 5.2 Si SSM no conecta
+### Si SSM no conecta
 
 Si `start-session` se queda colgado, verifica:
 
@@ -434,7 +434,7 @@ aws ssm describe-instance-information \
 
 ---
 
-## 6. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -452,7 +452,7 @@ terraform destroy \
 
 ---
 
-## 7. LocalStack
+## LocalStack
 
 Para ejecutar este laboratorio sin cuenta de AWS, consulta [localstack/README.md](localstack/README.md).
 

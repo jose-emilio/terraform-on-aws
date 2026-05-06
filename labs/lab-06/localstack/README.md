@@ -17,7 +17,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Diferencias con AWS
+## Diferencias con AWS
 
 ### `localstack/main.tf`
 
@@ -56,7 +56,7 @@ data "aws_iam_policy" "read_only" {
 data "aws_instances" "production" { ... }
 ```
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab06/localstack
@@ -67,7 +67,7 @@ terraform plan
 terraform apply
 ```
 
-## 3. Verificación
+## Verificación
 
 ```bash
 cat localstack/audit_report.txt
@@ -76,7 +76,7 @@ aws --profile localstack ec2 describe-vpcs --filters "Name=tag:Env,Values=produc
 aws --profile localstack iam get-policy --policy-arn arn:aws:iam::000000000000:policy/ReadOnlyAccess
 ```
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

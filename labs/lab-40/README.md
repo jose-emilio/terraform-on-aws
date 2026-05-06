@@ -47,10 +47,9 @@ escalar sin lock contention.
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3 de los tres proyectos).
 - AWS CLI configurado con perfil `default`.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado
-  habilitado.
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -60,7 +59,7 @@ export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
 ## Arquitectura
 
 ```
-labs/lab40/aws/
+labs/lab-40/aws/
 │
 ├── workspaces/                    Pasos 1-4: refactorizacion + parallelism
 │   ├── main.tf  (count → for_each → módulo)
@@ -257,7 +256,7 @@ backend de Terraform. Desventaja: requiere un paso extra de escritura.
 ## Estructura del proyecto
 
 ```
-lab40/
+lab-40/
 ├── aws/
 │   ├── workspaces/                    # Pasos 1-4
 │   │   ├── providers.tf
@@ -291,7 +290,7 @@ lab40/
 ## Paso 1 — Desplegar la infraestructura inicial con `count`
 
 ```bash
-cd labs/lab40/aws/workspaces
+cd labs/lab-40/aws/workspaces
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -1371,7 +1370,7 @@ export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
 
 # 1. Destruir el proyecto app/
-cd labs/lab40/aws/app
+cd labs/lab-40/aws/app
 terraform destroy -var="state_bucket=${BUCKET}"
 
 # 2. Destruir el proyecto network/

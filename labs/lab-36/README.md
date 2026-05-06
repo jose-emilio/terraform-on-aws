@@ -1,4 +1,4 @@
-# Laboratorio 36: Arquitectura Moderna NoSQL — DynamoDB con Caché y Eventos
+# Laboratorio 36 — Arquitectura Moderna NoSQL: DynamoDB con Caché y Eventos
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -8,7 +8,7 @@
 
 ## Visión general
 
-En este laboratorio construirás una capa de datos NoSQL ultra-rápida y orientada a eventos. Desplegarás una **tabla DynamoDB On-Demand** con un **Global Secondary Index** para consultas flexibles, activarás **DynamoDB Streams** y conectarás una **Lambda** que procesa cada cambio en tiempo real. Para acelerar las lecturas, desplegará un **cluster Redis de ElastiCache** con cifrado en tránsito y autenticación AUTH. Toda la infraestructura se monitoriza con **alarmas de CloudWatch** que notifican vía **SNS**.
+En este laboratorio construirás una capa de datos NoSQL ultra-rápida y orientada a eventos. Desplegarás una **tabla DynamoDB On-Demand** con un **Global Secondary Index** para consultas flexibles, activarás **DynamoDB Streams** y conectarás una **Lambda** que procesa cada cambio en tiempo real. Para acelerar las lecturas, desplegarás un **cluster Redis de ElastiCache** con cifrado en tránsito y autenticación AUTH. Toda la infraestructura se monitoriza con **alarmas de CloudWatch** que notifican vía **SNS**.
 
 La capa de aplicación es un **Product Catalog** Flask desplegado en EC2 que demuestra en tiempo real la diferencia de latencia entre una lectura desde Redis (< 5 ms) y una lectura directa a DynamoDB (~30-80 ms), con contadores de hits/misses y un feed de eventos CDC en vivo.
 
@@ -28,8 +28,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre DynamoDB, ElastiCache, Lambda, EC2, S3, Secrets Manager, IAM, CloudWatch y SNS
 
 ---
@@ -206,7 +206,7 @@ resource "aws_cloudwatch_metric_alarm" "redis_cpu" {
 ## Estructura del proyecto
 
 ```
-labs/lab36/
+labs/lab-36/
 ├── README.md
 └── aws/
     ├── app/
@@ -239,7 +239,7 @@ labs/lab36/
 # Obtén el ID de cuenta para el backend
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# Desde labs/lab36/aws/
+# Desde labs/lab-36/aws/
 terraform fmt
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -260,7 +260,7 @@ terraform output app_url
 
 ## Verificación final
 
-### 2.1 Aplicación web — Product Catalog
+### Aplicación web — Product Catalog
 
 ```bash
 APP_URL=$(terraform output -raw app_url)
@@ -280,7 +280,7 @@ El dashboard muestra:
 - **Latencia comparada**: barras visuales de rendimiento en la barra lateral
 - **Feed de eventos CDC**: cambios procesados por Lambda en tiempo real
 
-### 2.2 Demostración de latencia
+### Demostración de latencia
 
 ```bash
 # Primera carga (CACHE MISS → DynamoDB): ~50-80 ms
@@ -292,7 +292,7 @@ curl -s "$APP_URL/" | grep "src-badge"
 
 En el interfaz, recarga la misma página varias veces y observa cómo la latencia cae drásticamente en el segundo request.
 
-### 2.3 DynamoDB: tabla y schema
+### DynamoDB: tabla y schema
 
 ```bash
 TABLE=$(terraform output -raw dynamo_table_name)
@@ -307,7 +307,7 @@ aws dynamodb scan --table-name "$TABLE" \
   --query 'Items[*].{Cat:category.S,Nombre:name.S,Precio:price_cents.N,Estado:status.S}'
 ```
 
-### 2.4 GSI: consulta por estado y precio
+### GSI: consulta por estado y precio
 
 ```bash
 # Productos activos ordenados por precio (via GSI)
@@ -322,7 +322,7 @@ aws dynamodb query \
 # Los items vienen ordenados por price_cents de menor a mayor
 ```
 
-### 2.5 DynamoDB Streams y Lambda CDC
+### DynamoDB Streams y Lambda CDC
 
 ```bash
 LAMBDA=$(terraform output -raw lambda_function_name)
@@ -341,7 +341,7 @@ aws logs describe-log-groups \
   xargs -I{} aws logs tail {} --follow --since 5m
 ```
 
-### 2.6 ElastiCache Redis
+### ElastiCache Redis
 
 ```bash
 # Estado del cluster Redis
@@ -355,7 +355,7 @@ aws elasticache describe-replication-groups \
   --query 'ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint'
 ```
 
-### 2.7 AUTH token de Redis
+### AUTH token de Redis
 
 ```bash
 SECRET=$(terraform output -raw redis_secret_name)
@@ -373,7 +373,7 @@ REDIS_HOST=$(terraform output -raw redis_primary_endpoint)
 # Debe devolver: True
 ```
 
-### 2.8 CloudWatch Alarms y SNS
+### CloudWatch Alarms y SNS
 
 ```bash
 # Estado de las alarmas
@@ -572,7 +572,7 @@ aws dynamodb delete-table --table-name lab36-products-restored
 ## Limpieza
 
 ```bash
-# Desde labs/lab36/aws/
+# Desde labs/lab-36/aws/
 terraform destroy
 ```
 

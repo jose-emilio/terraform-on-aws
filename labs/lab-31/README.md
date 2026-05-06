@@ -1,4 +1,4 @@
-# Laboratorio 31: API Serverless: Lambda, API Gateway v2 y Layers
+# Laboratorio 31 — API Serverless: Lambda, API Gateway v2 y Layers
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,8 +23,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre Lambda, API Gateway v2, IAM y CloudWatch Logs
 - LocalStack en ejecución (para la sección de LocalStack)
 
@@ -155,10 +155,10 @@ resource "aws_lambda_permission" "apigw" {
 ## Estructura del proyecto
 
 ```
-lab31/
+lab-31/
 ├── aws/
 │   ├── aws.s3.tfbackend      # Parámetros del backend S3 (sin bucket)
-│   ├── providers.tf          # Backend S3, Terraform >= 1.5, providers AWS y archive
+│   ├── providers.tf          # Backend S3, Terraform >= 1.10, providers AWS y archive
 │   ├── variables.tf          # region, project, runtime, app_env
 │   ├── main.tf               # archive_file, IAM, CloudWatch, Layer, Lambda, APIGW, Permission
 │   ├── outputs.tf            # api_endpoint, function_name, layer_arn, log_group, curl_*
@@ -187,7 +187,7 @@ lab31/
 
 ## Despliegue en AWS Real
 
-### 1.1 Arquitectura
+### Arquitectura
 
 ```
 Cliente (curl / navegador)
@@ -234,7 +234,7 @@ Terraform local:
   source_code_hash               → hash del ZIP → detecta cambios → redeploy
 ```
 
-### 1.2 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`** — Fragmentos clave:
 
@@ -292,7 +292,7 @@ resource "aws_lambda_permission" "apigw" {
 }
 ```
 
-### 1.3 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 export BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
@@ -321,7 +321,7 @@ layer_version  = 1
 log_group      = "/aws/lambda/lab31-function"
 ```
 
-### 1.4 Verificar la API
+### Verificar la API
 
 **Paso 1** — Obtén la URL base y comprueba que la función responde:
 
@@ -438,7 +438,7 @@ LOG_GROUP=$(terraform output -raw log_group)
 aws logs tail "$LOG_GROUP" --follow --format short
 ```
 
-### 1.5 Forzar redeploy con source_code_hash
+### Forzar redeploy con source_code_hash
 
 Este es el mecanismo central del laboratorio. Modifica el código fuente y observa cómo Terraform detecta el cambio sin que el nombre del ZIP varíe:
 
@@ -472,20 +472,20 @@ terraform apply
 ## Verificación final
 
 ```bash
-# Obtener la URL de la API
-API_URL=$(terraform output -raw api_url)
+# Obtener la URL base de la API
+API_URL=$(terraform output -raw api_endpoint)
 
-# Probar el endpoint raiz
-curl -s "${API_URL}/"
-# Esperado: {"message": "Hello from Lambda Layer!", ...}
+# Probar GET /items
+curl -s "${API_URL}/items" | python3 -m json.tool
+# Esperado: {"items": [...], "total": 3, "metadata": {...}}
 
-# Probar el endpoint de health
-curl -s "${API_URL}/health"
-# Esperado: {"status": "ok"}
+# Probar GET /items/{id}
+curl -s "${API_URL}/items/2" | python3 -m json.tool
+# Esperado: {"item": {"id": "2", ...}, "metadata": {...}}
 
-# Verificar que la Layer esta asociada a la funcion
+# Verificar que la Layer está asociada a la función
 aws lambda get-function-configuration \
-  --function-name $(terraform output -raw lambda_function_name) \
+  --function-name "$(terraform output -raw function_name)" \
   --query 'Layers[*].Arn' --output text
 
 # Comprobar que los logs se generan en CloudWatch

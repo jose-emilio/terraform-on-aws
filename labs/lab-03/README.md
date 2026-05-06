@@ -1,4 +1,4 @@
-# Laboratorio 3: Infraestructura Parametrizada y Dinámica
+# Laboratorio 3 — Infraestructura Parametrizada y Dinámica
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -21,8 +21,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 1 completado (entorno configurado)
-- Laboratorio 2 completado (flujo básico de Terraform)
+- Laboratorio 01 completado (entorno configurado)
+- Laboratorio 02 completado (flujo básico de Terraform)
 ---
 
 ## Conceptos Clave
@@ -116,7 +116,7 @@ terraform fmt -check -diff
 ## Estructura del proyecto
 
 ```
-lab03/
+lab-03/
 ├── aws/
 │   ├── providers.tf   # Bloques terraform{} y provider{}
 │   ├── variables.tf   # Variables con tipos object y validaciones
@@ -141,9 +141,9 @@ Una VPC con CIDR parametrizado (`var.vpc_cidr`, validado contra RFC 1918), 4 sub
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`aws/providers.tf`**
 
@@ -288,7 +288,7 @@ output "security_group_id" {
 }
 ```
 
-### 1.2 Formatear el Código
+### Formatear el Código
 
 Antes de desplegar, aplica el formateador estándar:
 
@@ -311,7 +311,7 @@ Para verificar sin modificar:
 terraform fmt -check -diff
 ```
 
-### 1.3 Despliegue
+### Despliegue
 
 Desde el directorio `lab02/aws/`:
 
@@ -323,7 +323,7 @@ terraform apply
 
 Durante el `plan`, Terraform mostrará los 5 recursos a crear: 1 VPC, 2 subredes públicas, 2 subredes privadas y 1 security group con 3 reglas de ingress generadas dinámicamente.
 
-### 1.4 Verificar las Validaciones
+### Verificar las Validaciones
 
 Prueba que las validaciones funcionan pasando un valor inválido:
 
@@ -344,7 +344,7 @@ Salida esperada:
 ╵
 ```
 
-### 1.5 Verificación
+### Verificación
 
 Al finalizar `terraform apply`, los outputs mostrarán los CIDRs calculados automáticamente:
 
@@ -398,7 +398,7 @@ terraform output
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -408,13 +408,13 @@ terraform destroy
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Este laboratorio puede ejecutarse íntegramente en LocalStack. Consulta [localstack/README.md](localstack/README.md) para las instrucciones de despliegue local.
 
 ---
 
-## 4. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

@@ -31,9 +31,9 @@ dashboard con cinco widgets, todo definido como código Terraform.
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.9 instalado
+- **Terraform >= 1.10** instalado
 - Una dirección de correo válida para recibir las alertas SNS
 
 ```bash
@@ -189,7 +189,7 @@ específica, evitando que otras cuentas usen la misma CMK.
 ## Estructura
 
 ```
-lab46/
+lab-46/
 └── aws/                          Infraestructura del laboratorio
     ├── providers.tf              Provider AWS ~6.0, backend S3
     ├── variables.tf              Variables: región, proyecto, email, umbrales
@@ -206,7 +206,7 @@ lab46/
 Inicializa el backend y despliega todos los recursos:
 
 ```bash
-cd labs/lab46/aws
+cd labs/lab-46/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -501,7 +501,7 @@ aws logs get-query-results --query-id "$QUERY_ID" \
 Comprueba que todos los recursos están operativos antes de pasar a los retos:
 
 ```bash
-cd labs/lab46/aws
+cd labs/lab-46/aws
 
 PROJECT=$(terraform output -raw log_group_name | cut -d/ -f2)
 LOG_GROUP=$(terraform output -raw log_group_name)
@@ -907,7 +907,7 @@ done
 ## Limpieza
 
 ```bash
-cd labs/lab46/aws
+cd labs/lab-46/aws
 
 terraform destroy -var="alert_email=tu@email.com"
 ```

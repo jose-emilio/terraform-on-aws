@@ -66,12 +66,11 @@ repositorio CodeCommit dispara el build via EventBridge, sin intervención manua
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado.
 - AWS CLI v2 configurado con perfil `default` y permisos de administrador.
 - Docker instalado y en ejecución (para construir y publicar la imagen).
 - Git con credenciales HTTPS configuradas para CodeCommit (o helper de AWS CLI).
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado
-  habilitado (necesario para el backend S3 del estado de este laboratorio).
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -165,9 +164,9 @@ Imagen Docker multi-stage:
   │  Stage 1 (downloader) — alpine:3.21                                      │
   │                                                                          │
   │  curl + unzip + gnupg                                                    │
-  │  ├── Descarga terraform_1.14.8_linux_amd64.zip → SHA256 ✓                │
-  │  ├── Descarga tflint_0.52.0_linux_amd64.zip    → SHA256 ✓                │
-  │  ├── Descarga trivy_0.69.3_Linux-64bit.tar.gz  → SHA256 ✓                │
+  │  ├── Descarga terraform_1.15.2_linux_amd64.zip → SHA256 ✓                │
+  │  ├── Descarga tflint_0.62.0_linux_amd64.zip    → SHA256 ✓                │
+  │  ├── Descarga trivy_0.70.0_Linux-64bit.tar.gz  → SHA256 ✓                │
   │  ├── Descarga trivy contrib/junit.tpl           → embebida en imagen      │
   │  └── Instala plugin TFLint AWS v0.31.0         → pre-instalado           │
   └──────────────────────────────┬───────────────────────────────────────────┘
@@ -376,10 +375,9 @@ de cada uno.
 El runner genera informes JUnit de **ambas** herramientas de seguridad:
 
 **Trivy** no soporta `--format junit` de forma nativa: requiere una plantilla
-Go embebida en la imagen (`/usr/local/share/trivy-junit.tpl`). Al igual que
-tfsec, se ejecuta dos veces dentro del bloque Collect and Fail: la primera
-para texto legible en los logs, la segunda para JUnit con `|| true` para no
-alterar `SECURITY_FAILED`. El flag `--include-non-failures` incluye también
+Go embebida en la imagen (`/usr/local/share/trivy-junit.tpl`). Se ejecuta dos
+veces dentro del bloque Collect and Fail: la primera para texto legible en los
+logs, la segunda para JUnit con `|| true` para no alterar `SECURITY_FAILED`. El flag `--include-non-failures` incluye también
 los checks que pasan, para que CodeBuild Reports muestre el cuadro completo:
 
 ```bash
@@ -437,7 +435,7 @@ codebuild:BatchPutCodeCoverages — requerida por el agente aunque no se usen
 ## Estructura del proyecto
 
 ```
-labs/lab43/
+labs/lab-43/
 ├── aws/                     ── Infraestructura del pipeline (Terraform)
 │   ├── providers.tf         ── Provider AWS ~> 6.0, backend S3
 │   ├── variables.tf         ── Versiones pinneadas, nombres de recursos
@@ -465,7 +463,7 @@ labs/lab43/
 ## Paso 1 — Desplegar la infraestructura con Terraform
 
 ```bash
-cd labs/lab43/aws
+cd labs/lab-43/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -509,10 +507,10 @@ aws ecr get-login-password --region ${REGION} \
 
 # Construir la imagen (multi-stage con versiones pinneadas)
 docker build \
-  --build-arg TERRAFORM_VERSION=1.14.8 \
-  --build-arg TFLINT_VERSION=0.52.0 \
+  --build-arg TERRAFORM_VERSION=1.15.2 \
+  --build-arg TFLINT_VERSION=0.62.0 \
   --build-arg TFLINT_AWS_PLUGIN_VERSION=0.31.0 \
-  --build-arg TRIVY_VERSION=0.69.3 \
+  --build-arg TRIVY_VERSION=0.70.0 \
   --build-arg CHECKOV_VERSION=3.2.231 \
   -t ${ECR_URL}:latest \
   -t ${ECR_URL}:${IMAGE_VERSION} \
@@ -524,9 +522,9 @@ cada herramienta al final del stage `runner`:
 
 ```
 === Verificando herramientas del runner ===
-Terraform v1.14.8
-tflint version 0.52.0
-Trivy Version: 0.69.3
+Terraform v1.15.2
+tflint version 0.62.0
+Trivy Version: 0.70.0
 checkov, version 3.2.231
 === Todas las herramientas verificadas correctamente ===
 ```
@@ -633,7 +631,7 @@ El build se lanza automáticamente tras el push del paso anterior. Sigue los log
 ```bash
 cd /ruta/a/terraform-on-aws
 
-export PROJECT_NAME=$(cd labs/lab43/aws && terraform output -raw codebuild_project_name)
+export PROJECT_NAME=$(cd labs/lab-43/aws && terraform output -raw codebuild_project_name)
 
 # Seguir los logs en tiempo real
 aws logs tail /aws/codebuild/${PROJECT_NAME} --follow --region ${REGION}
@@ -789,8 +787,8 @@ cd /tmp/terraform-code
 
 # Reemplazar el contenido con el codigo seguro
 rm -rf *  .tflint.hcl
-cp -r /ruta/a/terraform-on-aws/labs/lab43/terraform-target/secure/. .
-cp /ruta/a/terraform-on-aws/labs/lab43/buildspec.yml .
+cp -r /ruta/a/terraform-on-aws/labs/lab-43/terraform-target/secure/. .
+cp /ruta/a/terraform-on-aws/labs/lab-43/buildspec.yml .
 
 git add .
 git commit -m "fix: replace insecure bucket with compliant secure configuration"
@@ -899,7 +897,7 @@ El resultado anterior corresponde al informe de Trivy. Trivy evalúa 52 checks s
 ## Paso 7 — Recuperar el artefacto tfplan
 
 ```bash
-export BUCKET_NAME=$(cd labs/lab43/aws && terraform output -raw pipeline_bucket_name)
+export BUCKET_NAME=$(cd labs/lab-43/aws && terraform output -raw pipeline_bucket_name)
 
 # Obtener el ID del ultimo build
 BUILD_ID=$(aws codebuild list-builds-for-project \
@@ -1473,7 +1471,7 @@ output "alerts_topic_arn" {
 ### Desplegar y confirmar la suscripción
 
 ```bash
-cd labs/lab43/aws
+cd labs/lab-43/aws
 
 terraform apply -var="alert_email=tu@email.com"
 ```
@@ -1504,8 +1502,8 @@ la alerta automáticamente cuando el build falle:
 ```bash
 cd /tmp/terraform-code
 rm -rf * .tflint.hcl
-cp -r /ruta/a/terraform-on-aws/labs/lab43/terraform-target/insecure/. .
-cp /ruta/a/terraform-on-aws/labs/lab43/buildspec.yml .
+cp -r /ruta/a/terraform-on-aws/labs/lab-43/terraform-target/insecure/. .
+cp /ruta/a/terraform-on-aws/labs/lab-43/buildspec.yml .
 git add .
 git commit -m "test(reto2): codigo inseguro para verificar alerta de fallo"
 git push -u origin HEAD:main
@@ -1540,8 +1538,8 @@ Sube el código `secure/` y confirma que no recibes correo:
 ```bash
 cd /tmp/terraform-code
 rm -rf * .tflint.hcl
-cp -r /ruta/a/terraform-on-aws/labs/lab43/terraform-target/secure/. .
-cp /ruta/a/terraform-on-aws/labs/lab43/buildspec.yml .
+cp -r /ruta/a/terraform-on-aws/labs/lab-43/terraform-target/secure/. .
+cp /ruta/a/terraform-on-aws/labs/lab-43/buildspec.yml .
 git add .
 git commit -m "test(reto2): codigo seguro no debe generar alerta"
 git push -u origin HEAD:main
@@ -1592,7 +1590,7 @@ aws ecr batch-delete-image \
 #    Si tiene contenido, Terraform lo elimina igualmente.
 
 # 4. Destruir toda la infraestructura
-cd labs/lab43/aws
+cd labs/lab-43/aws
 terraform destroy
 ```
 

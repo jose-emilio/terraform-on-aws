@@ -1,4 +1,4 @@
-# Laboratorio 8: LocalStack: Refactorización Declarativa y Adopción de Infraestructura
+# Laboratorio 8 — LocalStack: Refactorización Declarativa y Adopción de Infraestructura
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
@@ -17,8 +17,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.7 instalado
-- Laboratorio 1 completado (entorno configurado)
+- **Terraform >= 1.10** instalado
+- Laboratorio 01 completado (entorno configurado)
 - LocalStack en ejecución (para la sección de LocalStack)
 
 ---
@@ -110,7 +110,7 @@ El comando clásico `terraform state rm <addr>` elimina el recurso del estado si
 ```
 lab08/
 ├── aws/
-│   ├── providers.tf   # Requiere Terraform >= 1.7
+│   ├── providers.tf   # Requiere Terraform >= 1.10
 │   ├── variables.tf   # Nombre del bucket a importar
 │   ├── main.tf        # Evoluciona en cada fase del laboratorio
 │   └── outputs.tf
@@ -123,9 +123,9 @@ lab08/
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Diferencias en `localstack/providers.tf`
+### Diferencias en `localstack/providers.tf`
 
 ```hcl
 terraform {
@@ -154,7 +154,7 @@ provider "aws" {
 
 El endpoint de S3 apunta a LocalStack. El resto del comportamiento de los bloques `import {}`, `moved {}` y `removed {}` es idéntico al de AWS real porque todos operan sobre el estado local de Terraform.
 
-### 1.2 Fase 1 — Adopción (LocalStack)
+### Fase 1 — Adopción (LocalStack)
 
 **Paso 1** — Asegúrate de que LocalStack esté en ejecución:
 
@@ -181,11 +181,11 @@ terraform plan -generate-config-out=generated.tf
 
 **Pasos 4 al 6** — Idénticos a la sección AWS real: integra el bloque `resource` en `main.tf`, activa los outputs en `outputs.tf` y ejecuta `terraform apply`.
 
-### 1.3 Fase 2 — Refactorización (LocalStack)
+### Fase 2 — Refactorización (LocalStack)
 
 Idéntica a la sección AWS real. Los bloques `moved {}` operan exclusivamente sobre el estado local de Terraform; no realizan llamadas a la API de LocalStack ni recrean ningún recurso.
 
-### 1.4 Fase 3 — Remoción (LocalStack)
+### Fase 3 — Remoción (LocalStack)
 
 Idéntica a la sección AWS real. El bloque `removed { lifecycle { destroy = false } }` opera exclusivamente sobre el estado local; no envía ninguna llamada de eliminación a LocalStack.
 
@@ -198,7 +198,7 @@ aws --profile localstack s3 ls | grep lab8-import-local
 
 El primer comando devuelve una lista vacía (el recurso fue retirado del estado). El segundo confirma que el bucket sigue existiendo en LocalStack.
 
-### 1.5 Destruir los Recursos
+### Destruir los Recursos
 
 ```bash
 aws --profile localstack s3 rb s3://lab8-import-local --force
@@ -206,7 +206,7 @@ aws --profile localstack s3 rb s3://lab8-import-local --force
 
 ---
 
-## 2. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -218,7 +218,7 @@ aws --profile localstack s3 rb s3://lab8-import-local --force
 
 ---
 
-## 3. Buenas Prácticas
+## Buenas Prácticas
 
 - **Prefiere primitivas declarativas sobre comandos imperativos.** Los bloques `import {}`, `moved {}` y `removed {}` quedan en el historial de Git y son revisables en PR. `terraform state mv` y `terraform state rm` modifican el estado sin trazabilidad en el código.
 - **Elimina `import {}`, `moved {}` y `removed {}` tras el apply en producción.** Son bloques de migración de un solo uso. Mantenerlos indefinidamente no causa errores pero aumenta el ruido en el código y diluye la intención del bloque cuando aparezca en otra migración.
@@ -229,7 +229,7 @@ aws --profile localstack s3 rb s3://lab8-import-local --force
 
 ---
 
-## 4. Recursos Adicionales
+## Recursos Adicionales
 
 - [Bloque `import` - Documentación de Terraform](https://developer.hashicorp.com/terraform/language/import)
 - [Generación de configuración con `-generate-config-out`](https://developer.hashicorp.com/terraform/language/import/generating-configuration)

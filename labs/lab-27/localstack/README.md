@@ -17,7 +17,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Diferencias con AWS
+## Diferencias con AWS
 
 ### `localstack/providers.tf`
 
@@ -40,10 +40,10 @@ provider "aws" {
 
 > **Nota:** El data source `aws_ami` en LocalStack devuelve AMIs simuladas. El filtro se mantiene idéntico para validar la sintaxis, pero el ID devuelto no corresponde a una imagen real.
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
-cd labs/lab27/localstack
+cd labs/lab-27/localstack
 
 terraform fmt
 terraform init
@@ -51,7 +51,7 @@ terraform plan
 terraform apply
 ```
 
-## 3. Verificación
+## Verificación
 
 ```bash
 awslocal ec2 describe-instances --filters "Name=tag:Name,Values=corp-lab27-web"
@@ -59,7 +59,7 @@ awslocal iam list-instance-profiles
 awslocal ec2 describe-security-groups --group-names corp-lab27-web-sg
 ```
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

@@ -1,20 +1,20 @@
-# Laboratorio 26 — LocalStack: Procesamiento Asíncrono y Resiliencia de Eventos
+# Laboratorio 30 — LocalStack: Procesamiento Asíncrono y Resiliencia de Eventos
 
 ![Terraform on AWS](../../../images/lab-banner.svg)
 
 
-Este documento describe cómo ejecutar el laboratorio 26 contra LocalStack. El código Terraform de `localstack/` es equivalente al de `aws/` con las adaptaciones necesarias para los servicios disponibles en LocalStack Community.
+Este documento describe cómo ejecutar el laboratorio 30 contra LocalStack. El código Terraform de `localstack/` es equivalente al de `aws/` con las adaptaciones necesarias para los servicios disponibles en LocalStack Community.
 
 ## Requisitos Previos
 
 - LocalStack en ejecución: `localstack start -d`
-- Terraform >= 1.5
+- Terraform >= 1.10
 
 ---
 
-## 1. Despliegue en LocalStack
+## Despliegue en LocalStack
 
-### 1.1 Limitaciones conocidas
+### Limitaciones conocidas
 
 | Servicio | Soporte en Community |
 |---|---|
@@ -28,7 +28,7 @@ Este documento describe cómo ejecutar el laboratorio 26 contra LocalStack. El c
 | `filter_criteria` | Parcial — los filtros pueden no aplicarse en Community; todos los mensajes podrían activar Lambda independientemente del `order_type` |
 | `aws_lambda_function_event_invoke_config` (Lambda Destinations) | Parcial — el recurso se crea sin errores, pero LocalStack Community puede no enrutar el resultado a las colas de destino |
 
-### 1.2 Inicialización y despliegue
+### Inicialización y despliegue
 
 Asegúrate de que LocalStack está en ejecución:
 
@@ -47,7 +47,7 @@ terraform apply
 
 El `apply` despliega todas las colas SQS, Lambda, IAM y CloudWatch. No fallará por las limitaciones de `filter_criteria` o Lambda Destinations — los recursos se crean correctamente.
 
-### 1.3 Verificación de recursos
+### Verificación de recursos
 
 ```bash
 # Función Lambda
@@ -74,7 +74,7 @@ awslocal logs describe-log-groups \
   --log-group-name-prefix /aws/lambda/lab30-local
 ```
 
-### 1.4 Flujo SQS → Lambda (Event Source Mapping)
+### Flujo SQS → Lambda (Event Source Mapping)
 
 El Event Source Mapping está activo y Lambda pollea la cola automáticamente. Envía mensajes y observa cómo Lambda los procesa:
 
@@ -107,7 +107,7 @@ awslocal sqs get-queue-attributes \
   --attribute-names ApproximateNumberOfMessages
 ```
 
-### 1.5 Lambda Destinations (invocación async directa)
+### Lambda Destinations (invocación async directa)
 
 Para demostrar Lambda Destinations con invocación asíncrona:
 
@@ -141,7 +141,7 @@ awslocal sqs receive-message \
   --max-number-of-messages 5
 ```
 
-### 1.6 Invocación sync directa (para verificar el handler)
+### Invocación sync directa (para verificar el handler)
 
 Para verificar que el handler Python funciona correctamente sin esperar al Event Source Mapping, invoca Lambda de forma síncrona:
 
@@ -165,7 +165,7 @@ awslocal lambda invoke \
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 # Desde lab30/localstack/
@@ -177,7 +177,7 @@ rm -f function.zip
 
 ---
 
-## 3. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|
@@ -192,7 +192,7 @@ rm -f function.zip
 
 ---
 
-## 4. Buenas Prácticas
+## Buenas Prácticas
 
 - Usa LocalStack para verificar que el handler Python (`handler.py`) procesa correctamente tanto lotes SQS como invocaciones directas, antes de desplegar en AWS real.
 - El mecanismo de `source_code_hash` funciona igual en LocalStack: practica el ciclo editar → `terraform apply` → verificar aquí antes de afectar AWS real.
@@ -201,7 +201,7 @@ rm -f function.zip
 
 ---
 
-## 5. Recursos Adicionales
+## Recursos Adicionales
 
 - [LocalStack — SQS](https://docs.localstack.cloud/aws/services/sqs/)
 - [LocalStack — Lambda](https://docs.localstack.cloud/aws/services/lambda/)

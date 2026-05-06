@@ -1,4 +1,4 @@
-# Laboratorio 10: Arquitectura de State Splitting (Capas de Infraestructura)
+# Laboratorio 10 — Arquitectura de State Splitting (Capas de Infraestructura)
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,8 +23,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir en AWS
+- **Terraform >= 1.10** instalado
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - LocalStack en ejecución — para la sección LocalStack
 
 ---
@@ -105,7 +105,7 @@ Si la capa de red no ha sido desplegada, el data source falla inmediatamente en 
 ## Estructura del proyecto
 
 ```
-lab10/
+lab-10/
 ├── aws/
 │   ├── network/
 │   │   ├── providers.tf      # Backend S3 (parcial) + provider AWS
@@ -139,7 +139,7 @@ lab10/
 
 ## Despliegue en AWS Real
 
-### 1.1 Prerrequisito: bucket S3 del lab02
+### Prerrequisito: bucket S3 del lab02
 
 Las capas de red y cómputo almacenan sus estados en el bucket compartido del curso creado en el lab02, bajo claves distintas (`lab10/network/` y `lab10/compute/`).
 
@@ -154,7 +154,7 @@ aws s3api get-bucket-versioning --bucket $STATE_BUCKET
 
 Si el bucket no existe, vuelve al lab02 y ejecuta `terraform apply` antes de continuar.
 
-### 1.2 Código Terraform
+### Código Terraform
 
 **`aws/network/main.tf`** — Capa de Red:
 
@@ -240,7 +240,7 @@ resource "aws_security_group" "app" {
 }
 ```
 
-### 1.3 Despliegue de la Capa de Red
+### Despliegue de la Capa de Red
 
 ```bash
 # Desde lab-10/aws/network/
@@ -262,7 +262,7 @@ vpc_cidr  = "10.0.0.0/16"
 vpc_id    = "vpc-0a1b2c3d4e5f67890"
 ```
 
-### 1.4 Despliegue de la Capa de Cómputo
+### Despliegue de la Capa de Cómputo
 
 ```bash
 # Desde lab-10/aws/compute/
@@ -284,7 +284,7 @@ subnet_id         = "subnet-0a1b2c3d4e5f67890"
 vpc_id            = "vpc-0a1b2c3d4e5f67890"
 ```
 
-### 1.5 Verificación del Aislamiento (Blast Radius)
+### Verificación del Aislamiento (Blast Radius)
 
 Esta es la demostración central del laboratorio. Vas a destruir completamente la capa de cómputo y verificar que la capa de red no se ve afectada.
 
@@ -341,7 +341,7 @@ terraform apply -var="network_state_bucket=$STATE_BUCKET"
 
 El security group se recrea referenciando el mismo `vpc_id` que ya existía. La capa de red nunca fue interrumpida.
 
-### 1.6 Consultar el Estado Remoto Directamente
+### Consultar el Estado Remoto Directamente
 
 Puedes leer los outputs de la capa de red en cualquier momento sin necesidad de estar en el directorio de red:
 

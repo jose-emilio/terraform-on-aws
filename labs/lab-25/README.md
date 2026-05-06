@@ -33,7 +33,7 @@ Validar la estabilidad y el comportamiento de un módulo Terraform mediante el *
 
 ## Prerrequisitos
 
-- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado (usado como backend de tfstate)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
 - **Terraform >= 1.10** (necesario para `use_lockfile` en el backend S3; `mock_provider` ya está disponible desde 1.7, así que también queda cubierto)
 - Opcional: `checkov` o `trivy` instalados para análisis estático

@@ -1,4 +1,4 @@
-# Laboratorio 33: El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
+# Laboratorio 33 — El Data Lake Blindado: S3 con Seguridad y Ciclo de Vida
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -25,8 +25,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre S3, KMS, EC2 (VPC) e IAM
 - LocalStack en ejecución (para la sección de LocalStack)
 
@@ -135,17 +135,17 @@ Condition = {
 
 Con `Effect = "Deny"` y esta condición, cualquier petición que no provenga del endpoint es denegada, incluso si el principal tiene permisos IAM suficientes. Es la forma más efectiva de garantizar que solo el tráfico interno de la VPC pueda acceder a los datos.
 
-> **Nota**: la bucket policy de este laboratorio incluye una excepción para la cuenta raíz (`arn:aws:iam::ACCOUNT_ID:root`) que permite a Terraform gestionar el bucket desde fuera de la VPC. En producción, sustituye esta excepción por el ARN específico del rol de despliegue y elimina el acceso desde fuera de la VPC una vez completada la configuración inicial.
+> **Nota**: la bucket policy de este laboratorio incluye una excepción para cualquier principal de la propia cuenta (condición `aws:PrincipalAccount = ACCOUNT_ID` evaluada con `StringNotEquals` junto a `aws:sourceVpce`). El `Deny` sólo se activa cuando el principal **no** pertenece a la cuenta **y** el tráfico **no** viene del endpoint, lo que permite a Terraform gestionar el bucket desde fuera de la VPC. En producción, sustituye `aws:PrincipalAccount` por `aws:PrincipalArn` con el ARN específico del rol de despliegue para reducir el alcance al mínimo.
 
 ---
 
 ## Estructura del proyecto
 
 ```
-lab33/
+lab-33/
 ├── aws/
 │   ├── aws.s3.tfbackend      # Parámetros del backend S3 (sin bucket)
-│   ├── providers.tf          # Backend S3, Terraform >= 1.5, provider AWS
+│   ├── providers.tf          # Backend S3, Terraform >= 1.10, provider AWS
 │   ├── variables.tf          # region, project, transition_days, expiration_days
 │   ├── main.tf               # VPC, subred, route table, VPC endpoint, módulo
 │   ├── outputs.tf            # bucket_name, kms_key_arn, vpc_endpoint_id...
@@ -165,13 +165,11 @@ lab33/
         └── secure-bucket/    # Misma interfaz; anotaciones de limitaciones LocalStack
 ```
 
-> **Nota**: `function.zip` y `layer.zip` son artefactos generados durante el plan/apply. No los versiones en Git — añádelos a `.gitignore`.
-
 ---
 
 ## Despliegue en AWS Real
 
-### 1.1 Arquitectura
+### Arquitectura
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -201,7 +199,7 @@ lab33/
   module "datalake"          → invoca modules/secure-bucket con los parámetros
 ```
 
-### 1.2 Módulo secure-bucket
+### Módulo secure-bucket
 
 El módulo recibe el ID del endpoint como variable y lo inyecta en la bucket policy:
 
@@ -214,14 +212,16 @@ resource "aws_s3_bucket_policy" "main" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid       = "DenyNonVPCEndpoint"
+      Sid       = "DenyExternalNonVPCEndpoint"
       Effect    = "Deny"
       Principal = "*"
       Action    = "s3:*"
       Resource  = [aws_s3_bucket.main.arn, "${aws_s3_bucket.main.arn}/*"]
       Condition = {
-        StringNotEquals = { "aws:sourceVpce" = var.vpc_endpoint_id }
-        ArnNotLike      = { "aws:PrincipalArn" = local.account_root_arn }
+        StringNotEquals = {
+          "aws:sourceVpce"       = var.vpc_endpoint_id
+          "aws:PrincipalAccount" = local.account_id
+        }
       }
     }]
   })
@@ -246,7 +246,7 @@ module "datalake" {
 }
 ```
 
-### 1.3 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 export BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
@@ -272,7 +272,7 @@ vpc_endpoint_id      = "vpce-0abc123..."
 vpc_id               = "vpc-0abc123..."
 ```
 
-### 1.4 Verificar el sistema
+### Verificar el sistema
 
 **Paso 1** — Verifica los cuatro controles de acceso público:
 
@@ -358,7 +358,7 @@ aws s3api get-bucket-policy --bucket "$BUCKET" \
   --query Policy --output text | python3 -m json.tool
 ```
 
-Confirma que el `Statement` tiene `Effect: Deny`, `aws:sourceVpce` con el ID del endpoint y `ArnNotLike` con el ARN raíz de la cuenta.
+Confirma que el `Statement` tiene `Effect: Deny` con un único bloque `StringNotEquals` que incluye `aws:sourceVpce` (ID del endpoint) y `aws:PrincipalAccount` (ID de la cuenta). Ambos como AND lógico — el Deny sólo dispara cuando el origen NO es el endpoint Y el principal NO pertenece a la cuenta.
 
 ---
 

@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Diferencias con AWS
+## Diferencias con AWS
 
 ### `localstack/providers.tf`
 
@@ -37,7 +37,7 @@ provider "aws" {
 }
 ```
 
-## 2. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab05/localstack
@@ -48,7 +48,7 @@ terraform plan
 terraform apply
 ```
 
-## 3. Verificación
+## Verificación
 
 ```bash
 aws --profile localstack ec2 describe-key-pairs
@@ -56,7 +56,7 @@ aws --profile localstack ec2 describe-launch-templates
 cat localstack/app.conf
 ```
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

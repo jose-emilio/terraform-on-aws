@@ -16,7 +16,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -69,7 +69,7 @@ resource "aws_kms_alias" "s3" {
 # ── Bucket de logs de acceso ──────────────────────────────────────────────────
 #   S3 server access logging requiere un bucket dedicado. Los logs de acceso
 #   al bucket principal se escriben aqui con el prefijo "datos/".
-resource "aws_s3_bucket" "logs" { #tfsec:ignore:aws-s3-encryption-customer-key #tfsec:ignore:aws-s3-enable-bucket-logging
+resource "aws_s3_bucket" "logs" { #trivy:ignore:AVD-AWS-0132 #trivy:ignore:AVD-AWS-0089
   # checkov:skip=CKV2_AWS_62: Lab - event notifications fuera de scope
   # checkov:skip=CKV2_AWS_61: Lab - lifecycle policy fuera de scope
   # checkov:skip=CKV_AWS_144: Lab - cross-region replication fuera de scope

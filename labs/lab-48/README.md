@@ -43,9 +43,9 @@ La arquitectura tiene cuatro capas:
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.9 instalado
+- **Terraform >= 1.10** instalado
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -457,7 +457,7 @@ buena práctica desde el día uno.
 ## Estructura
 
 ```
-lab48/
+lab-48/
 └── aws/                             Infraestructura del laboratorio
     ├── providers.tf                 Provider AWS ~6.0 con default_tags, backend S3
     ├── variables.tf                 Variables: región, app, entorno, budget, ASG
@@ -477,7 +477,7 @@ lab48/
 ## Paso 1 — Desplegar la infraestructura
 
 ```bash
-cd labs/lab48/aws
+cd labs/lab-48/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -683,7 +683,7 @@ sg-0xxxxxxxxxxxx     → Project=lab48
 ### Ver la estructura del módulo
 
 ```bash
-cat labs/lab48/aws/modules/naming/main.tf
+cat labs/lab-48/aws/modules/naming/main.tf
 ```
 
 El módulo es deliberadamente simple: su única responsabilidad es componer el nombre.
@@ -2219,7 +2219,7 @@ del schedule, sin ninguna intervención manual.
 ## Limpieza
 
 ```bash
-cd labs/lab48/aws
+cd labs/lab-48/aws
 
 terraform destroy
 ```

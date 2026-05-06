@@ -86,7 +86,7 @@ La configuración SSE por defecto no impide subir objetos sin cifrado si el clie
 ## Estructura del proyecto
 
 ```
-lab13/
+lab-13/
 ├── README.md
 ├── aws/
 │   ├── providers.tf       # Provider AWS ~> 6.0 + backend S3

@@ -34,6 +34,7 @@ Preparar un módulo Terraform para ser consumido por otros equipos con garantía
 ## Prerrequisitos
 
 - Git configurado
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - **Terraform >= 1.10** (necesario para `use_lockfile` en el backend S3 del consumer)
 - AWS CLI configurado con credenciales válidas (para los ejemplos)
 - Herramientas opcionales (se instalan durante el lab):

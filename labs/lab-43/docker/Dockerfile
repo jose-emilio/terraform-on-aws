@@ -39,10 +39,10 @@
 # ──────────────────────────────────────────────────────────────────────────────
 FROM alpine:3.21 AS downloader
 
-ARG TERRAFORM_VERSION=1.9.5
-ARG TFLINT_VERSION=0.52.0
+ARG TERRAFORM_VERSION=1.15.2
+ARG TFLINT_VERSION=0.62.0
 ARG TFLINT_AWS_PLUGIN_VERSION=0.31.0
-ARG TRIVY_VERSION=0.69.3
+ARG TRIVY_VERSION=0.70.0
 
 RUN apk add --no-cache \
       curl=~8 \

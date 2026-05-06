@@ -27,7 +27,7 @@ introduzca en ningún momento.
 
 - Terraform ≥ 1.5 instalado.
 - AWS CLI configurado con perfil `default`.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado.
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -77,7 +77,7 @@ Almacenar el secreto como JSON es la práctica estándar de AWS por tres razones
 ## Estructura del proyecto
 
 ```
-lab14/
+lab-14/
 ├── README.md
 ├── aws/
 │   ├── providers.tf           # Provider AWS ~> 6.0 + random + backend S3

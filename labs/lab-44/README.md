@@ -28,9 +28,9 @@ usarás CodeDeploy para entregar dos versiones de una aplicación web mediante u
 
 ## Requisitos previos
 
-- Laboratorio 02 completado (bucket S3 para el backend de Terraform)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.5 instalado
+- **Terraform >= 1.10** instalado
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -207,7 +207,7 @@ instancias afectadas.
 ## Estructura del proyecto
 
 ```
-lab44/
+lab-44/
 ├── aws/
 │   ├── providers.tf        # Proveedor AWS y backend S3
 │   ├── variables.tf        # Variables con validaciones
@@ -948,7 +948,7 @@ valor del `deregistration_delay`.
 > (~$1/día), el ALB y las 4 instancias EC2 `t4g.micro`.
 
 ```bash
-cd labs/lab44/aws
+cd labs/lab-44/aws
 terraform destroy
 ```
 

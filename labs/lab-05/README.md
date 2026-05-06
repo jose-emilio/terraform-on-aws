@@ -1,4 +1,4 @@
-# Laboratorio 5: Configuración Dinámica y Plantillas de Sistema
+# Laboratorio 5 — Configuración Dinámica y Plantillas de Sistema
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -22,7 +22,7 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 1 completado (entorno configurado)
+- Laboratorio 01 completado (entorno configurado)
 ---
 
 ## Conceptos Clave
@@ -114,7 +114,7 @@ tags = merge(
 ## Estructura del proyecto
 
 ```
-lab05/
+lab-05/
 ├── user_data.tftpl      # Plantilla de bash compartida por ambos entornos
 ├── aws/
 │   ├── providers.tf     # Bloque terraform{} y provider{}
@@ -132,9 +132,9 @@ La plantilla `user_data.tftpl` vive en la raíz de `lab04/` y es compartida por 
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`user_data.tftpl`**
 
@@ -311,7 +311,7 @@ output "config_file_path" {
 }
 ```
 
-### 1.2 Preparar la Clave SSH
+### Preparar la Clave SSH
 
 Antes de desplegar, asegúrate de tener un par de claves SSH. Si no existe, genéralo:
 
@@ -325,7 +325,7 @@ Verifica que el archivo de clave pública existe:
 cat ~/.ssh/id_rsa.pub
 ```
 
-### 1.3 Despliegue
+### Despliegue
 
 Desde el directorio `lab04/aws/`:
 
@@ -338,7 +338,7 @@ terraform apply
 
 Durante el `plan`, Terraform mostrará el script de User Data ya renderizado con los valores de las variables, lo que permite verificar el resultado antes de que llegue a la instancia.
 
-### 1.4 Verificar los Outputs
+### Verificar los Outputs
 
 Al finalizar `terraform apply`:
 
@@ -405,7 +405,7 @@ ssh -i ~/.ssh/id_rsa ec2-user@${PUBLIC_IP} "systemctl status $(terraform output 
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -415,13 +415,13 @@ terraform destroy
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Este laboratorio puede ejecutarse íntegramente en LocalStack. Consulta [localstack/README.md](localstack/README.md) para las instrucciones de despliegue local.
 
 ---
 
-## 4. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

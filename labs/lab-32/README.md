@@ -1,4 +1,4 @@
-# Laboratorio 32: FinOps y Rendimiento: Optimización de Cómputo
+# Laboratorio 32 — FinOps y Rendimiento: Optimización de Cómputo
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -23,8 +23,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre Lambda, ECS, EC2 (VPC), IAM, CloudWatch y SNS
 
 ---
@@ -157,10 +157,10 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
 ## Estructura del proyecto
 
 ```
-lab32/
+lab-32/
 └── aws/
     ├── aws.s3.tfbackend      # Parámetros del backend S3 (sin bucket)
-    ├── providers.tf          # Backend S3, Terraform >= 1.5, providers AWS y archive
+    ├── providers.tf          # Backend S3, Terraform >= 1.10, providers AWS y archive
     ├── variables.tf          # region, project, runtime, provisioned_concurrency,
     │                         # ecs_desired_count, alert_email
     ├── main.tf               # VPC+subredes+SGs, IAM (Lambda+ECS), CloudWatch,
@@ -179,7 +179,7 @@ lab32/
 
 ## Despliegue en AWS Real
 
-### 1.1 Arquitectura
+### Arquitectura
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -215,7 +215,7 @@ Terraform local:
   source_code_hash               → hash del ZIP  → detecta cambios → redeploy + nueva versión
 ```
 
-### 1.2 Código Terraform
+### Código Terraform
 
 **`aws/main.tf`** — Fragmentos clave:
 
@@ -269,7 +269,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 }
 ```
 
-### 1.3 Inicialización y despliegue
+### Inicialización y despliegue
 
 ```bash
 export BUCKET="terraform-state-labs-$(aws sts get-caller-identity --query Account --output text)"
@@ -306,7 +306,7 @@ sns_topic_arn        = "arn:aws:sns:us-east-1:123456789:lab32-alerts"
 vpc_id               = "vpc-0abc123..."
 ```
 
-### 1.4 Verificar el sistema
+### Verificar el sistema
 
 **Paso 1** — Verifica Provisioned Concurrency y el alias:
 
@@ -406,7 +406,7 @@ aws sns list-subscriptions-by-topic \
 
 Si la suscripción está en `PendingConfirmation`, revisa tu bandeja de entrada y confirma el email de AWS.
 
-### 1.5 Publicar una nueva versión y ver cómo avanza el alias
+### Publicar una nueva versión y ver cómo avanza el alias
 
 Cuando modificas el código y aplicas, Terraform publica una nueva versión y actualiza el alias automáticamente:
 
@@ -440,26 +440,30 @@ El alias `live` siempre usa `--qualifier live`, no el número de versión direct
 ## Verificación final
 
 ```bash
-# Verificar que la funcion Lambda usa Provisioned Concurrency
+# Verificar que la función Lambda usa Provisioned Concurrency
 aws lambda get-provisioned-concurrency-config \
-  --function-name $(terraform output -raw lambda_function_name) \
+  --function-name "$(terraform output -raw function_name)" \
   --qualifier live \
   --query 'RequestedProvisionedConcurrentExecutions'
 
-# Invocar la funcion via alias y comprobar init_type
+# Invocar la función via alias y comprobar init_type
 aws lambda invoke \
-  --function-name "$(terraform output -raw lambda_function_name):live" \
-  --payload '{}' /tmp/response.json && cat /tmp/response.json
+  --function-name "$(terraform output -raw function_name)" \
+  --qualifier live \
+  --payload '{}' \
+  --cli-binary-format raw-in-base64-out \
+  /tmp/response.json && cat /tmp/response.json | python3 -m json.tool
 # Esperado: "init_type": "provisioned-concurrency"
 
 # Verificar tareas ECS en RUNNING
 aws ecs list-tasks \
-  --cluster $(terraform output -raw ecs_cluster_name) \
+  --cluster "$(terraform output -raw cluster_name)" \
   --query 'taskArns' --output table
 
 # Comprobar la alarma de CloudWatch
 aws cloudwatch describe-alarms \
-  --query 'MetricAlarms[?contains(AlarmName,`lab32`)].{Name:AlarmName,State:StateValue}' \
+  --alarm-names "$(terraform output -raw alarm_name)" \
+  --query 'MetricAlarms[*].{Name:AlarmName,State:StateValue}' \
   --output table
 ```
 

@@ -18,7 +18,7 @@ export AWS_DEFAULT_REGION=us-east-1
 alias awslocal='aws --endpoint-url=http://localhost.localstack.cloud:4566'
 ```
 
-## 1. Despliegue
+## Despliegue
 
 ```bash
 cd labs/lab-19/localstack
@@ -39,9 +39,9 @@ terraform output
 # peering_app_c_id  = "pcx-xxxxxxxxx"
 ```
 
-## 2. Verificacion
+## Verificacion
 
-### 2.1 VPCs
+### VPCs
 
 ```bash
 awslocal ec2 describe-vpcs \
@@ -50,7 +50,7 @@ awslocal ec2 describe-vpcs \
   --output table
 ```
 
-### 2.2 Peerings
+### Peerings
 
 ```bash
 awslocal ec2 describe-vpc-peering-connections \
@@ -59,7 +59,7 @@ awslocal ec2 describe-vpc-peering-connections \
   --output table
 ```
 
-### 2.3 Rutas con peering
+### Rutas con peering
 
 ```bash
 awslocal ec2 describe-route-tables \
@@ -68,7 +68,7 @@ awslocal ec2 describe-route-tables \
   --output json
 ```
 
-## 3. Limitaciones en LocalStack
+## Limitaciones en LocalStack
 
 | Caracteristica | AWS Real | LocalStack Community |
 |---|---|---|
@@ -80,7 +80,7 @@ awslocal ec2 describe-route-tables \
 
 Para verificar la no transitividad y la conectividad real, usa la version `aws/`.
 
-## 4. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy

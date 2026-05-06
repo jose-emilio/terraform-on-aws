@@ -1,4 +1,4 @@
-# Laboratorio 35: Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación
+# Laboratorio 35 — Base de Datos Relacional Crítica: RDS Multi-AZ y Replicación
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -8,7 +8,7 @@
 
 ## Visión general
 
-En este laboratorio aprovisinarás una base de datos PostgreSQL de nivel empresarial con alta disponibilidad, seguridad en capas y escalado de lectura. La capa de aplicación es un CRM Dashboard Flask que se despliega en un **Auto Scaling Group** detrás de un **Application Load Balancer** y demuestra en tiempo real el failover de RDS Multi-AZ, la AZ activa de la primaria y la lectura desde la réplica.
+En este laboratorio aprovisionarás una base de datos PostgreSQL de nivel empresarial con alta disponibilidad, seguridad en capas y escalado de lectura. La capa de aplicación es un CRM Dashboard Flask que se despliega en un **Auto Scaling Group** detrás de un **Application Load Balancer** y demuestra en tiempo real el failover de RDS Multi-AZ, la AZ activa de la primaria y la lectura desde la réplica.
 
 Aprenderás a configurar un **DB Subnet Group** y un **Parameter Group** que fuerza SSL, a desplegar RDS con **Multi-AZ** para failover automático en menos de 60 segundos, a habilitar la **autenticación IAM** con tokens efímeros, a gestionar credenciales con **Secrets Manager** cifrado con CMK propia, y a crear una **Read Replica** en una AZ distinta para descargar lecturas.
 
@@ -28,8 +28,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Terraform >= 1.5 instalado
-- Laboratorio 2 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
+- **Terraform >= 1.10** instalado (necesario para `use_lockfile` en el backend S3)
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Perfil AWS con permisos sobre RDS, KMS, Secrets Manager, IAM, EC2, S3 y Auto Scaling
 
 ---
@@ -209,7 +209,7 @@ La replicación es asíncrona — puede haber un lag de milisegundos. Para datos
 ## Estructura del proyecto
 
 ```
-labs/lab35/
+labs/lab-35/
 ├── README.md
 └── aws/
     ├── providers.tf
@@ -229,7 +229,7 @@ labs/lab35/
 # Obtén el ID de cuenta para el backend
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# Desde labs/lab35/aws/
+# Desde labs/lab-35/aws/
 terraform fmt
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -250,7 +250,7 @@ terraform output app_url
 
 ## Verificación final
 
-### 2.1 Aplicación web — CRM Dashboard
+### Aplicación web — CRM Dashboard
 
 ```bash
 APP_URL=$(terraform output -raw app_url)
@@ -269,7 +269,7 @@ El dashboard muestra:
 - **Card RDS Multi-AZ**: AZ actual de la instancia primaria, estado y botón **Failover**
 - **Tabla de clientes**: 15 clientes precargados, filtrables por nombre/email/país y plan
 
-### 2.2 Instancia RDS y Multi-AZ
+### Instancia RDS y Multi-AZ
 
 ```bash
 # Estado, AZ y configuración de la primaria
@@ -283,7 +283,7 @@ aws rds describe-db-instances \
   --query 'DBInstances[0].Endpoint'
 ```
 
-### 2.3 Auto Scaling Group
+### Auto Scaling Group
 
 ```bash
 # Estado del ASG y número de instancias
@@ -301,7 +301,7 @@ aws elbv2 describe-target-health \
 # Ambas instancias deben aparecer como "healthy"
 ```
 
-### 2.4 SSL forzado (Parameter Group)
+### SSL forzado (Parameter Group)
 
 ```bash
 aws rds describe-db-parameters \
@@ -310,7 +310,7 @@ aws rds describe-db-parameters \
 # Valor debe ser "1"
 ```
 
-### 2.5 Autoscaling de almacenamiento
+### Autoscaling de almacenamiento
 
 ```bash
 aws rds describe-db-instances \
@@ -319,7 +319,7 @@ aws rds describe-db-instances \
 # Debe mostrar: 20, 100, gp3, true
 ```
 
-### 2.6 Secrets Manager
+### Secrets Manager
 
 ```bash
 SECRET=$(terraform output -raw secret_name)
@@ -336,7 +336,7 @@ aws secretsmanager get-secret-value \
 # Debe mostrar: engine, host, port, dbname, username, password
 ```
 
-### 2.7 IAM Database Authentication
+### IAM Database Authentication
 
 ```bash
 DB_HOST=$(terraform output -raw db_host)
@@ -355,7 +355,7 @@ echo "Token generado (primeros 50 chars): ${TOKEN:0:50}..."
 # PGPASSWORD="$TOKEN" psql "host=$DB_HOST port=5432 dbname=appdb user=$DB_USER sslmode=require"
 ```
 
-### 2.8 Read Replica
+### Read Replica
 
 ```bash
 # Estado y AZ de la réplica
@@ -374,7 +374,7 @@ aws cloudwatch get-metric-statistics \
   --query 'Datapoints[*].Average'
 ```
 
-### 2.9 Demostración de failover Multi-AZ
+### Demostración de failover Multi-AZ
 
 El CRM Dashboard incluye un botón **⚡ Failover** que dispara un `reboot_db_instance` con `ForceFailover=True` desde la propia aplicación.
 
@@ -555,7 +555,7 @@ aws rds delete-db-instance \
 ## Limpieza
 
 ```bash
-# Desde labs/lab35/aws/
+# Desde labs/lab-35/aws/
 terraform destroy
 ```
 

@@ -24,9 +24,9 @@ Aprender a detectar y gestionar el **drift de infraestructura** (divergencia ent
 
 ## Prerrequisitos
 
-- lab-02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - AWS CLI configurado con credenciales válidas
-- Terraform >= 1.5
+- **Terraform >= 1.10**
 
 ```bash
 # Exportar el Account ID y nombre del bucket para usar en los comandos
@@ -38,7 +38,7 @@ echo "Bucket: $BUCKET"
 ## Estructura del proyecto
 
 ```
-lab11/
+lab-11/
 ├── README.md                    ← Esta guía
 ├── aws/
 │   ├── providers.tf             ← Backend S3 parcial
@@ -67,7 +67,7 @@ Dos fases:
 ## Despliegue inicial
 
 ```bash
-cd labs/lab11/aws
+cd labs/lab-11/aws
 
 terraform init \
   -backend-config=aws.s3.tfbackend \
@@ -98,7 +98,7 @@ aws s3 ls s3://$BUCKET/lab11/
 
 El drift ocurre cuando alguien modifica infraestructura fuera de Terraform (consola web, CLI, otro proceso). Terraform no lo sabe hasta que ejecuta un `plan` o `apply`.
 
-### 2.1 Introducir drift manualmente
+### Introducir drift manualmente
 
 Obtén el ID del security group desplegado:
 
@@ -125,7 +125,7 @@ aws ec2 authorize-security-group-ingress \
   --cidr 0.0.0.0/0
 ```
 
-### 2.2 Detectar el drift con Terraform
+### Detectar el drift con Terraform
 
 ```bash
 terraform plan
@@ -244,7 +244,7 @@ aws ec2 revoke-security-group-ingress \
 
 Simularás la corrupción o pérdida del archivo de estado y lo recuperarás usando el versionado de S3.
 
-### 4.1 Listar versiones del archivo de estado
+### Listar versiones del archivo de estado
 
 Antes de corromper nada, lista las versiones disponibles:
 
@@ -267,7 +267,7 @@ GOOD_VERSION=$(aws s3api list-object-versions \
 echo "Versión sana: $GOOD_VERSION"
 ```
 
-### 4.2 Simular la corrupción del estado
+### Simular la corrupción del estado
 
 ```bash
 # Sobreescribir el estado con contenido inválido (no es JSON parseable)
@@ -293,7 +293,7 @@ terraform plan
 # ╵
 ```
 
-### 4.3 Restaurar el estado sano desde S3
+### Restaurar el estado sano desde S3
 
 Usa `s3api copy-object` para restaurar la versión anterior sin descargar el archivo:
 
@@ -304,7 +304,7 @@ aws s3api copy-object \
   --key lab11/terraform.tfstate
 ```
 
-### 4.4 Verificar la restauración
+### Verificar la restauración
 
 ```bash
 terraform plan

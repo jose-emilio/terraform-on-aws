@@ -163,7 +163,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline" {
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # El repositorio almacena la imagen Docker del runner (Terraform + TFLint +
-# tfsec + Checkov). Cada push a ECR activa un escaneo de vulnerabilidades
+# Trivy + Checkov). Cada push a ECR activa un escaneo de vulnerabilidades
 # automatico con Amazon Inspector (Enhanced Scanning) o con el escaner nativo
 # de ECR, segun lo que este habilitado en la cuenta.
 #
@@ -301,7 +301,7 @@ resource "aws_cloudwatch_log_group" "codebuild" {
 #               1. terraform fmt   (formato)
 #               2. terraform init + validate (sintaxis)
 #               3. tflint          (errores logicos y uso de APIs)
-#               4. tfsec           (misconfiguraciones de seguridad conocidas)
+#               4. trivy           (misconfiguraciones de seguridad conocidas)
 #               5. checkov         (politicas de seguridad como codigo)
 #               Si cualquier paso falla (exit code != 0) el build se aborta
 #               inmediatamente — patron "Fail Fast".

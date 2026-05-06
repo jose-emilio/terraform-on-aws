@@ -67,18 +67,18 @@ output "build_commands" {
     docker build \
       --build-arg TERRAFORM_VERSION=${var.terraform_version} \
       --build-arg TFLINT_VERSION=${var.tflint_version} \
-      --build-arg TFSEC_VERSION=${var.tfsec_version} \
+      --build-arg TRIVY_VERSION=${var.trivy_version} \
       --build-arg CHECKOV_VERSION=${var.checkov_version} \
       -t ${aws_ecr_repository.iac_runner.repository_url}:latest \
-      Labs/Lab43/docker/
+      labs/lab-43/docker/
 
     # ── Paso 3: Publicar la imagen en ECR ────────────────────────────────────
     docker push ${aws_ecr_repository.iac_runner.repository_url}:latest
 
     # ── Paso 4: Clonar el repositorio CodeCommit y subir el codigo ───────────
     git clone ${aws_codecommit_repository.terraform_code.clone_url_http} /tmp/terraform-code
-    cp -r Labs/Lab43/terraform-target/insecure/. /tmp/terraform-code/
-    cp Labs/Lab43/buildspec.yml /tmp/terraform-code/
+    cp -r labs/lab-43/terraform-target/insecure/. /tmp/terraform-code/
+    cp labs/lab-43/buildspec.yml /tmp/terraform-code/
     cd /tmp/terraform-code
     git add . && git commit -m "feat: add insecure terraform code"
     git push origin main

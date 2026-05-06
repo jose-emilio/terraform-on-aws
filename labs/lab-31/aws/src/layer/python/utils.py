@@ -1,5 +1,5 @@
 """
-Utilidades compartidas para el Lab30 — distribuidas como Lambda Layer.
+Utilidades compartidas para el Lab31 — distribuidas como Lambda Layer.
 
 Al empaquetar la capa, Lambda espera la estructura:
   layer.zip
@@ -20,7 +20,7 @@ def format_response(status_code: int, body: dict) -> dict:
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json; charset=utf-8",
-            "X-Lab": os.environ.get("APP_PROJECT", "lab30"),
+            "X-Lab": os.environ.get("APP_PROJECT", "lab31"),
         },
         "body": json.dumps(body, ensure_ascii=False, default=str),
     }

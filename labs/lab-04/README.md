@@ -1,4 +1,4 @@
-# Laboratorio 4: Orquestación de Identidades y Gestión de Ciclo de Vida
+# Laboratorio 4 — Orquestación de Identidades y Gestión de Ciclo de Vida
 
 ![Terraform on AWS](../../images/lab-banner.svg)
 
@@ -22,8 +22,8 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Requisitos Previos
 
-- Laboratorio 1 completado (entorno configurado)
-- Laboratorio 2 completado (flujo básico de Terraform)
+- Laboratorio 01 completado (entorno configurado)
+- Laboratorio 02 completado (flujo básico de Terraform)
 ---
 
 ## Conceptos Clave
@@ -116,7 +116,7 @@ Esto genera un map `{ "alice" => "arn:...", "bob" => "arn:..." }`, mucho más le
 ## Estructura del proyecto
 
 ```
-lab04/
+lab-04/
 ├── aws/
 │   ├── providers.tf   # Bloque terraform{} y provider{}
 │   ├── variables.tf   # Map de usuarios IAM y nombre de aplicación
@@ -139,9 +139,9 @@ Cuatro mecanismos clave combinados: (1) `for_each` sobre `map(object)` para crea
 
 ---
 
-## 1. Despliegue en AWS Real
+## Despliegue en AWS Real
 
-### 1.1 Código Terraform
+### Código Terraform
 
 **`aws/providers.tf`**
 
@@ -258,7 +258,7 @@ output "ami_id" {
 }
 ```
 
-### 1.2 Despliegue
+### Despliegue
 
 Desde el directorio `lab03/aws/`:
 
@@ -271,7 +271,7 @@ terraform apply
 
 Durante el `plan`, Terraform mostrará los data sources resueltos y los 4 recursos a crear: 3 usuarios IAM (uno por entrada del map) y 1 launch template.
 
-### 1.3 Verificación
+### Verificación
 
 Al finalizar `terraform apply`, los outputs mostrarán la auditoría completa:
 
@@ -296,7 +296,7 @@ aws iam list-users
 aws ec2 describe-launch-templates --filters "Name=tag:Name,Values=corp-lab3"
 ```
 
-### 1.4 Simular una Actualización Blue-Green
+### Simular una Actualización Blue-Green
 
 Modifica el tipo de instancia en `variables.tf` o directamente en `main.tf` para forzar el reemplazo del launch template:
 
@@ -317,7 +317,7 @@ Plan: 1 to add, 0 to change, 1 to destroy.
 
 El símbolo `+/-` indica que se aplicará `create_before_destroy`.
 
-### 1.5 Añadir un Usuario al Map
+### Añadir un Usuario al Map
 
 Añade una entrada al map en `variables.tf`:
 
@@ -352,7 +352,7 @@ terraform output caller_arn
 
 ---
 
-## 2. Limpieza
+## Limpieza
 
 ```bash
 terraform destroy
@@ -362,13 +362,13 @@ terraform destroy
 
 ---
 
-## 3. LocalStack
+## LocalStack
 
 Este laboratorio puede ejecutarse íntegramente en LocalStack (con limitaciones en `aws_ami`). Consulta [localstack/README.md](localstack/README.md) para las instrucciones de despliegue local.
 
 ---
 
-## 4. Comparativa AWS Real vs LocalStack
+## Comparativa AWS Real vs LocalStack
 
 | Aspecto | AWS Real | LocalStack |
 |---|---|---|

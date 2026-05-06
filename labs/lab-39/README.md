@@ -46,9 +46,9 @@ con frecuencia al madurar un proyecto de infraestructura:
 
 ## Requisitos previos
 
-- Terraform >= 1.5 instalado.
+- **Terraform >= 1.10** instalado (`import {}` + `-generate-config-out`: 1.5, `use_lockfile` en backend S3: 1.10).
 - AWS CLI configurado con perfil `default`.
-- lab02 desplegado: bucket `terraform-state-labs-<ACCOUNT_ID>` con versionado habilitado.
+- Laboratorio 02 completado — el bucket `terraform-state-labs-<ACCOUNT_ID>` debe existir
 - Permisos IAM sobre S3 y SSM Parameter Store en **ambas regiones**.
 
 ```bash
@@ -277,9 +277,9 @@ un bloque `resource` completo en `generated.tf`. El fichero generado:
 ## Estructura del proyecto
 
 ```
-lab39/
+lab-39/
 ├── aws/
-│   ├── providers.tf        # Terraform >= 1.5 + dos alias de proveedor AWS ~> 6.0
+│   ├── providers.tf        # Terraform >= 1.10 + dos alias de proveedor AWS ~> 6.0
 │   ├── variables.tf        # primary_region, secondary_region, project, environment, legacy_bucket_name
 │   ├── main.tf             # Recursos multi-region + bloque import (comentado)
 │   ├── outputs.tf          # ARNs, nombres de bucket, comandos de verificacion
@@ -290,7 +290,7 @@ lab39/
 Durante el Paso 4 (importacion), Terraform generara un fichero adicional:
 
 ```
-lab39/
+lab-39/
 └── aws/
     └── generated.tf        # Generado automaticamente por -generate-config-out
                             # Revisar, limpiar e integrar en main.tf
@@ -301,7 +301,7 @@ lab39/
 ### Paso 1 — Inicializar y desplegar la infraestructura multi-región
 
 ```bash
-cd labs/lab39/aws
+cd labs/lab-39/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET="terraform-state-labs-${ACCOUNT_ID}"
@@ -365,7 +365,7 @@ aws ssm get-parameter \
 
 ---
 
-## Paso 3 — Simular Drift: modificar un tag manualmente
+### Paso 3 — Simular Drift: modificar un tag manualmente
 
 **Opción A — Consola de AWS** (recomendada para visualizar el flujo real):
 
@@ -401,7 +401,7 @@ pero la realidad en AWS es `Owner = "devops-team"`.
 
 ---
 
-## Paso 4 — Detectar drift con `-refresh-only`
+### Paso 4 — Detectar drift con `-refresh-only`
 
 ```bash
 # Muestra solo las diferencias entre el estado almacenado y la realidad en AWS.
@@ -463,7 +463,7 @@ Terraform ha detectado el drift pero aun no ha tomado ninguna accion.
 
 ---
 
-## Paso 5 — Decidir como gestionar el drift
+### Paso 5 — Decidir como gestionar el drift
 
 Tienes dos opciones:
 
@@ -529,7 +529,7 @@ terraform apply   # restaura el tag al valor del codigo HCL
 
 ---
 
-## Paso 6 — Crear el bucket "legacy" fuera de Terraform
+### Paso 6 — Crear el bucket "legacy" fuera de Terraform
 
 Simula un bucket que existia antes de que el equipo adoptara Terraform.
 Lo creamos con AWS CLI para imitar la situación real:
@@ -565,7 +565,7 @@ echo "Bucket legacy creado: ${LEGACY_BUCKET}"
 
 ---
 
-## Paso 7 — Declarar la intencion de adoptar el bucket con `import {}`
+### Paso 7 — Declarar la intencion de adoptar el bucket con `import {}`
 
 Abre [aws/main.tf](aws/main.tf) y localiza el bloque `import` comentado al
 final del fichero. Descomenta las cinco lineas eliminando los `#`:
@@ -613,7 +613,7 @@ para que Terraform genere ese bloque `resource` automáticamente.
 
 ---
 
-## Paso 8 — Generar el HCL automáticamente con `-generate-config-out`
+### Paso 8 — Generar el HCL automáticamente con `-generate-config-out`
 
 ```bash
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -646,7 +646,7 @@ Plan: 1 to import, 0 to add, 0 to change, 0 to destroy.
 
 ---
 
-## Paso 9 — Revisar y limpiar el HCL generado
+### Paso 9 — Revisar y limpiar el HCL generado
 
 Abre `generated.tf`. Terraform incluye una cabecera de advertencia seguida
 del bloque `resource` con los atributos que leyo del bucket real en AWS:
@@ -724,7 +724,7 @@ resource "aws_s3_bucket" "legacy_logs" {
 
 ---
 
-## Paso 10 — Mover el resource a `main.tf` y aplicar
+### Paso 10 — Mover el resource a `main.tf` y aplicar
 
 > **Error frecuente**: NO elimines el bloque `import {}` todavia. Debe
 > permanecer en `main.tf` durante el `terraform apply` de este paso. Es
@@ -1134,7 +1134,7 @@ exacto.
 ## Limpieza
 
 ```bash
-cd labs/lab39/aws
+cd labs/lab-39/aws
 
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
