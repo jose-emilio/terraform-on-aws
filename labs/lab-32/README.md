@@ -181,39 +181,9 @@ lab-32/
 
 ### Arquitectura
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  VPC: lab32-vpc (10.28.0.0/16)                                           │
-│                                                                          │
-│  Subredes privadas (Lambda)          Subredes públicas (ECS)             │
-│  10.28.1.0/24 · us-east-1a           10.28.10.0/24 · us-east-1a          │
-│  10.28.2.0/24 · us-east-1b           10.28.11.0/24 · us-east-1b          │
-│                                                                          │
-│  ┌───────────────────────────────┐    ┌───────────────────────────────┐  │
-│  │  Lambda: lab32-function       │    │  ECS: lab32-cluster           │  │
-│  │  Python 3.12 · publish = true │    │  Container Insights: enabled  │  │
-│  │  vpc_config → subredes priv.  │    │                               │  │
-│  │  SG: lab32-lambda-sg          │    │  Capacity Providers:          │  │
-│  │                               │    │    FARGATE_SPOT  weight = 3   │  │
-│  │  Alias "live" → versión N     │    │    FARGATE       weight = 1   │  │
-│  │  Provisioned Concurrency: 5   │    │    (base = 1 On-Demand)       │  │
-│  └───────────────────────────────┘    │                               │  │
-│                                       │  Service: lab32-service       │  │
-│                                       │  desired_count = 2            │  │
-│                                       │  nginx:stable-alpine          │  │
-│                                       └───────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────────┘
-                    │ CPUUtilization > 80% · 2 períodos
-                    ▼
-         ┌──────────────────────┐
-         │  CloudWatch Alarm    │────► SNS: lab32-alerts ────► Email (opcional)
-         │  lab32-ecs-cpu-high  │
-         └──────────────────────┘
+![Lambda en VPC con Provisioned Concurrency sobre alias live + ECS Fargate Spot 3:1 con base=1 On-Demand + alarma CPU → SNS](arch/diagrama.svg)
 
-Terraform local:
-  data "archive_file" "function" → src/function/ → function.zip
-  source_code_hash               → hash del ZIP  → detecta cambios → redeploy + nueva versión
-```
+Dos optimizaciones complementarias sobre la misma VPC. **Lambda** vive en subredes privadas (`vpc_config` con ENIs), publica versión por apply (`publish = true`) y un alias `live` apunta a la última. La **Provisioned Concurrency** se aplica al alias — cualquier invocación a `live` golpea contenedores pre-calentados (sin cold start). **ECS Fargate** corre nginx en subredes públicas con la estrategia `capacity_provider_strategy` 3:1 entre `FARGATE_SPOT` y `FARGATE`: `base = 1` en On-Demand garantiza al menos 1 tarea sobreviviente si AWS reclama instancias Spot. Una `aws_cloudwatch_metric_alarm` sobre CPU del servicio dispara `SNS` (con suscripción email opcional) tanto en `alarm` como en `ok`.
 
 ### Código Terraform
 

@@ -171,33 +171,9 @@ lab-33/
 
 ### Arquitectura
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  VPC: lab33-vpc (10.29.0.0/16)                                               │
-│                                                                              │
-│  ┌────────────────────────────┐                                              │
-│  │ Subred privada             │                                              │
-│  │ 10.29.1.0/24 · us-east-1a │────── Route Table ──────────────────────────► │
-│  └────────────────────────────┘                  VPC Gateway Endpoint S3     │
-└─────────────────────────────────────────────────────────│────────────────────┘
-                                                          │
-                          ┌───────────────────────────────▼────────────────────┐
-                          │  Módulo secure-bucket                              │
-                          │                                                    │
-                          │  aws_kms_key (CMK, rotación anual)                 │
-                          │  aws_kms_alias  alias/lab33-datalake               │
-                          │                                                    │
-                          │  aws_s3_bucket  lab33-datalake-<ACCOUNT_ID>        │
-                          │  ├── public_access_block  (4 controles activos)    │
-                          │  ├── encryption  SSE-KMS + Bucket Key              │
-                          │  ├── versioning  Enabled                           │
-                          │  ├── lifecycle → Glacier(90d) → Delete(365d)       │
-                          │  └── policy      Deny si aws:sourceVpce ≠ endpoint │
-                          └────────────────────────────────────────────────────┘
+![Data Lake S3 con KMS CMK, SSE-KMS Bucket Key, versionado, lifecycle a Glacier y bucket policy que exige VPC Gateway Endpoint](arch/diagrama.svg)
 
-  data "aws_caller_identity" → Account ID → nombre del bucket (único global)
-  module "datalake"          → invoca modules/secure-bucket con los parámetros
-```
+El módulo `secure-bucket` encapsula todas las capas de defensa: una **CMK** dedicada con rotación anual cifra los objetos vía **SSE-KMS con Bucket Key** (1 sola llamada a KMS por bucket en lugar de por objeto). El bloqueo público con los 4 controles, el **versionado** anti-ransomware y la **lifecycle rule** que transiciona a Glacier y luego expira completan la fortificación. La **bucket policy** deniega `s3:*` cuando `aws:sourceVpce ≠ endpoint` **Y** `aws:PrincipalAccount ≠ cuenta` (AND lógico): así los principales de la propia cuenta acceden con normalidad y los accesos externos solo funcionan a través del **VPC Gateway Endpoint** desde la subred privada.
 
 ### Módulo secure-bucket
 

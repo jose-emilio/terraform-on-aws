@@ -191,6 +191,12 @@ labs/lab-34/
 
 ---
 
+## Arquitectura
+
+![EBS gp3 alto rendimiento adjunto a EC2 + EFS Multi-AZ con mount targets en 2 subredes + DLM con snapshots automáticos por tag](arch/diagrama.svg)
+
+Una VPC con subredes privadas en 2 AZs aloja una **EC2 cliente** con un volumen **EBS gp3** dedicado (100 GB, 6000 IOPS, 400 MB/s) — almacenamiento rápido single-AZ por instancia. En paralelo, un **EFS** proporciona sistema de archivos compartido con **mount targets en cada AZ** (replicación automática) y un Access Point que fija UID/GID para la app. El SG de NFS solo admite 2049 desde el SG de la EC2 — sin CIDRs hardcodeados. Una política de **Data Lifecycle Manager** toma snapshots diarios a las 03:00 UTC de cualquier volumen con `tag Backup = true` (retención 14 snapshots), independientemente del código de la app.
+
 ## Despliegue en AWS
 
 ```bash

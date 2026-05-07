@@ -36,46 +36,15 @@ Al finalizar este laboratorio serás capaz de:
 
 ## Arquitectura
 
-```
-Internet
-    │ HTTP :80
-    ▼
-┌───────────────────────────────────────────────┐
-│  Application Load Balancer (público, multi-AZ)│
-│  lab35-alb  ·  us-east-1a / us-east-1b        │
-└────────────────────┬──────────────────────────┘
-                     │ HTTP :8080
-          ┌──────────┴──────────┐
-          ▼                     ▼
-  ┌───────────────┐     ┌───────────────┐
-  │  EC2 t4g.small│     │  EC2 t4g.small│  ← Auto Scaling Group
-  │  us-east-1a   │     │  us-east-1b   │    min=1  desired=2  max=4
-  │  Flask CRM    │     │  Flask CRM    │    target tracking CPU 60%
-  └───────┬───────┘     └───────┬───────┘
-          └──────────┬──────────┘
-                     │
-          ┌──────────┴────────────────────┐
-          │                               │
-          ▼ escrituras                    ▼ lecturas
-  ┌────────────────┐             ┌────────────────────┐
-  │  RDS PRIMARY   │  async      │  READ REPLICA      │
-  │  us-east-1a    │────────────►│  us-east-1c        │
-  │  db.t4g.small  │             │  db.t4g.small      │
-  └───────┬────────┘             └────────────────────┘
-          │ sync (Multi-AZ)
-          ▼
-  ┌────────────────┐
-  │  RDS STANDBY   │
-  │  us-east-1b    │
-  │  (failover)    │
-  └────────────────┘
+![ALB → ASG con Flask CRM en privadas a/b → RDS PostgreSQL Multi-AZ + Read Replica en AZ-c · Secrets Manager + KMS CMK + S3 app artifacts](arch/diagrama.svg)
 
-  ┌────────────────┐   ┌─────────────────────────┐
-  │  Secrets Mgr   │   │  S3 (artefactos app)    │
-  │  KMS CMK       │   │  app.py descargado      │
-  └────────────────┘   │  en cada arranque       │
-                       └─────────────────────────┘
-```
+Tres mecanismos de continuidad combinados sobre la misma VPC:
+
+- **RDS Multi-AZ** — la primaria tiene una standby síncrona en otra AZ; el failover es automático y el endpoint DNS no cambia.
+- **Read Replica** asíncrona en AZ-c — descarga las consultas de lectura para no saturar la primaria.
+- **Secrets Manager** con CMK propia — la contraseña la genera Terraform con `random_password` y se almacena cifrada; la EC2 la recupera en el `user_data` con permisos vía Instance Profile (sin secretos en el código). La rotación opcional vía Lambda se activa con `var.rotation_lambda_arn`.
+
+El parameter group personalizado fuerza `rds.force_ssl = 1`. La app Flask se descarga desde S3 en cada arranque del ASG, lo que permite actualizar el código publicando una nueva versión sin tocar el Launch Template.
 
 ---
 
