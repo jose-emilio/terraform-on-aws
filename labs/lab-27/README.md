@@ -146,6 +146,16 @@ La plantilla `user_data.tftpl` vive en la raíz de `lab27/` y es compartida por 
 
 ## Despliegue en AWS Real
 
+### Arquitectura
+
+![EC2 segura: AMI dinámica + Instance Profile (SSM) + IMDSv2 obligatorio + templatefile() user_data + SG con reglas separadas](arch/diagrama.svg)
+
+> Fuente editable: [`diagrama.drawio`](diagrama.drawio) — abrir con la extensión
+> [Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio)
+> de VS Code o en [app.diagrams.net](https://app.diagrams.net).
+
+Cinco controles combinados sobre una EC2 ARM en la VPC default: (1) `data "aws_ami" "al2023"` con triple filtro (`name = "al2023-ami-2023.*-arm64"` + `architecture = arm64` + `virtualization-type = hvm`) resuelve la AMI más reciente sin hardcoding. (2) `aws_iam_instance_profile` con un rol cuya Trust Policy permite asumir solo a `ec2.amazonaws.com` y `AmazonSSMManagedInstanceCore` adjunta — acceso por Session Manager, sin SSH ni Access Keys. (3) `metadata_options.http_tokens = "required"` activa IMDSv2 obligatorio (bloquea exfiltración SSRF de credenciales). (4) `local.user_data = templatefile(...)` inyecta `{env, app_name, db_endpoint}`; `user_data_replace_on_change = true` recrea la instancia ante cualquier cambio. (5) Reglas del SG en recursos `aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule` separados (drift-resistant). Sumado a `lifecycle.create_before_destroy = true` en la instancia, el reemplazo es zero-downtime.
+
 ### Código Terraform
 
 **`user_data.tftpl`**

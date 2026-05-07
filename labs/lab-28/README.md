@@ -137,28 +137,9 @@ lab-28/
 
 ### Arquitectura
 
-```
-Internet
-    │ (puerto 80)
-    ▼
-┌──────────────────────────────────────────────────────┐
-│  ALB  (subredes públicas, AZ-a y AZ-b)               │
-└───────────────┬──────────────────────────────────────┘
-                │ (puerto 8080, health check /)
-    ┌───────────┴────────────┐
-    ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐
-│  subred pub AZ-a│    │  subred pub AZ-b│
-│  NAT Gateway-a  │    │  NAT Gateway-b  │
-└────────┬────────┘    └────────┬────────┘
-         │ (salida)             │ (salida)
-┌────────┴────────┐    ┌────────┴────────┐
-│ subred priv AZ-a│    │ subred priv AZ-b│
-│    EC2 AZ-a     │    │    EC2 AZ-b     │  ← ASG
-└─────────────────┘    └─────────────────┘
-```
+![ALB en 2 subredes públicas → ASG con Launch Template versionado en 2 subredes privadas, NAT GW por AZ, instance_refresh Rolling y Target Tracking CPU=50%](arch/diagrama.svg)
 
-Cada AZ tiene su propio NAT Gateway: si una zona cae, las instancias de las otras AZs conservan conectividad de salida. Las instancias del ASG nunca reciben tráfico directo de Internet; todo el tráfico entrante pasa por el ALB.
+Cada AZ tiene su propio NAT Gateway: si una zona cae, las instancias de las otras AZs conservan conectividad de salida. Las instancias del ASG nunca reciben tráfico directo de Internet; todo el tráfico entrante pasa por el ALB en el puerto 80, que lo reenvía al puerto 8080 de las instancias. El SG de las instancias usa `security_groups = [aws_security_group.alb.id]` (no CIDR) — solo aceptan tráfico del ALB. El ASG apunta a `aws_launch_template.web.latest_version`, así cualquier cambio (p.ej. `app_version`) dispara un `instance_refresh` Rolling con `min_healthy_percentage = 90`.
 
 ### Código Terraform
 

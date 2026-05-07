@@ -207,41 +207,9 @@ lab-29/
 
 ### Arquitectura
 
-```
-Navegador
-    │  GET /          → HTML page (tarea Web)
-    │  GET /api-data  → nginx proxy_pass → http://api:8080 (Service Connect)
-    ▼
-┌──────────────────────────────────────────────────────────────┐
-│  VPC: 10.0.0.0/16  (subredes públicas, assign_public_ip=true)│
-│                                                              │
-│  Servicio Web  (lab29-web, puerto 80)                        │
-│  ┌─────────────────────────┐  ┌──────────────────────────┐   │
-│  │ Tarea Web AZ-a          │  │ Tarea Web AZ-b           │   │
-│  │  nginx:80 + Envoy proxy │  │  nginx:80 + Envoy proxy  │   │
-│  │  startup.sh             │  │  startup.sh              │   │
-│  └────────────┬────────────┘  └──────────┬───────────────┘   │
-│               │ proxy_pass http://api:8080 + X-API-Key header│
-│               ▼                                              │
-│  Servicio API  (lab29-api, puerto 8080 — solo interno)       │
-│  ┌─────────────────────────┐  ┌──────────────────────────┐   │
-│  │ Tarea API AZ-a          │  │ Tarea API AZ-b           │   │
-│  │  nginx:8080 + Envoy     │  │  nginx:8080 + Envoy      │   │
-│  │  startup-api.sh → JSON  │  │  startup-api.sh → JSON   │   │
-│  └─────────────────────────┘  └──────────────────────────┘   │
-│                                                              │
-│  Cloud Map Namespace: lab29                                  │
-│  ├── DNS: web → IPs tareas Web  (puerto 80)                  │
-│  └── DNS: api → IPs tareas API  (puerto 8080)                │
-└──────────────────────────────────────────────────────────────┘
+![ECS Fargate web + api en subredes públicas, Service Connect HTTP namespace, SSM API_KEY inyectada como secret, ECR IMMUTABLE con lifecycle policy](arch/diagrama.svg)
 
-SSM Parameter Store: /lab29/api-key (SecureString)
-  ├── Web: proxy_set_header X-API-Key "$API_KEY"  (envía la clave al API)
-  └── API: map $http_x_api_key $auth_valid { "$API_KEY" 1 }  (valida la clave)
-
-ECR: lab29/api (IMMUTABLE)
-  └── Lifecycle Policy: mantener ≤ 10 imágenes
-```
+Patrón sin ALB: las tareas Fargate viven en subredes públicas con `assign_public_ip = true` y exponen IP directamente. La comunicación interna **web → api** usa Service Connect sobre un `aws_service_discovery_http_namespace` — cada tarea lleva un sidecar Envoy que resuelve `api:8080` a las IPs de las tareas activas con load balancing y reintentos. El `aws_security_group.ecs` admite tcp/80 desde Internet y tcp/{80, 8080, 15000-15010} con `self = true` (Envoy interno). La clave compartida se guarda en `aws_ssm_parameter.api_key` (SecureString cifrado con `alias/aws/ssm`) y se inyecta en ambos servicios como `secrets.API_KEY` — el `execution_role` tiene permiso `ssm:GetParameters` + `kms:Decrypt`. El `deployment_circuit_breaker` con `rollback = true` revierte automáticamente despliegues fallidos a la task definition anterior.
 
 ### Código Terraform
 

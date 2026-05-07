@@ -179,50 +179,14 @@ lab-30/
 
 ---
 
-## Despliegue en AWS Real
+## Despliegue en AWS Real.
 
 ### Arquitectura
 
-```
-Producer (aws sqs send-message)
-    │
-    │  {"order_id":"ORD-001","order_type":"premium","amount":299.99}
-    ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  SQS: lab30-orders                                               │
-│  visibility_timeout = 30 s                                       │
-│  redrive_policy:                                                 │
-│    deadLetterTargetArn = lab30-dlq                               │
-│    maxReceiveCount     = 3                                       │
-└─────────────────────────┬────────────────────────────────────────┘
-                          │ event_source_mapping
-                          │ batch_size = 10
-                          │ filter_criteria: order_type = "premium"
-                          │ (mensajes "standard" se descartan aquí)
-                          ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Lambda: lab30-processor (Python 3.12)                           │
-│  timeout = 30 s                                                  │
-│                                                                  │
-│  destination_config (invocaciones async directas):               │
-│    on_success → lab30-success                                    │
-│    on_failure → lab30-failure                                    │
-└──────────────────────────────────────────────────────────────────┘
-         │ [3 fallos en ESM]            │ logs
-         ▼                              ▼
-┌────────────────────┐    ┌──────────────────────────────────────┐
-│  SQS: lab30-dlq    │    │  CloudWatch: /aws/lambda/lab30-proc  │
-│  retención 14 días │    │  (7 días)                            │
-└────────────────────┘    └──────────────────────────────────────┘
+![SQS orders + Lambda async con filter_criteria + DLQ tras 3 reintentos + Lambda Destinations on_success/on_failure (solo en invocación async)](arch/diagrama.svg)
 
-Path async directo (aws lambda invoke --invocation-type Event):
-  Éxito  (amount ≤ 9999) → lab30-success
-  Fallo  (amount > 9999) → lab30-failure
+El productor encola mensajes en `orders`. El **Event Source Mapping** hace polling en batches de 10 con `filter_criteria` que descarta los mensajes que no son `order_type = premium` antes de invocar Lambda — invocación síncrona. Si el handler falla 3 veces sobre el mismo mensaje, la `redrive_policy` lo mueve a la **DLQ** (retención 14 días). El `aws_lambda_function_event_invoke_config` con `on_success → success` y `on_failure → failure` **solo dispara en invocaciones asíncronas** (`InvocationType = Event` desde S3, EventBridge, etc.). En caso de invocaciones mediante **Event Source Mapping** sólo se pueden crear `Destinations` para las invocaciones fallidas.
 
-Terraform local:
-  data "archive_file" "function" → src/function/ → function.zip
-  source_code_hash               → hash del ZIP  → detecta cambios → redeploy
-```
 
 ### Código Terraform
 

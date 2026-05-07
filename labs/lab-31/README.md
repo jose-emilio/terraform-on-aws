@@ -189,50 +189,9 @@ lab-31/
 
 ### Arquitectura
 
-```
-Cliente (curl / navegador)
-    │
-    │  GET /items
-    │  GET /items/{id}
-    │  POST /items
-    ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  API Gateway v2 — HTTP API                                       │
-│  https://{api-id}.execute-api.us-east-1.amazonaws.com            │
-│                                                                  │
-│  Stage: $default  (auto_deploy = true)                           │
-│  Integración: AWS_PROXY → payload_format_version = "2.0"         │
-└─────────────────────────────┬────────────────────────────────────┘
-                              │ lambda:InvokeFunction
-                              │ (aws_lambda_permission · source_arn = execution_arn/*/*)
-                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Lambda Function: lab31-function (Python 3.12)                   │
-│  handler = "handler.lambda_handler"                              │
-│                                                                  │
-│  Variables de entorno:                                           │
-│    APP_ENV     = "production"                                    │
-│    APP_PROJECT = "lab31"                                         │
-│                                                                  │
-│  Layers:                                                         │
-│  ┌──────────────────────────────────────────┐                    │
-│  │  lab31-utils (Lambda Layer)              │                    │
-│  │  /opt/python/utils.py                    │                    │
-│  │    · format_response(status, body) → {}  │                    │
-│  │    · get_metadata(context) → {}          │                    │
-│  └──────────────────────────────────────────┘                    │
-└─────────────────────────────┬────────────────────────────────────┘
-                              │ logs
-                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  CloudWatch Logs: /aws/lambda/lab31-function  (7 días)           │
-└──────────────────────────────────────────────────────────────────┘
+![API Gateway v2 HTTP API → integración AWS_PROXY → Lambda con Layer compartida + CloudWatch Logs](arch/diagrama.svg)
 
-Terraform local:
-  data "archive_file" "layer"    → src/layer/ → layer.zip
-  data "archive_file" "function" → src/function/ → function.zip
-  source_code_hash               → hash del ZIP → detecta cambios → redeploy
-```
+El cliente HTTP llega al stage `$default` de una HTTP API v2 (más simple y barata que REST API v1). La integración `AWS_PROXY` con `payload_format_version = "2.0"` reenvía el evento completo a la Lambda. Tres rutas mapean a la misma función: `GET /items`, `GET /items/{id}` y `POST /items`. La función importa utilidades (`format_response`, `get_metadata`) desde una **Lambda Layer** independiente — el `source_code_hash` separado en cada `archive_file` permite redespliegues granulares: editar `utils.py` solo recrea la layer; editar `handler.py` solo recrea la función.
 
 ### Código Terraform
 

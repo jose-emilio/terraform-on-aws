@@ -1,0 +1,79 @@
+<mxfile host="65bd71144e">
+    <diagram name="Arquitectura Lab-29" id="lab29-arch">
+        <mxGraphModel dx="1208" dy="524" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;Lab-29 — Microservicios con Amazon ECS (Fargate) y malla de servicios&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontStyle=1;fontColor=#232F3E;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="100" width="1220" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Navegador&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E1F5FE;strokeColor=#0277BD;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=#01579B;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="320" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpcBox" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;VPC main  ·  cluster ECS Fargate  ·  Service Connect HTTP namespace&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;strokeWidth=2;fontSize=12;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;spacingLeft=12;fontColor=#7A5800;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="160" width="780" height="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="webSvc" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Servicio &lt;b&gt;Web&lt;/b&gt; (Fargate)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;strokeWidth=2;fontSize=11;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;fontColor=#1B5E20;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="220" width="320" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="webLbl" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;task &quot;web&quot;&lt;br&gt;nginx :80&lt;br&gt;subred pública (assign_public_ip)&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#1B5E20;" parent="1" vertex="1">
+                    <mxGeometry x="295" y="335" width="290" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="webRole" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Service Connect: &lt;br&gt;registra web:80, consume api:8080&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;strokeWidth=1;dashed=1;fontSize=10;align=center;verticalAlign=middle;fontColor=#1B5E20;" parent="1" vertex="1">
+                    <mxGeometry x="295" y="395" width="290" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="apiSvc" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Servicio &lt;b&gt;API&lt;/b&gt; (Fargate)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontSize=11;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;fontColor=#0D47A1;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="220" width="320" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="apiLbl" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;task &quot;api&quot;&lt;br&gt;nginx :8080  (interno)&lt;br&gt;valida header X-API-Key&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=10;fontColor=#0D47A1;" parent="1" vertex="1">
+                    <mxGeometry x="685" y="335" width="290" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="apiRole" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Service Connect: registra api:8080&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;strokeWidth=1;dashed=1;fontSize=10;align=center;verticalAlign=middle;fontColor=#0D47A1;" parent="1" vertex="1">
+                    <mxGeometry x="685" y="395" width="290" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ssm" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#DD344C;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.systems_manager;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="200" width="55" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ssmLbl" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;SSM Parameter Store&lt;/b&gt;&lt;br&gt;/.../api-key (SecureString)&lt;br&gt;inyectado como secret en ambos servicios&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=11;fontColor=#A1162F;" parent="1" vertex="1">
+                    <mxGeometry x="1027.5" y="263.5" width="200" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ecrLbl" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;ECR&lt;/b&gt; tag = IMMUTABLE&lt;br&gt;scan_on_push&lt;br&gt;Lifecycle: ≤ 10 imágenes&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=11;fontColor=#E65100;" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="440" width="200" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrBrowserWeb" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;HTTP :80&lt;/font&gt;" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#01579B;strokeWidth=2;fontSize=10;fontColor=#01579B;" parent="1" edge="1" target="2">
+                    <mxGeometry x="0.2562" y="4" relative="1" as="geometry">
+                        <mxPoint x="180" y="345" as="sourcePoint"/>
+                        <mxPoint x="420" y="295" as="targetPoint"/>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arrWebApi" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;proxy_pass api:8080&lt;br&gt;Service Connect&lt;/font&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#558B2F;strokeWidth=2;fontSize=10;fontColor=#33691E;" parent="1" edge="1" target="3" source="2">
+                    <mxGeometry x="0.5668" y="3" relative="1" as="geometry">
+                        <mxPoint x="475" y="295" as="sourcePoint"/>
+                        <mxPoint x="800" y="295" as="targetPoint"/>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arrSsm" value="API_KEY" style="endArrow=classic;html=1;rounded=0;strokeColor=#DD344C;strokeWidth=2;dashed=1;fontSize=10;fontColor=#A1162F;entryX=0.999;entryY=0.441;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" edge="1" target="3">
+                    <mxGeometry x="0.3802" y="-5" relative="1" as="geometry">
+                        <mxPoint x="1100" y="240" as="sourcePoint"/>
+                        <mxPoint x="855" y="290" as="targetPoint"/>
+                        <mxPoint x="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;Sin ALB:&lt;/b&gt; las tareas web exponen IP pública directamente; el navegador llega a una de ellas.&amp;nbsp;&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;La comunicación interna &lt;b&gt;web → api&lt;/b&gt; usa Service Connect (sidecar Envoy resuelve &lt;code&gt;api:8080&lt;/code&gt;).&amp;nbsp;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;El secreto de SSM se inyecta como variable de entorno por el execution_role.&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=2;fontColor=#555555;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="560" width="1220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.ecs_service;" vertex="1" parent="1">
+                    <mxGeometry x="412.37" y="263.5" width="55.25" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.ecs_service;" vertex="1" parent="1">
+                    <mxGeometry x="802.38" y="267" width="55.25" height="68" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecr;" vertex="1" parent="1">
+                    <mxGeometry x="1096" y="370" width="68" height="68" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
