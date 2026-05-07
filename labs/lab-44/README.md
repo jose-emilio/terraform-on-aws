@@ -39,55 +39,9 @@ export REGION="us-east-1"
 
 ## Arquitectura
 
-```
-                    Internet
-                        │
-                ┌───────▼───────┐
-                │      IGW      │
-                └───────┬───────┘
-                        │
-  ┌───── VPC  10.44.0.0/16 ───────────────────────────────┐
-  │                                                       │
-  │   Subredes públicas  (10.44.0.0/24 · 10.44.1.0/24)    │
-  │  ┌─────────────────────────────────────────────────┐  │
-  │  │  ┌──────────────────────┐  ┌─────────────────┐  │  │
-  │  │  │         ALB          │  │   NAT Gateway   │  │  │
-  │  │  │      app-tg (80)     │  │      (EIP)      │  │  │
-  │  │  └──────────────────────┘  └─────────────────┘  │  │
-  │  └─────────────────────────────────────────────────┘  │
-  │               │                       ▲               │
-  │           HTTP (80)              salida EC2           │
-  │               │                       │               │
-  │   Subredes privadas  (10.44.10.0/24 · 10.44.11.0/24)  │
-  │  ┌─────────────────────────────────────────────────┐  │
-  │  │  ┌─────────────────────────────────────────┐    │  │
-  │  │  │   ASG app  (t4g.micro, ARM64)  min=4    │    │  │
-  │  │  │   ├── Instancia EC2 (AZ-a)              │    │  │
-  │  │  │   ├── Instancia EC2 (AZ-a)              │    │  │
-  │  │  │   ├── Instancia EC2 (AZ-b)              │    │  │
-  │  │  │   └── Instancia EC2 (AZ-b)              │    │  │
-  │  │  │   Apache + agente CodeDeploy            │    │  │
-  │  │  └─────────────────────────────────────────┘    │  │
-  │  └─────────────────────────────────────────────────┘  │
-  └───────────────────────────────────────────────────────┘
+![CodeDeploy IN_PLACE: Application + DeploymentGroup orquesta ALB + ASG con appspec.yml hooks · alarma 5xx con Metric Math dispara auto-rollback](arch/diagrama.svg)
 
-  IAM: EC2 Instance Profile
-  ├── S3 (leer artefactos)
-  ├── SSM (Session Manager, sin SSH)
-  └── CloudWatch (métricas)
-
-  CodeDeploy Application
-  └── Deployment Group (IN_PLACE)
-      ├── WITH_TRAFFIC_CONTROL (ALB)
-      ├── MinimumHealthy75Pct  (lotes de 1 instancia)
-      ├── auto_rollback: DEPLOYMENT_FAILURE
-      │                  DEPLOYMENT_STOP_ON_ALARM
-      └── Alarm: 5xx error rate > 1%
-
-  CloudWatch Alarm
-  └── Metric Math: IF(requests>0, errors/requests*100, 0)
-      evaluation_periods: 2 × 60 s
-```
+**CodeDeploy** orquesta el despliegue IN_PLACE sobre el ASG: en cada lote (`MinimumHealthy75Pct` → máximo 25% del fleet a la vez) deregistra instancias del Target Group del **ALB**, el agente CodeDeploy en cada EC2 descarga el zip de la **revisión desde S3** y ejecuta los hooks del `appspec.yml` (`ApplicationStop → BeforeInstall → AfterInstall → ValidateService`). Si `ValidateService` (curl `/health`) o el health check del ALB fallan, la instancia queda *tainted*. Una **CloudWatch Metric Alarm** con **Metric Math** (`IF(requests > 0, (errors / requests) * 100, 0)`) sobre `HTTPCode_Target_5XX_Count` y `RequestCount` del ALB se vincula al deployment group con `auto_rollback_configuration { events = [DEPLOYMENT_FAILURE, DEPLOYMENT_STOP_ON_ALARM] }` — si el porcentaje de 5xx supera el umbral en 2 periodos consecutivos de 60s, CodeDeploy detiene el despliegue y reinstala la revisión anterior automáticamente.
 
 ## Conceptos clave
 
@@ -208,6 +162,9 @@ instancias afectadas.
 
 ```
 lab-44/
+├── diagrama.drawio          # Fuente editable del diagrama de arquitectura
+├── arch/
+│   └── diagrama.svg         # Diagrama de arquitectura (referenciado en este README)
 ├── aws/
 │   ├── providers.tf        # Proveedor AWS y backend S3
 │   ├── variables.tf        # Variables con validaciones

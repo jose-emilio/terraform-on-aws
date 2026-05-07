@@ -45,73 +45,9 @@ export REGION="us-east-1"
 
 ## Arquitectura
 
-```
-  ┌─────────────────────────────────────────────────────────────────────────┐
-  │  CodeCommit                                                             │
-  │  └── rama main  ──►  EventBridge ──► CodePipeline                       │
-  └─────────────────────────────────────────────────────────────────────────┘
-                                              │
-                         ┌────────────────────▼──────────────────────────┐
-                         │  Etapa 1: Source                              │
-                         │  CodeCommit → source_output (ZIP cifrado KMS) │
-                         └────────────────────┬──────────────────────────┘
-                                              │
-                         ┌────────────────────▼──────────────────────────┐
-                         │  Etapa 2: Build                               │
-                         │                                               │
-                         │  runOrder=1 (paralelas):                      │
-                         │  ┌─────────────────┐  ┌────────────────────┐  │
-                         │  │ ValidateAndLint │  │   SecurityScan     │  │
-                         │  │ fmt + validate  │  │   Checkov + JUnit  │  │
-                         │  │ + TFLint        │  │                    │  │
-                         │  └─────────────────┘  └────────────────────┘  │
-                         │                                               │
-                         │  runOrder=2:                                  │
-                         │  ┌────────────────────────────────────────┐   │
-                         │  │  Plan                                  │   │
-                         │  │  tfplan.bin + tfplan.json + tfplan.txt │   │
-                         │  └────────────────────────────────────────┘   │
-                         │                                               │
-                         │  runOrder=3:                                  │
-                         │  ┌────────────────────────────────────────┐   │
-                         │  │  InspectPlan (Lambda)                  │   │
-                         │  │  Cuenta create/update/delete/replace   │   │
-                         │  │  Bloquea si destroys > max_threshold   │   │
-                         │  └────────────────────────────────────────┘   │
-                         └────────────────────┬──────────────────────────┘
-                                              │
-                         ┌────────────────────▼──────────────────────────┐
-                         │  Etapa 3: Approval                            │
-                         │  SNS email → aprobador revisa tfplan.txt      │
-                         │  Aprueba o rechaza con comentario             │
-                         └────────────────────┬──────────────────────────┘
-                                              │
-                         ┌────────────────────▼──────────────────────────┐
-                         │  Etapa 4: Deploy                              │
-                         │                                               │
-                         │  runOrder=1:                                  │
-                         │  ┌─────────────────────────────────────────┐  │
-                         │  │  Apply                                  │  │
-                         │  │  terraform apply tfplan.bin (inmutable) │  │
-                         │  └─────────────────────────────────────────┘  │
-                         │                                               │
-                         │  runOrder=2:                                  │
-                         │  ┌─────────────────────────────────────────┐  │
-                         │  │  SmokeTest                              │  │
-                         │  │  Verifica S3 + SSM + CloudWatch via API │  │
-                         │  └─────────────────────────────────────────┘  │
-                         └───────────────────────────────────────────────┘
+![CodePipeline 4 etapas: Source → Build (validate+scan paralelos → plan → InspectPlan Lambda) → Approval (SNS email) → Deploy (apply tfplan.bin + smoke test)](arch/diagrama.svg)
 
-  Artefactos (cifrados con CMK KMS):
-  ├── source_output  → código Terraform del repositorio
-  └── plan_output    → tfplan.bin · tfplan.json · tfplan.txt
-
-  IAM (mínimo privilegio):
-  ├── pipeline-role        → S3, KMS, CodeCommit, CodeBuild, Lambda, SNS
-  ├── codebuild-role       → S3, KMS, CloudWatch Logs, target resources (S3/SSM/CWL)
-  ├── lambda-inspector     → S3, KMS, CodePipeline (put_job_result)
-  └── events-role          → codepipeline:StartPipelineExecution
-```
+El pipeline implementa **GitOps** sobre Terraform con un **contrato inmutable plan→apply**: el `tfplan.bin` se genera una vez en la etapa Build, se almacena cifrado como artefacto y se reutiliza tal cual en Deploy con `terraform apply tfplan.bin` — sin re-plan. Lo que el aprobador vio (revisando `tfplan.txt`) es exactamente lo que se aplica. La **Lambda InspectPlan** (`run_order = 3`) parsea `tfplan.json` y bloquea si supera el umbral de recursos destruidos. La aprobación humana es manual con notificación SNS por email + link directo al `tfplan.txt` en S3.
 
 ## Conceptos clave
 
