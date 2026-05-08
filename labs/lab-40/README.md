@@ -500,7 +500,7 @@ Coste total estimado del lab si se destruye al terminar: **menos de 0,50 €** (
 ## Recursos
 
 - [Terraform: `configuration_aliases`](https://developer.hashicorp.com/terraform/language/modules/develop/providers#provider-aliases-within-modules)
-- [Terraform: pasar providers a módulos](https://developer.hashicorp.com/terraform/language/meta-arguments/module-providers)
+- [Terraform: pasar providers a módulos](https://developer.hashicorp.com/terraform/language/modules/develop/providers)
 - [Terraform: `assume_role` en el AWS provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#assume_role-configuration-block)
 - [AWS KMS — Multi-Region Keys](https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html)
 - [`aws_kms_replica_key` resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_replica_key)

@@ -3135,6 +3135,6 @@ coincide con `"lab49-recorder"`.
 - [Config Remediation — SSM Automation Documents](https://docs.aws.amazon.com/config/latest/developerguide/remediation.html)
 - [Security Hub — Estándares y findings agregados](https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html)
 - [SSM Automation — Sintaxis de runbooks](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-documents.html)
-- [Open Policy Agent — Lenguaje Rego](https://www.openpolicyagent.org/docs/latest/policy-language/)
+- [Open Policy Agent — Lenguaje Rego](https://www.openpolicyagent.org/docs/policy-language)
 - [Conftest — Aplicación de políticas Rego sobre IaC](https://www.conftest.dev/)
 - [Compliance as Code — AWS Well-Architected (Security Pillar)](https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html)

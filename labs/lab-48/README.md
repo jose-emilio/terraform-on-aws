@@ -2274,7 +2274,7 @@ aws iam list-attached-role-policies \
 - [Cost Anomaly Detection — Detección automática de desviaciones](https://docs.aws.amazon.com/cost-management/latest/userguide/manage-ad.html)
 - [Cost Allocation Tags — Activación y reportes](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)
 - [EC2 Spot Instances — Comportamiento y mejores prácticas](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html)
-- [ASG Mixed Instances Policy — Combinación On-Demand y Spot](https://docs.aws.amazon.com/autoscaling/ec2/userguide/asg-purchase-options.html)
+- [ASG Mixed Instances Policy — Combinación On-Demand y Spot](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-mixed-instances-groups.html)
 - [Capacity-Optimized — Estrategias de asignación Spot](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-capacity-rebalancing.html)
 - [ABAC en AWS — Tags como dimensión de autorización](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html)
 - [Tag Policies — Gobernanza centralizada de tagging](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html)

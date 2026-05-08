@@ -1531,8 +1531,8 @@ la UI.
 
 - [HCP Terraform — Documentación oficial](https://developer.hashicorp.com/terraform/cloud-docs)
 - [Bloque `cloud {}` — Configuración del backend](https://developer.hashicorp.com/terraform/cli/cloud/settings)
-- [Workspaces — CLI-driven workflow](https://developer.hashicorp.com/terraform/cloud-docs/run/cli)
-- [Variables sensibles y entorno en HCP Terraform](https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables)
+- [Workspaces — CLI-driven workflow](https://developer.hashicorp.com/terraform/cloud-docs/workspaces/run/cli)
+- [Variables sensibles y entorno en HCP Terraform](https://developer.hashicorp.com/terraform/cloud-docs/variables)
 - [Migración de un backend local/S3 a HCP Terraform](https://developer.hashicorp.com/terraform/cloud-docs/migrate)
 - [Plan de precios y free tier de HCP Terraform](https://www.hashicorp.com/products/terraform/pricing)
 - [API Tokens — Tipos y mejores prácticas](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens)
