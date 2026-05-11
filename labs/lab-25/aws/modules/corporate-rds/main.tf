@@ -51,7 +51,7 @@ locals {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   name = "${var.project_name}-vpc"
   cidr = var.vpc_cidr
@@ -129,7 +129,7 @@ resource "aws_security_group" "rds" {
 
 module "rds" {
   source  = "terraform-aws-modules/rds/aws"
-  version = "~> 6.0"
+  version = "~> 7.0"
 
   identifier = "${var.project_name}-db"
 
