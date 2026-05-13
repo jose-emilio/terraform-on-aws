@@ -29,7 +29,7 @@ cat > /var/www/html/index.html << HTML
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab28 · ${app_version}</title>
+  <title>Lab29 · ${app_version}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -90,7 +90,7 @@ cat > /var/www/html/index.html << HTML
 </head>
 <body>
   <div class="card">
-    <div class="badge">Lab 28 · Zero Downtime</div>
+    <div class="badge">Lab 29 · Zero Downtime</div>
     <h1>Instancia activa</h1>
     <p class="subtitle">Escalabilidad y Alta Disponibilidad con Terraform</p>
 
